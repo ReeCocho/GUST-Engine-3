@@ -326,9 +326,9 @@ namespace gust
 
 			/**
 			 * @brief Allocate a new resource.
-			 * @note The constructor for the resource will no 
+			 * @return Resource handle.
+			 * @note The constructor for the resource will not
 			 * have been called, so make sure you do that.
-			 * @note Resource handle.
 			 */
 			size_t allocate() const
 			{
@@ -361,6 +361,58 @@ namespace gust
 				T* resource = getResourceByHandle(handle);
 				resource->~T();
 				m_data[handle] = 0;
+			}
+
+			/**
+			 * @brief Resize the resource array to fit more resources.
+			 * @param New size.
+			 * @bool Should we maintain the current resources?
+			 * @note If the new size is less than the old size,
+			 * the old resources will not be maintained.
+			 */
+			void resize(size_t newSize, bool maintain)
+			{
+				// Resize and maintain old data
+				if (maintain && newSize >= m_maxResourceCount)
+				{
+					unsigned char* oldData = m_data;
+					size_t oldSize = m_maxResourceCount;
+					size_t oldOffset = m_offset;
+
+					// Create new data
+					m_maxResourceCount = newSize;
+					m_data = new unsigned char[(sizeof(T) * newSize) + m_alignment + newSize];
+					m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + newSize);
+
+					// Reset allocation table
+					for (size_t i = 0; i < m_maxResourceCount; i++)
+						m_data[i] = (i < oldSize ? oldData[i] : 0);
+
+					// Set old data
+					for (size_t i = 0; i < oldSize * sizeof(T); i++)
+					{
+						size_t newIndex = (m_maxResourceCount + m_offset) + i;
+						size_t oldIndex = (oldSize + oldOffset) + i;
+						m_data[newIndex] = oldData[oldIndex];
+					}
+
+					// Delete old data.
+					delete oldData;
+				}
+				// Ignore old data
+				else
+				{
+					delete m_data;
+
+					// Create new data
+					m_maxResourceCount = newSize;
+					m_data = new unsigned char[(sizeof(T) * newSize) + m_alignment + newSize];
+					m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + newSize);
+
+					// Reset allocation table
+					for (size_t i = 0; i < m_maxResourceCount; i++)
+						m_data[i] = 0;
+				}
 			}
 
 		private:

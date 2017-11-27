@@ -1,3 +1,3 @@
 # Other subdirectories
 add_subdirectory(GUST-Core)
-add_subdirectory(Testing)
+add_subdirectory(GUST-Testing)
