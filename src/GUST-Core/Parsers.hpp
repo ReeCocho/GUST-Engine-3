@@ -8,12 +8,3 @@
 
 /** Includes. */
 #include <json.hpp>
-
-namespace gust
-{
-	namespace core
-	{
-		// JSON library from nlohamnn
-		using json = nlohmann::json;
-	}
-}

@@ -3,7 +3,7 @@ set(
 	GUST_CORE_SRCS
 	Allocators.cpp
 	Debugging.cpp
-	Parsers.cpp
+	Hashing.cpp
 )
 	
 # Header files
@@ -11,7 +11,9 @@ set(
 	GUST_CORE_HDRS
 	Allocators.hpp
 	Debugging.hpp
+	Hashing.hpp
 	Parsers.hpp
+	Math.hpp
 )
 
 # Project Declaration
