@@ -23,9 +23,9 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 SET(
 	LINK_LIBRARY 
 	optimized 
-	${CMAKE_SOURCE_DIR}/build/src/GUST-Core/Release/GUST-Core.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-Engine/Release/GUST-Engine.lib
 	debug 
-	${CMAKE_SOURCE_DIR}/build/src/GUST-Core/Debug/GUST-Core.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-Engine/Debug/GUST-Engine.lib
 )
 
 # Libraries

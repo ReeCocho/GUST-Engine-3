@@ -11,13 +11,10 @@
 
 namespace gust
 {
-	namespace core
-	{
-		/**
-		 * @brief Hash a string.
-		 * @param String to hash.
-		 * @return Hashed string.
-		 */
-		extern size_t hash(const std::string& str);
-	}
+	/**
+	 * @brief Hash a string.
+	 * @param String to hash.
+	 * @return Hashed string.
+	 */
+	extern size_t hash(const std::string& str);
 }
