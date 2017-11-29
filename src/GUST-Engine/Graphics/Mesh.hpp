@@ -1,34 +1,35 @@
-/**
+#pragma once
+
+/** 
  * @file Mesh.hpp
  * @brief Mesh header file.
  * @author Connor J. Bramham (ReeCocho)
  */
 
 /** Includes. */
-#include "Vulkan.hpp"
-#include "Math.hpp"
-#include <vector>
+#include <array>
+#include "Graphics.hpp"
 
 namespace gust
 {
 	/**
 	 * @struct Vertex
 	 * @brief Vertex info.
-	 * @see Mesh
+	 * @see MeshInfoData
 	 */
 	struct Vertex
 	{
-		/** Position. */
-		glm::vec3 position = {};
+		/** Vertex position. */
+		glm::vec3 position = glm::vec3();
 
-		/** UV. */
-		glm::vec2 uv = {};
+		/** Vertex UV. */
+		glm::vec2 uv = glm::vec2();
 
-		/** Normal. */
-		glm::vec3 normal = {};
+		/** Vertex normal. */
+		glm::vec3 normal = glm::vec3();
 
-		/** Tangent. */
-		glm::vec3 tangent = {};
+		/** Vertex tangent. */
+		glm::vec3 tangent = glm::vec3();
 
 		/**
 		 * @brief Describes how to pass data to vertex shader.
@@ -47,18 +48,9 @@ namespace gust
 		 * @param Vertex to compare with.
 		 * @return If they are equal.
 		 */
-		bool operator==(const Vertex& other) const
-		{
-			return position == other.position && normal == other.normal && uv == other.uv && tangent == other.tangent;
-		}
+		bool operator==(const Vertex& other) const;
 	};
 
-
-
-	/**
-	 * @class Mesh
-	 * @brief Stores data about a renderable mesh.
-	 */
 	class Mesh
 	{
 	public:
@@ -68,17 +60,19 @@ namespace gust
 		 */
 		Mesh() = default;
 
-		/**
-		 * @brief Destructor.
-		 */
-		~Mesh();
+		// /**
+		//  * @brief Constructor.
+		//  * @param Graphics context.
+		//  * @param Path to OBJ file containing a mesh.
+		//  */
+		// Mesh(Graphics* graphics, const std::string& path);
 
 		/**
-		* @brief Constructor.
-		* @param Graphics context.
-		* @param Meshes indices.
-		* @param Meshes vertecies.
-		*/
+		 * @brief Constructor.
+		 * @param Graphics context.
+		 * @param Meshes indices.
+		 * @param Meshes vertecies.
+		 */
 		Mesh
 		(
 			Graphics* graphics,
@@ -87,12 +81,12 @@ namespace gust
 		);
 
 		/**
-		* @brief Constructor.
-		* @param Graphics context.
-		* @param Meshes indices.
-		* @param Meshes vertecies.
-		* @param Meshes UVs.
-		*/
+		 * @brief Constructor.
+		 * @param Graphics context.
+		 * @param Meshes indices.
+		 * @param Meshes vertecies.
+		 * @param Meshes UVs.
+		 */
 		Mesh
 		(
 			Graphics* graphics,
@@ -102,13 +96,13 @@ namespace gust
 		);
 
 		/**
-		* @brief Constructor.
-		* @param Graphics context.
-		* @param Meshes indices.
-		* @param Meshes vertecies.
-		* @param Meshes UVs.
-		* @param Meshes normals.
-		*/
+		 * @brief Constructor.
+		 * @param Graphics context.
+		 * @param Meshes indices.
+		 * @param Meshes vertecies.
+		 * @param Meshes UVs.
+		 * @param Meshes normals.
+		 */
 		Mesh
 		(
 			Graphics* graphics,
@@ -139,6 +133,11 @@ namespace gust
 		);
 
 		/**
+		 * @Destructor.
+		 */
+		~Mesh();
+
+		/**
 		 * @brief Get number of indices.
 		 * @return Number of indices.
 		 */
@@ -153,7 +152,7 @@ namespace gust
 		 */
 		inline const Buffer& getVertexUniformBuffer() const
 		{
-			return m_vertexBuffer;
+			return m_vertexUniformBuffer;
 		}
 
 		/**
@@ -162,7 +161,7 @@ namespace gust
 		 */
 		inline const Buffer& getIndexUniformBuffer() const
 		{
-			return m_indexBuffer;
+			return m_indexUniformBuffer;
 		}
 
 		/**
@@ -172,16 +171,31 @@ namespace gust
 
 	private:
 
+		/**
+		 * @brief Create vertex buffer.
+		 */
+		void initVertexBuffer();
+
+		/**
+		 * @brief Create index buffer.
+		 */
+		void initIndexBuffer();
+
+
+
+		/** Graphics context. */
+		Graphics* m_graphics = nullptr;
+
 		/** Vertex data. */
-		std::vector<Vertex> m_vertices;
+		std::vector<Vertex> m_vertices = {};
 
 		/** Index data. */
-		std::vector<uint32_t> m_indices;
+		std::vector<uint32_t> m_indices = {};
 
-		/** Vertex uniform buffer. */
-		Buffer m_vertexBuffer = {};
+		/** Vertex uniform buffer */
+		Buffer m_vertexUniformBuffer = {};
 
 		/** Index uniform buffer. */
-		Buffer m_indexBuffer = {};
+		Buffer m_indexUniformBuffer = {};
 	};
 }

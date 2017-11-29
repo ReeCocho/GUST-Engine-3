@@ -16,4 +16,9 @@ namespace gust
 		std::cout << str << '\n';
 #endif
 	}
+
+	void throwError(const std::string& msg)
+	{
+		throw std::runtime_error(msg);
+	}
 }

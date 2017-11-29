@@ -1,1 +1,5 @@
-﻿
+﻿  Checking Build System
+  CMake does not need to re-run because C:/Users/xXDea/Documents/Code/GUST-Engine-3/build/CMakeFiles/generate.stamp is up-to-date.
+  CMake does not need to re-run because C:/Users/xXDea/Documents/Code/GUST-Engine-3/build/src/CMakeFiles/generate.stamp is up-to-date.
+  CMake does not need to re-run because C:/Users/xXDea/Documents/Code/GUST-Engine-3/build/src/GUST-Engine/CMakeFiles/generate.stamp is up-to-date.
+  CMake does not need to re-run because C:/Users/xXDea/Documents/Code/GUST-Engine-3/build/src/GUST-Testing/CMakeFiles/generate.stamp is up-to-date.

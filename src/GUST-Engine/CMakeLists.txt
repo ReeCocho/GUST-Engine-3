@@ -1,39 +1,36 @@
-# Source files
-set(
-	GUST_ENGINE_SRCS
-	Allocators.cpp
-	Debugging.cpp
-	Hashing.cpp
-	FileIO.cpp
-	Clock.cpp
-	ResourceManager.cpp
-	Mesh.cpp
-	Shader.cpp
-	Material.cpp
-	Texture.cpp
+# Core
+file(
+	GLOB_RECURSE 
+	GUST_CORE
+	"${CMAKE_SOURCE_DIR}/src/GUST-Engine/Core/*.cpp"
+	"${CMAKE_SOURCE_DIR}/src/GUST-Engine/Core/*.hpp"
 )
-	
-# Header files
-set(
-	GUST_ENGINE_HDRS
-	Allocators.hpp
-	Debugging.hpp
-	Hashing.hpp
-	FileIO.hpp
-	Clock.hpp
-	Parsers.hpp
-	Math.hpp
-	Vulkan.hpp
-	ResourceManager.hpp
-	Mesh.hpp
-	Shader.hpp
-	Material.hpp
-	Texture.hpp
+
+# Graphics
+file(
+	GLOB_RECURSE 
+	GUST_GRAPHICS
+	"${CMAKE_SOURCE_DIR}/src/GUST-Engine/Graphics/*.cpp"
+	"${CMAKE_SOURCE_DIR}/src/GUST-Engine/Graphics/*.hpp"
+)
+
+# Utilities
+file(
+	GLOB_RECURSE 
+	GUST_UTILITIES
+	"${CMAKE_SOURCE_DIR}/src/GUST-Engine/Utilities/*.cpp"
+	"${CMAKE_SOURCE_DIR}/src/GUST-Engine/Utilities/*.hpp"
 )
 
 # Project Declaration
 ADD_LIBRARY(
 	GUST-Engine
-	${GUST_ENGINE_SRCS} 
-	${GUST_ENGINE_HDRS}
+	${GUST_CORE} 
+	${GUST_GRAPHICS}
+	${GUST_UTILITIES}
 )
+
+# Grouping
+source_group("Core" FILES ${GUST_CORE})
+source_group("Utilites" FILES ${GUST_UTILITIES})
+source_group("Graphics" FILES ${GUST_GRAPHICS})

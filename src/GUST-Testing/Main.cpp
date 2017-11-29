@@ -1,5 +1,5 @@
 #include <iostream>
-#include <GUST-Engine\Allocators.hpp>
+#include <GUST-Engine\Utilities\Allocators.hpp>
 
 struct TestStruct
 {
@@ -10,14 +10,14 @@ struct TestStruct
 
 int main()
 {
-	auto alloc = gust::core::ResourceAllocator<TestStruct>(150, 4);
+	auto alloc = gust::ResourceAllocator<TestStruct>(150, 4);
 
-	gust::core::Handle<TestStruct> h1;
+	gust::Handle<TestStruct> h1;
 
 	for (size_t i = 0; i < 5; i++)
 		if (i == 3)
 		{
-			h1 = gust::core::Handle<TestStruct>(&alloc, alloc.allocate());
+			h1 = gust::Handle<TestStruct>(&alloc, alloc.allocate());
 			::new(h1.get())(TestStruct);
 		}
 

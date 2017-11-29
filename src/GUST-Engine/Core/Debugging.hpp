@@ -8,6 +8,7 @@
 
 /** Includes. */
 #include <string>
+#include <assert.h>
 
 namespace gust
 {
@@ -22,4 +23,10 @@ namespace gust
 	 * @param String to print and log.
 	 */
 	extern void printLine(const std::string& str);
+
+	/**
+	 * @brief Throw an error and stop the application.
+	 * @param Error message.
+	 */
+	extern void throwError(const std::string& msg);
 }

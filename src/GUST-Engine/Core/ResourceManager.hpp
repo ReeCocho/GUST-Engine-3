@@ -5,11 +5,11 @@
  */
 
 /** Includes. */
-#include "Allocators.hpp"
-#include "Mesh.hpp"
-#include "Material.hpp"
-#include "Shader.hpp"
-#include "Texture.hpp"
+#include "../Utilities/Allocators.hpp"
+#include "../Graphics/Mesh.hpp"
+#include "../Graphics/Material.hpp"
+#include "../Graphics/Shader.hpp"
+#include "../Graphics/Texture.hpp"
 
 namespace gust
 {
