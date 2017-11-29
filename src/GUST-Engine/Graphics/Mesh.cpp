@@ -1,87 +1,87 @@
-// #define TINYOBJLOADER_IMPLEMENTATION
-// #include <tiny_obj_loader.h>
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 #include "Mesh.hpp"
 
 namespace gust
 {
-	// Mesh::Mesh(Graphics* graphics, const std::string& path) : m_graphics(graphics)
-	// {
-	// 	tinyobj::attrib_t attrib;
-	// 	std::vector<tinyobj::shape_t> shapes;
-	// 	std::vector<tinyobj::material_t> materials;
-	// 	std::string err;
-	// 
-	// 	// Load OBJ
-	// 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str()))
-	// 		throw std::runtime_error(err);
-	// 
-	// 	std::vector<uint32_t> indices = {};
-	// 
-	// 	std::vector<glm::vec3> vertices = {};
-	// 	std::vector<glm::vec2> uvs = {};
-	// 	std::vector<glm::vec3> normals = {};
-	// 
-	// 	std::vector<Mesh::Vertex> uniqueVertices = {};
-	// 
-	// 	for (const auto& shape : shapes)
-	// 		for (const auto& index : shape.mesh.indices)
-	// 		{
-	// 			Mesh::Vertex vertex = {};
-	// 
-	// 			// Get position
-	// 			vertex.position =
-	// 			{
-	// 				attrib.vertices[3 * index.vertex_index + 0],
-	// 				attrib.vertices[3 * index.vertex_index + 1],
-	// 				attrib.vertices[3 * index.vertex_index + 2]
-	// 			};
-	// 
-	// 			// Get UV
-	// 			if (attrib.texcoords.size() > 0)
-	// 				vertex.uv =
-	// 			{
-	// 				attrib.texcoords[2 * index.texcoord_index + 0],
-	// 				1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-	// 			};
-	// 
-	// 			// Get normal
-	// 			if (attrib.normals.size() > 0)
-	// 				vertex.normal =
-	// 			{
-	// 				attrib.normals[3 * index.normal_index + 0],
-	// 				attrib.normals[3 * index.normal_index + 1],
-	// 				attrib.normals[3 * index.normal_index + 2]
-	// 			};
-	// 
-	// 			// Check if duplicate vertex
-	// 			bool isUnique = true;
-	// 
-	// 			for (size_t i = 0; i < uniqueVertices.size(); i++)
-	// 				if (uniqueVertices[i] == vertex)
-	// 				{
-	// 					indices.push_back(static_cast<uint32_t>(i));
-	// 					isUnique = false;
-	// 					break;
-	// 				}
-	// 
-	// 			if (isUnique)
-	// 			{
-	// 				indices.push_back(static_cast<uint32_t>(vertices.size()));
-	// 				vertices.push_back(vertex.position);
-	// 				uvs.push_back(vertex.uv);
-	// 				normals.push_back(vertex.normal);
-	// 				uniqueVertices.push_back(vertex);
-	// 			}
-	// 		}
-	// 
-	// 	m_vertices = uniqueVertices;
-	// 	m_indices = indices;
-	// 
-	// 	initVertexBuffer();
-	// 	initIndexBuffer();
-	// 	calculateTangents();
-	// }
+	Mesh::Mesh(Graphics* graphics, const std::string& path) : m_graphics(graphics)
+	{
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string err;
+	
+		// Load OBJ
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str()))
+			throw std::runtime_error(err);
+	
+		std::vector<uint32_t> indices = {};
+	
+		std::vector<glm::vec3> vertices = {};
+		std::vector<glm::vec2> uvs = {};
+		std::vector<glm::vec3> normals = {};
+	
+		std::vector<Vertex> uniqueVertices = {};
+	
+		for (const auto& shape : shapes)
+			for (const auto& index : shape.mesh.indices)
+			{
+				Vertex vertex = {};
+	
+				// Get position
+				vertex.position =
+				{
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+	
+				// Get UV
+				if (attrib.texcoords.size() > 0)
+					vertex.uv =
+				{
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+	
+				// Get normal
+				if (attrib.normals.size() > 0)
+					vertex.normal =
+				{
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+	
+				// Check if duplicate vertex
+				bool isUnique = true;
+	
+				for (size_t i = 0; i < uniqueVertices.size(); i++)
+					if (uniqueVertices[i] == vertex)
+					{
+						indices.push_back(static_cast<uint32_t>(i));
+						isUnique = false;
+						break;
+					}
+	
+				if (isUnique)
+				{
+					indices.push_back(static_cast<uint32_t>(vertices.size()));
+					vertices.push_back(vertex.position);
+					uvs.push_back(vertex.uv);
+					normals.push_back(vertex.normal);
+					uniqueVertices.push_back(vertex);
+				}
+			}
+	
+		m_vertices = uniqueVertices;
+		m_indices = indices;
+	
+		initVertexBuffer();
+		initIndexBuffer();
+		calculateTangents();
+	}
 
 	Mesh::Mesh
 	(

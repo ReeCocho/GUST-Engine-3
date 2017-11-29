@@ -7,6 +7,7 @@
  */
 
 /** Includes. */
+#include "../Core/Debugging.hpp"
 #include <vector>
 #include <algorithm>
 #include <assert.h>
@@ -264,12 +265,14 @@ namespace gust
 		~ResourceAllocator()
 		{
 			// Call destructors for all allocated data
-			for(size_t i = 0; i < m_maxResourceCount; i++)
+			for (size_t i = 0; i < m_maxResourceCount; i++)
+			{
 				if (isAllocated(i))
 				{
 					T* data = reinterpret_cast<T*>(m_data[m_maxResourceCount + m_offset + (i * m_clampedDataSize)]);
 					data->~T();
 				}
+			}
 
 			delete m_data;
 		}

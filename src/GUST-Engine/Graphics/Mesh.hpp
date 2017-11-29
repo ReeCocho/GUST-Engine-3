@@ -60,12 +60,12 @@ namespace gust
 		 */
 		Mesh() = default;
 
-		// /**
-		//  * @brief Constructor.
-		//  * @param Graphics context.
-		//  * @param Path to OBJ file containing a mesh.
-		//  */
-		// Mesh(Graphics* graphics, const std::string& path);
+		/**
+		 * @brief Constructor.
+		 * @param Graphics context.
+		 * @param Path to OBJ file containing a mesh.
+		 */
+		Mesh(Graphics* graphics, const std::string& path);
 
 		/**
 		 * @brief Constructor.

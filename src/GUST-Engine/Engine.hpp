@@ -9,6 +9,7 @@
 /** Includes. */
 #include "Graphics\Graphics.hpp"
 #include "Core\Input.hpp"
+#include "Core\ResourceManager.hpp"
 
 namespace gust
 {
@@ -66,6 +67,9 @@ namespace gust
 
 		/** Input manager. */
 		Input input = {};
+
+		/** Resource manager. */
+		ResourceManager resourceManager = {};
 
 	private:
 
