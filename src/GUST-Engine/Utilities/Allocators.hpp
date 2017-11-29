@@ -231,7 +231,6 @@ namespace gust
 		 */
 		ResourceAllocator() : 
 			m_data(nullptr), 
-			m_top(nullptr),
 			m_alignment(0),
 			m_maxResourceCount(0),
 			m_offset(0),

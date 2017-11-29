@@ -48,6 +48,7 @@ namespace gust
 
 	private:
 
-		
+		/** Mesh allocator. */
+		ResourceAllocator<Mesh> m_meshAllocator;
 	};
 }

@@ -34,17 +34,24 @@ namespace gust
 		Graphics() = default;
 
 		/**
-		 * @brief Constructor.
+		 * @brief Default destructor.
+		 */
+		~Graphics() = default;
+
+		/**
+		 * @brief Startup graphics.
 		 * @param Window name.
 		 * @param Window width.
 		 * @param Window height.
+		 * @note This is called internally. Do not use.
 		 */
-		Graphics(const std::string& name, uint32_t width, uint32_t height);
+		void startup(const std::string& name, uint32_t width, uint32_t height);
 
 		/**
-		 * @brief Destructor.
+		 * @brief Shutdown graphics.
+		 * @note This is called internally. Do not use.
 		 */
-		~Graphics();
+		void shutdown();
 
 		/**
 		 * @brief Set resolution.
@@ -228,7 +235,7 @@ namespace gust
 		uint32_t m_height;
 
 		/** Window name. */
-		const std::string m_name;
+		std::string m_name;
 
 		/** Vulkan instance. */
 		vk::Instance m_instance;

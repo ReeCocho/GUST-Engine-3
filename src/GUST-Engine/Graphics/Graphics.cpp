@@ -4,10 +4,7 @@
 
 namespace gust
 {
-	Graphics::Graphics(const std::string& name, uint32_t width, uint32_t height) :	
-		m_name(name),
-		m_height(height),
-		m_width(width)
+	void Graphics::startup(const std::string& name, uint32_t width, uint32_t height)
 	{
 		// Check parameters
 		assert(width > 0);
@@ -16,6 +13,7 @@ namespace gust
 
 		m_width = width;
 		m_height = height;
+		m_name = name;
 
 		// Initialize SDL video
 		if (SDL_Init(SDL_INIT_VIDEO | SDL_VIDEO_VULKAN) != 0)
@@ -126,7 +124,7 @@ namespace gust
 		m_commandManager = std::make_unique<VulkanCommandManager>(m_deviceManager.get(), m_queueManager.get());
 	}
 
-	Graphics::~Graphics()
+	void Graphics::shutdown()
 	{
 		m_deviceManager->getLogicalDevice().waitIdle();
 

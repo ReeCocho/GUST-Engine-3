@@ -1,5 +1,5 @@
 #include <iostream>
-#include <GUST-Engine\Utilities\Allocators.hpp>
+#include <GUST-Engine\Engine.hpp>
 
 struct TestStruct
 {
@@ -10,20 +10,24 @@ struct TestStruct
 
 int main()
 {
-	auto alloc = gust::ResourceAllocator<TestStruct>(150, 4);
+	gust::Engine::get().startup("Test Game", 1280, 720);
+	gust::Engine::get().simulate();
+	gust::Engine::get().shutdown();
 
-	gust::Handle<TestStruct> h1;
-
-	for (size_t i = 0; i < 5; i++)
-		if (i == 3)
-		{
-			h1 = gust::Handle<TestStruct>(&alloc, alloc.allocate());
-			::new(h1.get())(TestStruct);
-		}
-
-	h1->m3 = 10.1f;
-
-	std::cout << h1->m1 << ' ' << h1->m2 << ' ' << h1->m3 << '\n';
+	// auto alloc = gust::ResourceAllocator<TestStruct>(150, 4);
+	// 
+	// gust::Handle<TestStruct> h1;
+	// 
+	// for (size_t i = 0; i < 5; i++)
+	// 	if (i == 3)
+	// 	{
+	// 		h1 = gust::Handle<TestStruct>(&alloc, alloc.allocate());
+	// 		::new(h1.get())(TestStruct);
+	// 	}
+	// 
+	// h1->m3 = 10.1f;
+	// 
+	// std::cout << h1->m1 << ' ' << h1->m2 << ' ' << h1->m3 << '\n';
 
 	std::cin.get();
 	return 0;

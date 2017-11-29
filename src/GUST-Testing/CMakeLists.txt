@@ -31,7 +31,8 @@ SET(
 # Libraries
 target_link_libraries(
 	GUST-Testing 
+	GUST-Engine
 	${SDL2_LIBRARY} 
 	${VULKAN_LIBRARY}
-	${LINK_LIBRARY}
+	# ${LINK_LIBRARY}
 )
