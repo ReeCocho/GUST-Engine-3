@@ -8,6 +8,7 @@
 
 /** Includes. */
 #include "Graphics\Graphics.hpp"
+#include "Graphics\Renderer.hpp"
 #include "Core\Input.hpp"
 #include "Core\ResourceManager.hpp"
 
@@ -70,6 +71,9 @@ namespace gust
 
 		/** Resource manager. */
 		ResourceManager resourceManager = {};
+
+		/** Rendering engine. */
+		Renderer renderer = {};
 
 	private:
 

@@ -9,6 +9,7 @@ namespace gust
 		input.startup();
 		graphics.startup(name, width, height);
 		resourceManager.startup(&graphics, 20, 20, 10, 10);
+		renderer.startup(&graphics);
 	}
 
 	void Engine::simulate()
@@ -21,8 +22,9 @@ namespace gust
 
 	void Engine::shutdown()
 	{
-		graphics.shutdown();
+		renderer.shutdown();
 		resourceManager.shutdown();
+		graphics.shutdown();
 		input.shutdown();
 	}
 }

@@ -50,30 +50,30 @@ namespace gust
 			bool depthTesting
 		);
 
-		// /**
-		//  * @brief Constructor.
-		//  * @param Graphics context.
-		//  * @param Descriptor set layouts.
-		//  * @param Render pass.
-		//  * @param Path to file containing vertex shader byte code.
-		//  * @param Path to file containing fragment shader byte code.
-		//  * @param Size of data sent to vertex shader.
-		//  * @param Size of data sent to fragment shader.
-		//  * @param Number of textures used by the shader
-		//  * @param Should the shader perform depth testing?
-		//  */
-		// Shader
-		// (
-		// 	Graphics* graphics,
-		// 	const std::vector<vk::DescriptorSetLayout>& layouts,
-		// 	const vk::RenderPass& renderPass, 
-		// 	const std::string& vertexShaderPath, 
-		// 	const std::string& fragmentShaderPath,
-		// 	size_t vertexDataSize,
-		// 	size_t fragmentDataSize,
-		// 	size_t textureCount,
-		// 	bool depthTesting
-		// );
+		/**
+		 * @brief Constructor.
+		 * @param Graphics context.
+		 * @param Descriptor set layouts.
+		 * @param Render pass.
+		 * @param Path to file containing vertex shader byte code.
+		 * @param Path to file containing fragment shader byte code.
+		 * @param Size of data sent to vertex shader.
+		 * @param Size of data sent to fragment shader.
+		 * @param Number of textures used by the shader
+		 * @param Should the shader perform depth testing?
+		 */
+		Shader
+		(
+			Graphics* graphics,
+			const std::vector<vk::DescriptorSetLayout>& layouts,
+			const vk::RenderPass& renderPass, 
+			const std::string& vertexShaderPath, 
+			const std::string& fragmentShaderPath,
+			size_t vertexDataSize,
+			size_t fragmentDataSize,
+			size_t textureCount,
+			bool depthTesting
+		);
 
 		/**
 		 * @brief Destructor.

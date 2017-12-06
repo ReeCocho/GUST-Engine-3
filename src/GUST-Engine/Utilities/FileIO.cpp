@@ -31,7 +31,7 @@ namespace gust
 		stream << str;
 	}
 
-	std::vector<unsigned char> readBinary(const std::string& path)
+	std::vector<char> readBinary(const std::string& path)
 	{
 		// Open stream
 		std::ifstream stream(path, std::ios::binary | std::ios::in | std::ios::ate);
@@ -48,25 +48,20 @@ namespace gust
 		stream.read(data, size);
 
 		// Put the data into a vector
-		std::vector<unsigned char> vectorData(size);
+		std::vector<char> vectorData(size);
 		for (size_t i = 0; i < size; i++)
-			vectorData[i] = static_cast<unsigned char>(data[i]);
+			vectorData[i] = data[i];
 
 		return vectorData;
 	}
 
-	void writeBinary(const std::string& path, const std::vector<unsigned char>& bytes)
+	void writeBinary(const std::string& path, const std::vector<char>& bytes)
 	{
 		// Open stream
 		std::ofstream stream(path, std::ios::binary | std::ios::out);
 		assert(stream.is_open());
 
-		// Bytes to char
-		std::vector<char> chars(bytes.size());
-		for (size_t i = 0; i < bytes.size(); i++)
-			chars[i] = static_cast<char>(bytes[i]);
-
 		// Write data
-		stream.write(chars.data(), chars.size());
+		stream.write(bytes.data(), bytes.size());
 	}
 }

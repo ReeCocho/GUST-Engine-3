@@ -162,7 +162,7 @@ namespace gust
 
 	Mesh::~Mesh()
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 
 		logicalDevice.destroyBuffer(m_indexUniformBuffer.buffer);
 		logicalDevice.freeMemory(m_indexUniformBuffer.memory);
@@ -173,7 +173,7 @@ namespace gust
 
 	void Mesh::initVertexBuffer()
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 		const auto bufferSize = static_cast<vk::DeviceSize>(sizeof(m_vertices[0]) * m_vertices.size());
 
 		// Create staging buffer
@@ -213,7 +213,7 @@ namespace gust
 
 	void Mesh::initIndexBuffer()
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 		const auto bufferSize = static_cast<vk::DeviceSize>(sizeof(m_indices[0]) * m_indices.size());
 
 		// Create staging buffer
@@ -253,7 +253,7 @@ namespace gust
 
 	void Mesh::calculateTangents()
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 
 		logicalDevice.destroyBuffer(m_indexUniformBuffer.buffer);
 		logicalDevice.freeMemory(m_indexUniformBuffer.memory);

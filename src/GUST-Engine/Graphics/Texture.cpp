@@ -97,7 +97,7 @@ namespace gust
 
 	Texture::~Texture()
 	{
-		vk::Device logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		vk::Device logicalDevice = m_graphics->getLogicalDevice();
 
 		logicalDevice.destroySampler(m_sampler);
 		logicalDevice.destroyImageView(m_imageView);

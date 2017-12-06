@@ -13,13 +13,32 @@
 #include "Vulkan.hpp"
 #include "../Utilities/Math.hpp"
 #include "VulkanDebugging.hpp"
-#include "VulkanSurfaceManager.hpp"
-#include "VulkanDeviceManager.hpp"
-#include "VulkanQueueManager.hpp"
-#include "VulkanCommandManager.hpp"
 
 namespace gust
 {
+	/**
+	 * @struct QueueFamilyIndices
+	 * @brief Stores queue family indices for different queue types.
+	 */
+	struct QueueFamilyIndices
+	{
+		/** Index of graphics family. */
+		int graphicsFamily = -1;
+
+		/** Index of present family. */
+		int presentFamily = -1;
+
+		/** Index of transfer family. */
+		int transferFamily = -1;
+
+		bool isComplete()
+		{
+			return graphicsFamily >= 0 && presentFamily >= 0 && transferFamily >= 0;
+		}
+	};
+
+
+
 	/**
 	 * @class Graphics
 	 * @brief Manages interacting with Vulkan and a window.
@@ -80,39 +99,136 @@ namespace gust
 		}
 
 		/**
-		 * @brief Get surface manager.
-		 * @return Surface manager.
+		 * @brief Get surface.
+		 * @return Surface.
 		 */
-		inline VulkanSurfaceManager* getSurface() const
+		inline const vk::SurfaceKHR& getSurface() const
 		{
-			return m_surfaceManager.get();
+			return m_surface;
 		}
 
 		/**
-		 * @brief Get device manager.
-		 * @return Device manager.
+		 * @brief Get surface color format.
+		 * @return Surface color format.
 		 */
-		inline VulkanDeviceManager* getDeviceManager() const
+		inline vk::Format getSurfaceColorFormat() const
 		{
-			return m_deviceManager.get();
+			return m_colorFormat;
 		}
 
 		/**
-		 * @brief Get command manager.
-		 * @return Command manager.
+		 * @brief Get surface color space.
+		 * @return Surface color space.
 		 */
-		inline VulkanCommandManager* getCommandManager() const
+		inline vk::ColorSpaceKHR getSurfaceColorSpace() const
 		{
-			return m_commandManager.get();
+			return m_colorSpace;
 		}
 
 		/**
-		 * @brief Get queue manager.
-		 * @return Queue manager.
+		 * @brief Get depth format.
+		 * @return Depth format.
 		 */
-		inline VulkanQueueManager* getQueueManager() const
+		inline vk::Format getDepthFormat() const
 		{
-			return m_queueManager.get();
+			return m_depthFormat;
+		}
+
+		/**
+		 * @brief Get physical device.
+		 * @return Physical device.
+		 */
+		inline vk::PhysicalDevice getPhysicalDevice() const
+		{
+			return m_physicalDevice;
+		}
+
+		/**
+		 * @brief Get logical device.
+		 * @return Logical device.
+		 */
+		inline vk::Device getLogicalDevice() const
+		{
+			return m_logicalDevice;
+		}
+
+		/**
+		 * @brief Get queue family indices.
+		 * @return Queue family indices.
+		 */
+		inline QueueFamilyIndices getQueueFamilyIndices() const
+		{
+			return m_queueFamilyIndices;
+		}
+
+		/**
+		 * @brief Create a command buffer.
+		 * @param Command buffer level.
+		 * @return New command buffer.
+		 */
+		vk::CommandBuffer createCommandBuffer(vk::CommandBufferLevel level);
+
+		/**
+		 * @brief Destroy a command buffer.
+		 * @param Command buffer to destroy.
+		 */
+		inline void destroyCommandBuffer(vk::CommandBuffer commandBuffer)
+		{
+			m_logicalDevice.freeCommandBuffers(m_graphicsPool, commandBuffer);
+		}
+
+		/**
+		 * @brief Get transfer command pool.
+		 * @return Transfer command pool.
+		 */
+		inline const vk::CommandPool& getTransferPool() const
+		{
+			return m_transferPool;
+		}
+
+		/**
+		 * @brief Create a command buffer for a single use.
+		 * @return Single use command buffer.
+		 */
+		vk::CommandBuffer beginSingleTimeCommands();
+
+		/**
+		 * @brief End single use command buffer.
+		 * @param Single use command buffer to end.
+		 */
+		void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+
+		/**
+		 * @brief Reset graphics command buffers.
+		 * @note Used internally. Do not call.
+		 */
+		void resetGraphicsCommandBuffers();
+
+		/**
+		 * @brief Get graphics queue.
+		 * @return Graphics queue.
+		 */
+		inline vk::Queue getGraphicsQueue() const
+		{
+			return m_graphicsQueue;
+		}
+
+		/**
+		 * @brief Get presentation queue.
+		 * @return Presentation queue.
+		 */
+		inline vk::Queue getPresentationQueue() const
+		{
+			return m_presentQueue;
+		}
+
+		/**
+		 * @brief Get transfer queue.
+		 * @return Transfer queue.
+		 */
+		inline vk::Queue getTransferQueue() const
+		{
+			return m_transferQueue;
 		}
 
 		/**
@@ -223,6 +339,33 @@ namespace gust
 		 */
 		std::vector<const char*> getExtensions(const std::vector<const char*>& extensions);
 
+		/**
+		 * @brief Gets the rating of a physical device.
+		 * @param Device to check.
+		 * @return Device score.
+		 */
+		size_t getDeviceScore(vk::PhysicalDevice device);
+
+		/**
+		 * @brief Get queue family indices of a physical device.
+		 * @param Physical device to check.
+		 * @return Queue family indices of the device.
+		 */
+		QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device);
+
+		/**
+		 * @brief Check if device supports device extensions
+		 * @param Physical device to check extensions of.
+		 * @return If the device supports device extensions.
+		 */
+		bool supportsDeviceExtensions(vk::PhysicalDevice physicalDevice);
+
+		/**
+		 * @brief Initialize Vulkan surface formats.
+		 * @param Physical device needed too check if it supports certain formats.
+		 */
+		void initSurfaceFormats(vk::PhysicalDevice physicalDevice);
+
 
 
 		/** SDL Window. */
@@ -246,21 +389,54 @@ namespace gust
 		/** Vulkan extensions. */
 		std::vector<const char*> m_extensions;
 
+		/** Vulkan device extensions. */
+		std::vector<const char*> m_deviceExtensions =
+		{
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+		};
+
 #ifndef NDEBUG
 		/** Vulkan debugging manager. */
 		std::unique_ptr<VulkanDebugging> m_debugging;
 #endif
 
-		/** Vulkan surface manager. */
-		std::unique_ptr<VulkanSurfaceManager> m_surfaceManager;
+		/** Vulkan surface. */
+		vk::SurfaceKHR m_surface = {};
 
-		/** Vulkan device manager. */
-		std::unique_ptr<VulkanDeviceManager> m_deviceManager;
+		/** Surface color format. */
+		vk::Format m_colorFormat = {};
 
-		/** Vulkan queue manager. */
-		std::unique_ptr<VulkanQueueManager> m_queueManager;
+		/** Surface color space. */
+		vk::ColorSpaceKHR m_colorSpace = {};
 
-		/** Vulkan command manager. */
-		std::unique_ptr<VulkanCommandManager> m_commandManager;
+		/** Surface depth format. */
+		vk::Format m_depthFormat = {};
+
+		/** Vulkan physical device. */
+		vk::PhysicalDevice m_physicalDevice = {};
+
+		/** Vulkan logical device. */
+		vk::Device m_logicalDevice = {};
+
+		/** Physical device queue family indices. */
+		QueueFamilyIndices m_queueFamilyIndices = {};
+
+		/** Graphics queue. */
+		vk::Queue m_graphicsQueue = {};
+
+		/** Presentation queue. */
+		vk::Queue m_presentQueue = {};
+
+		/** Transfer queue. */
+		vk::Queue m_transferQueue = {};
+
+		/** Graphics command pool. */
+		vk::CommandPool m_graphicsPool = {};
+
+		/** Transfer command pool. */
+		vk::CommandPool m_transferPool = {};
+
+		/** Single use command pool. */
+		vk::CommandPool m_singleUsePool = {};
 	};
 }

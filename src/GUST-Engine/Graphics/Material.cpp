@@ -29,7 +29,7 @@ namespace gust
 
 	Material::~Material()
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 
 		// Destroy pool
 		logicalDevice.destroyDescriptorPool(m_descriptorPool);
@@ -72,7 +72,7 @@ namespace gust
 		}
 
 		// Update descriptor sets
-		m_graphics->getDeviceManager()->getLogicalDevice().updateDescriptorSets(static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
+		m_graphics->getLogicalDevice().updateDescriptorSets(static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
 	}
 
 	void Material::initDescriptorPool()
@@ -96,12 +96,12 @@ namespace gust
 		poolInfo.setMaxSets(static_cast<uint32_t>(poolSizes.size()));
 
 		// Create descriptor pool
-		m_descriptorPool = m_graphics->getDeviceManager()->getLogicalDevice().createDescriptorPool(poolInfo);
+		m_descriptorPool = m_graphics->getLogicalDevice().createDescriptorPool(poolInfo);
 	}
 
 	void Material::initDescriptorSets(const vk::DescriptorSetLayout& layout)
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 
 		// Texture descriptor set
 		if (m_shader->getTextureCount() > 0)

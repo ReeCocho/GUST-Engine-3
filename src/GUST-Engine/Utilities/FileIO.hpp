@@ -31,12 +31,12 @@ namespace gust
 	 * @param Path to file.
 	 * @return Vector containing the contents.
 	 */
-	extern std::vector<unsigned char> readBinary(const std::string& path);
+	extern std::vector<char> readBinary(const std::string& path);
 
 	/**
 	 * @brief Write binary data to a file.
 	 * @param Path to file.
 	 * @param Binary data to write.
 	 */
-	extern void writeBinary(const std::string& path, const std::vector<unsigned char>& bytes);
+	extern void writeBinary(const std::string& path, const std::vector<char>& bytes);
 }

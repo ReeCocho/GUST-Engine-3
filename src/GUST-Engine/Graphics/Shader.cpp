@@ -1,4 +1,4 @@
-// #include <fstream>
+#include "../Utilities/FileIO.hpp"
 #include "Shader.hpp"
 #include "Mesh.hpp"
 
@@ -34,97 +34,61 @@ namespace gust
 		initGraphicsPipeline(renderPass);
 	}
 
-	// Shader::Shader
-	// (
-	// 	Graphics* graphics,
-	// 	const std::vector<vk::DescriptorSetLayout>& layouts,
-	// 	const vk::RenderPass& renderPass,
-	// 	const std::string& vertexShaderPath,
-	// 	const std::string& fragmentShaderPath,
-	// 	size_t vertexDataSize,
-	// 	size_t fragmentDataSize,
-	// 	size_t textureCount,
-	// 	bool depthTesting
-	// ) : 
-	// 	m_graphics(graphics),
-	// 	m_descriptorSetLayouts(layouts),
-	// 	m_fragmentDataSize(static_cast<vk::DeviceSize>(fragmentDataSize)),
-	// 	m_vertexDataSize(static_cast<vk::DeviceSize>(vertexDataSize)),
-	// 	m_textureCount(textureCount),
-	// 	m_depthTesting(depthTesting)
-	// {
-	// 	std::vector<char> vertexShaderByteCode = {};
-	// 	std::vector<char> fragmentShaderByteCode = {};
-	// 
-	// 	// Vertex shader
-	// 	{
-	// 		// Open file
-	// 		std::ifstream file(vertexShaderPath, std::ios::ate | std::ios::binary);
-	// 
-	// 		// Throw error if we didn't open
-	// 		if (!file.is_open())
-	// 			throw std::runtime_error("Failed to open file " + vertexShaderPath);
-	// 
-	// 		// Create a buffer for file data
-	// 		size_t fileSize = (size_t)file.tellg();
-	// 		std::vector<char> buffer(fileSize);
-	// 
-	// 		// Read data
-	// 		file.seekg(0);
-	// 		file.read(buffer.data(), fileSize);
-	// 
-	// 		// Close file and return buffer
-	// 		file.close();
-	// 		vertexShaderByteCode = buffer;
-	// 	}
-	// 
-	// 	// Fragment shader
-	// 	{
-	// 		// Open file
-	// 		std::ifstream file(fragmentShaderPath, std::ios::ate | std::ios::binary);
-	// 
-	// 		// Throw error if we didn't open
-	// 		if (!file.is_open())
-	// 			throw std::runtime_error("Failed to open file " + fragmentShaderPath);
-	// 
-	// 		// Create a buffer for file data
-	// 		size_t fileSize = (size_t)file.tellg();
-	// 		std::vector<char> buffer(fileSize);
-	// 
-	// 		// Read data
-	// 		file.seekg(0);
-	// 		file.read(buffer.data(), fileSize);
-	// 
-	// 		// Close file and return buffer
-	// 		file.close();
-	// 		fragmentShaderByteCode = buffer;
-	// 	}
-	// 
-	// 	if (m_fragmentDataSize == 0)
-	// 		m_fragmentDataSize = 1;
-	// 
-	// 	if (m_vertexDataSize == 0)
-	// 		m_vertexDataSize = 1;
-	// 
-	// 	initShaderModules(vertexShaderByteCode, fragmentShaderByteCode);
-	// 	initDescriptorSetLayout();
-	// 	initGraphicsPipeline(renderPass);
-	// }
+	Shader::Shader
+	(
+		Graphics* graphics,
+		const std::vector<vk::DescriptorSetLayout>& layouts,
+		const vk::RenderPass& renderPass,
+		const std::string& vertexShaderPath,
+		const std::string& fragmentShaderPath,
+		size_t vertexDataSize,
+		size_t fragmentDataSize,
+		size_t textureCount,
+		bool depthTesting
+	) : 
+		m_graphics(graphics),
+		m_descriptorSetLayouts(layouts),
+		m_fragmentDataSize(static_cast<vk::DeviceSize>(fragmentDataSize)),
+		m_vertexDataSize(static_cast<vk::DeviceSize>(vertexDataSize)),
+		m_textureCount(textureCount),
+		m_depthTesting(depthTesting)
+	{
+		// Read files
+		auto vertexShaderByteCode = readBinary(vertexShaderPath);
+		auto fragmentShaderByteCode = readBinary(fragmentShaderPath);
+
+		if (m_fragmentDataSize == 0)
+			m_fragmentDataSize = 1;
+	
+		if (m_vertexDataSize == 0)
+			m_vertexDataSize = 1;
+	
+		initShaderModules(vertexShaderByteCode, fragmentShaderByteCode);
+		initDescriptorSetLayout();
+		initGraphicsPipeline(renderPass);
+	}
 
 	Shader::~Shader()
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 
 		// Destroy shader modules
-		logicalDevice.destroyShaderModule(m_fragmentShader);
-		logicalDevice.destroyShaderModule(m_vertexShader);
+		if (m_fragmentShader)
+			logicalDevice.destroyShaderModule(m_fragmentShader);
+
+		if(m_vertexShader)
+			logicalDevice.destroyShaderModule(m_vertexShader);
 
 		// Destroy graphics pipeline and layout
-		logicalDevice.destroyPipeline(m_graphicsPipeline);
-		logicalDevice.destroyPipelineLayout(m_graphicsPipelineLayout);
+		if(m_graphicsPipeline)
+			logicalDevice.destroyPipeline(m_graphicsPipeline);
+
+		if(m_graphicsPipelineLayout)
+			logicalDevice.destroyPipelineLayout(m_graphicsPipelineLayout);
 
 		// Destroy descriptor set layout
-		logicalDevice.destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
+		if(m_textureDescriptorSetLayout)
+			logicalDevice.destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
 	}
 
 	void Shader::initShaderModules
@@ -133,7 +97,7 @@ namespace gust
 		const std::vector<char>& fragmentShaderByteCode
 	)
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 
 		// Vertex shader module
 		{
@@ -196,7 +160,7 @@ namespace gust
 		createInfo.setPBindings(bindings.data());
 
 		// Create descriptor set layout
-		m_textureDescriptorSetLayout = m_graphics->getDeviceManager()->getLogicalDevice().createDescriptorSetLayout(createInfo);
+		m_textureDescriptorSetLayout = m_graphics->getLogicalDevice().createDescriptorSetLayout(createInfo);
 	}
 
 	void Shader::initGraphicsPipeline(const vk::RenderPass& renderPass)
@@ -321,7 +285,7 @@ namespace gust
 		pipelineLayoutInfo.setSetLayoutCount(static_cast<uint32_t>(layouts.size()));
 		pipelineLayoutInfo.setPSetLayouts(layouts.data());
 		
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 
 		// Create pipeline layout
 		m_graphicsPipelineLayout = logicalDevice.createPipelineLayout(pipelineLayoutInfo);

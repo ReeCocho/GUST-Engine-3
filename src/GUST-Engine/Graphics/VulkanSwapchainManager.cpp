@@ -25,7 +25,7 @@ namespace gust
 
 	VulkanSwapchainManager::~VulkanSwapchainManager()
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 
 		// Cleanup depth texture
 		logicalDevice.destroyImageView(m_depthTexture.imageView);
@@ -46,8 +46,8 @@ namespace gust
 	void VulkanSwapchainManager::initSwapchain()
 	{
 		// Get surface capabilities, present modes, and size
-		const auto surfaceCapabilities = m_graphics->getDeviceManager()->getPhysicalDevice().getSurfaceCapabilitiesKHR(m_graphics->getSurface()->getSurface());
-		const auto surfacePresentModes = m_graphics->getDeviceManager()->getPhysicalDevice().getSurfacePresentModesKHR(m_graphics->getSurface()->getSurface());
+		const auto surfaceCapabilities = m_graphics->getPhysicalDevice().getSurfaceCapabilitiesKHR(m_graphics->getSurface());
+		const auto surfacePresentModes = m_graphics->getPhysicalDevice().getSurfacePresentModesKHR(m_graphics->getSurface());
 
 		// Get best present mode
 		auto presentMode = vk::PresentModeKHR::eImmediate;
@@ -68,10 +68,10 @@ namespace gust
 			imageCount = surfaceCapabilities.maxImageCount;
 
 		vk::SwapchainCreateInfoKHR swapchainCreateInfo = {};
-		swapchainCreateInfo.setSurface(m_graphics->getSurface()->getSurface());						// Surface to create swapchain for
+		swapchainCreateInfo.setSurface(m_graphics->getSurface());						// Surface to create swapchain for
 		swapchainCreateInfo.setMinImageCount(imageCount);											// Minimum number of swapchain images
-		swapchainCreateInfo.setImageFormat(m_graphics->getSurface()->getSurfaceColorFormat());		// Swapchain images color format
-		swapchainCreateInfo.setImageColorSpace(m_graphics->getSurface()->getSurfaceColorSpace());	// Swapchain images color space
+		swapchainCreateInfo.setImageFormat(m_graphics->getSurfaceColorFormat());		// Swapchain images color format
+		swapchainCreateInfo.setImageColorSpace(m_graphics->getSurfaceColorSpace());	// Swapchain images color space
 		swapchainCreateInfo.setImageExtent(vk::Extent2D(m_width, m_height));						// Size of swapchain images.
 		swapchainCreateInfo.setImageArrayLayers(1);													// I honestly don't know what this does 
 		swapchainCreateInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);				// Type of image
@@ -100,11 +100,11 @@ namespace gust
 		}
 
 		// Create swapchain
-		if (m_graphics->getDeviceManager()->getLogicalDevice().createSwapchainKHR(&swapchainCreateInfo, nullptr, &m_swapchain) != vk::Result::eSuccess)
+		if (m_graphics->getLogicalDevice().createSwapchainKHR(&swapchainCreateInfo, nullptr, &m_swapchain) != vk::Result::eSuccess)
 			throwError("VULKAN: Unable to create swapchain.");
 
 		// Get swapchain images
-		m_images = m_graphics->getDeviceManager()->getLogicalDevice().getSwapchainImagesKHR(m_swapchain);
+		m_images = m_graphics->getLogicalDevice().getSwapchainImagesKHR(m_swapchain);
 	}
 
 	void VulkanSwapchainManager::initDepthResources()
@@ -114,7 +114,7 @@ namespace gust
 		(
 			m_width,
 			m_height,
-			m_graphics->getSurface()->getDepthFormat(),
+			m_graphics->getDepthFormat(),
 			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eDepthStencilAttachment,
 			vk::MemoryPropertyFlagBits::eDeviceLocal,
@@ -126,7 +126,7 @@ namespace gust
 		m_depthTexture.imageView = m_graphics->createImageView
 		(
 			m_depthTexture.image,
-			m_graphics->getSurface()->getDepthFormat(),
+			m_graphics->getDepthFormat(),
 			vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil
 		);
 
@@ -134,7 +134,7 @@ namespace gust
 		m_graphics->transitionImageLayout
 		(
 			m_depthTexture.image,
-			m_graphics->getSurface()->getDepthFormat(),
+			m_graphics->getDepthFormat(),
 			vk::ImageLayout::eUndefined,
 			vk::ImageLayout::eDepthStencilAttachmentOptimal
 		);
@@ -142,7 +142,7 @@ namespace gust
 
 	void VulkanSwapchainManager::initSwapchainBuffers()
 	{
-		auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+		auto logicalDevice = m_graphics->getLogicalDevice();
 		m_buffers.resize(m_images.size());
 
 		for (size_t i = 0; i < m_images.size(); i++)
@@ -153,7 +153,7 @@ namespace gust
 			imageView.setFlags(vk::ImageViewCreateFlags());										// Creation flags
 			imageView.setImage(m_images[i]);													// Image to view
 			imageView.setViewType(vk::ImageViewType::e2D);										// Type of image
-			imageView.setFormat(m_graphics->getSurface()->getSurfaceColorFormat());				// Color format of the image
+			imageView.setFormat(m_graphics->getSurfaceColorFormat());				// Color format of the image
 			imageView.setComponents(vk::ComponentMapping());									// I don't know
 			imageView.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });		// Resource range
 
