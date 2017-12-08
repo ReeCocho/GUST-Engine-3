@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @file ResourceManager.hpp
  * @brief Resource manager header file.

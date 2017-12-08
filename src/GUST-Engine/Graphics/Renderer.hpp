@@ -8,6 +8,8 @@
 
 /** Includes. */
 #include "../Graphics/Graphics.hpp"
+#include "../Core/ResourceManager.hpp"
+#include "../Core/Threading.hpp"
 
 namespace gust
 {
@@ -50,8 +52,9 @@ namespace gust
 		/**
 		 * @brief Initiailize renderer.
 		 * @param Graphics context.
+		 * @param Thread count.
 		 */
-		void startup(Graphics* graphics);
+		void startup(Graphics* graphics, size_t threadCount);
 
 		/**
 		 * @brief Shutdown renderer.
@@ -65,6 +68,34 @@ namespace gust
 		void render();
 
 		/**
+		 * @brief Get swapchain.
+		 * @return Swapchain.
+		 */
+		inline vk::SwapchainKHR& getSwapchain()
+		{
+			return m_swapchain;
+		}
+
+		/**
+		 * @brief Get swapchain buffer
+		 * @param Buffer index.
+		 * @return Buffer.
+		 */
+		inline const SwapChainBuffer& getSwapchainBuffer(size_t index) const
+		{
+			return m_buffers[index];
+		}
+		
+		/**
+		 * @brief Get swapchain image count.
+		 * @return Swapchain image count.
+		 */
+		inline size_t getImageCount() const
+		{
+			return m_images.size();
+		}
+
+		/**
 		 * @brief Render a mesh.
 		 * @param Mesh to render.
 		 */
@@ -75,8 +106,62 @@ namespace gust
 
 	private:
 
+		/**
+		 * @brief Initialize render pass.
+		 */
+		void initRenderPass();
+
+		/**
+		 * @brief Initialize swapchain.
+		 */
+		void initSwapchain();
+
+		/**
+		 * @brief Initialize depth resources.
+		 */
+		void initDepthResources();
+
+		/**
+		 * @brief Initialize swapchain buffers.
+		 */
+		void initSwapchainBuffers();
+
+
+
+		/**
+		 * @struct DepthTexture
+		 * @brief Contains depth texture.
+		 */
+		struct DepthTexture
+		{
+			/** Depth image */
+			vk::Image image = {};
+
+			/** Depth image view. */
+			vk::ImageView imageView = {};
+
+			/** Depth image memory */
+			vk::DeviceMemory memory = {};
+
+		} m_depthTexture;
+
 		/** Graphics context. */
 		Graphics* m_graphics;
+
+		/** Swap chain. */
+		vk::SwapchainKHR m_swapchain = {};
+
+		/** Renderpass */
+		vk::RenderPass m_renderPass = {};
+
+		/** Swap chain images. */
+		SwapChainImages m_images = {};
+
+		/** Swap chain buffers. */
+		std::vector<SwapChainBuffer> m_buffers = {};
+
+		/** Thread pool for rendering meshes. */
+		std::unique_ptr<ThreadPool> m_threadPool;
 
 		/** List of meshes to render. */
 		std::vector<MeshData> m_meshes = {};

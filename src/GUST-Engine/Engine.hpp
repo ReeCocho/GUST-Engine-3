@@ -11,6 +11,7 @@
 #include "Graphics\Renderer.hpp"
 #include "Core\Input.hpp"
 #include "Core\ResourceManager.hpp"
+#include "Core\Threading.hpp"
 
 namespace gust
 {
@@ -76,6 +77,9 @@ namespace gust
 		Renderer renderer = {};
 
 	private:
+
+		/** Rendering thread. */
+		std::unique_ptr<SimulationThread> m_renderingThread;
 
 		/** Singleton. */
 		static Engine engine;
