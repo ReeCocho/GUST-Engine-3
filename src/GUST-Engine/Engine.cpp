@@ -9,7 +9,7 @@ namespace gust
 		// Start modules
 		input.startup();
 		graphics.startup(name, width, height);
-		resourceManager.startup(&graphics, 20, 20, 10, 10);
+		resourceManager.startup(&graphics, &renderer, 20, 20, 10, 10);
 		renderer.startup(&graphics, 4);
 
 		// Start threads

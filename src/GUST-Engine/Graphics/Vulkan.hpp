@@ -40,8 +40,8 @@ namespace gust
 		/** Swapchain buffers color image. */
 		vk::Image image = {};
 
-		/** Swapchain buffers views. */
-		std::array<vk::ImageView, 2> views = {};
+		/** Swapchain buffers view. */
+		vk::ImageView view = {};
 
 		/** Swapchain frame buffer. */
 		vk::Framebuffer frameBuffer = {};

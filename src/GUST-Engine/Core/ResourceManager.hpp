@@ -7,6 +7,7 @@
  */
 
 /** Includes. */
+#include "vulkan\vulkan.hpp"
 #include "../Utilities/Allocators.hpp"
 #include "../Graphics/Mesh.hpp"
 #include "../Graphics/Material.hpp"
@@ -15,6 +16,10 @@
 
 namespace gust
 {
+	class Graphics;
+
+	class Renderer;
+
 	/**
 	 * @class ResourceManager
 	 * @brief Manages resources.
@@ -36,6 +41,7 @@ namespace gust
 		/**
 		 * @brief Startup resource manager.
 		 * @param Graphics context.
+		 * @param Rendering engine.
 		 * @param Default mesh count.
 		 * @param Default material count.
 		 * @param Default shader count.
@@ -45,6 +51,7 @@ namespace gust
 		void startup
 		(
 			Graphics* graphics,
+			Renderer* renderer,
 			size_t meshCount,
 			size_t materialCount,
 			size_t shaderCount,
@@ -65,15 +72,51 @@ namespace gust
 		Handle<Mesh> createMesh(const std::string& path);
 
 		/**
+		 * @brief Create a texture.
+		 * @param Path to a file containing the texture.
+		 * @param Texture filtering.
+		 * @return Texture handle.
+		 */
+		Handle<Texture> createTexture(const std::string& path, vk::Filter filtering);
+
+		/**
+		 * @brief Create a texture.
+		 * @param Image.
+		 * @param Image view.
+		 * @param Sampler.
+		 * @param Image memory.
+		 * @param Width.
+		 * @param Height.
+		 */
+		Handle<Texture> createTexture
+		(
+			vk::Image image, 
+			vk::ImageView imageView, 
+			vk::Sampler sampler, 
+			vk::DeviceMemory memory, 
+			uint32_t width, 
+			uint32_t height
+		);
+
+		/**
 		 * @brief Destroy a mesh.
 		 * @param Mesh handle.
 		 */
 		void destroyMesh(const Handle<Mesh>& mesh);
 
+		/**
+		 * @brief Destroy a texture.
+		 * @param Texture handle.
+		 */
+		void destroyTexture(const Handle<Texture>& texture);
+
 	private:
 
 		/** Graphics context. */
 		Graphics* m_graphics;
+
+		/** Rendering engine. */
+		Renderer* m_renderer;
 
 		/** Mesh allocator. */
 		ResourceAllocator<Mesh> m_meshAllocator;

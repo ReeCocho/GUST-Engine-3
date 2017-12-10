@@ -45,16 +45,16 @@ namespace gust
 			uint32_t height
 		);
 
-		// /**
-		//  * @brief Constructor.
-		//  * @param Graphics context.
-		//  * @param Path to file containing image.
-		//  * @param Texture filtering.
-		//  */
-		// Texture(Graphics* graphics, const std::string& path, vk::Filter filter);
-
 		/**
 		 * @brief Constructor.
+		 * @param Graphics context.
+		 * @param Path to file containing image.
+		 * @param Texture filtering.
+		 */
+		Texture(Graphics* graphics, const std::string& path, vk::Filter filter);
+
+		/**
+		 * @brief Destructor.
 		 */
 		~Texture();
 

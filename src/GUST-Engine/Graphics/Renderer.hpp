@@ -73,7 +73,7 @@ namespace gust
 		 */
 		inline vk::SwapchainKHR& getSwapchain()
 		{
-			return m_swapchain;
+			return m_swapchain.swapchain;
 		}
 
 		/**
@@ -83,7 +83,7 @@ namespace gust
 		 */
 		inline const SwapChainBuffer& getSwapchainBuffer(size_t index) const
 		{
-			return m_buffers[index];
+			return m_swapchain.buffers[index];
 		}
 		
 		/**
@@ -92,7 +92,7 @@ namespace gust
 		 */
 		inline size_t getImageCount() const
 		{
-			return m_images.size();
+			return m_swapchain.images.size();
 		}
 
 		/**
@@ -107,9 +107,9 @@ namespace gust
 	private:
 
 		/**
-		 * @brief Initialize render pass.
+		 * @brief Initialize render passes.
 		 */
-		void initRenderPass();
+		void initRenderPasses();
 
 		/**
 		 * @brief Initialize swapchain.
@@ -126,7 +126,20 @@ namespace gust
 		 */
 		void initSwapchainBuffers();
 
+		/**
+		 * @brief Initialize semaphores.
+		 */
+		void initSemaphores();
 
+		/**
+		 * @brief Initialize command buffers.
+		 */
+		void initCommandBuffers();
+
+
+
+		/** Graphics context. */
+		Graphics* m_graphics;
 
 		/**
 		 * @struct DepthTexture
@@ -145,20 +158,59 @@ namespace gust
 
 		} m_depthTexture;
 
-		/** Graphics context. */
-		Graphics* m_graphics;
+		/**
+		 * @struct SwapchainInfo
+		 * @brief Info about the swapchain.
+		 */
+		struct SwapchainInfo
+		{
+			/** Swap chain. */
+			vk::SwapchainKHR swapchain = {};
 
-		/** Swap chain. */
-		vk::SwapchainKHR m_swapchain = {};
+			/** Swap chain images. */
+			SwapChainImages images = {};
 
-		/** Renderpass */
-		vk::RenderPass m_renderPass = {};
+			/** Swap chain buffers. */
+			std::vector<SwapChainBuffer> buffers = {};
 
-		/** Swap chain images. */
-		SwapChainImages m_images = {};
+		} m_swapchain;
 
-		/** Swap chain buffers. */
-		std::vector<SwapChainBuffer> m_buffers = {};
+		/**
+		 * @struct RenderPasses
+		 * @brief Render passes
+		 */
+		struct RenderPasses
+		{
+			/** Onscreen renderpass */
+			vk::RenderPass onscreen = {};
+
+			/** Offscreen renderpass. */
+			vk::RenderPass offscreen = {};
+
+			/** Renderpass to use when performing lighting calculations. */
+			vk::RenderPass lighting = {};
+
+		} m_renderPasses;
+
+		/**
+		 * @struct Semaphores
+		 * @brief Semaphores used for rendering.
+		 */
+		struct Semaphores
+		{
+			/** Used to synchronize offscreen rendering and usage. */
+			vk::Semaphore offscreen = {};
+
+			/** Image avaliable semaphore. */
+			vk::Semaphore imageAvailable = {};
+
+			/** Rendering has finished and presentation can happen. */
+			vk::Semaphore renderFinished = {};
+
+		} m_semaphores;
+
+		/** Primary command buffer. */
+		vk::CommandBuffer m_primaryCommandBuffer;
 
 		/** Thread pool for rendering meshes. */
 		std::unique_ptr<ThreadPool> m_threadPool;
