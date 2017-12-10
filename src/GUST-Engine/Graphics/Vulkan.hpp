@@ -90,6 +90,18 @@ namespace gust
 	};
 
 	/**
+	 * @struct FrameBufferAttachment
+	 * @brief Framebuffer for offscreen rendering.
+	 */
+	struct FrameBufferAttachment 
+	{
+		vk::Image image = {};
+		vk::DeviceMemory memory = {};
+		vk::ImageView view = {};
+		vk::Format format;
+	};
+
+	/**
 	 * @typedef SwapChainImages
 	 * @brief Swap chain images type
 	 */

@@ -503,6 +503,7 @@ namespace gust
 		viewInfo.setImage(image);
 		viewInfo.setViewType(vk::ImageViewType::e2D);
 		viewInfo.setFormat(format);
+		viewInfo.setComponents(vk::ComponentMapping());
 		viewInfo.subresourceRange.aspectMask = aspectFlags;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;

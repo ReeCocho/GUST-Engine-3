@@ -6,7 +6,7 @@
 
 namespace gust
 {
-	Texture::Texture(Graphics* graphics, vk::Image image, vk::ImageView imageView, vk::Sampler sampler, vk::DeviceMemory memory, uint32_t width, uint32_t height) :
+	Texture::Texture(Graphics* graphics, vk::Image image, vk::ImageView& imageView, vk::Sampler sampler, vk::DeviceMemory memory, uint32_t width, uint32_t height) :
 		m_graphics(graphics),
 		m_image(image),
 		m_imageView(imageView),
@@ -102,9 +102,16 @@ namespace gust
 	{
 		vk::Device logicalDevice = m_graphics->getLogicalDevice();
 
-		logicalDevice.destroySampler(m_sampler);
-		logicalDevice.destroyImageView(m_imageView);
-		logicalDevice.freeMemory(m_imageMemory);
-		logicalDevice.destroyImage(m_image);
+		if(m_sampler)
+			logicalDevice.destroySampler(m_sampler);
+
+		if(m_imageView)
+			logicalDevice.destroyImageView(m_imageView);
+
+		if(m_imageMemory)
+			logicalDevice.freeMemory(m_imageMemory);
+
+		if(m_image)
+			logicalDevice.destroyImage(m_image);
 	}
 }

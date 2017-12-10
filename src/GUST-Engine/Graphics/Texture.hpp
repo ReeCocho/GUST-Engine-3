@@ -38,7 +38,7 @@ namespace gust
 		(
 			Graphics* graphics, 
 			vk::Image image, 
-			vk::ImageView imageView, 
+			vk::ImageView& imageView, 
 			vk::Sampler sampler, 
 			vk::DeviceMemory memory, 
 			uint32_t width, 
@@ -80,7 +80,7 @@ namespace gust
 		 * @brief Get texture image view.
 		 * @return Texture image view.
 		 */
-		inline const vk::ImageView& getImageView() const
+		inline vk::ImageView& getImageView()
 		{
 			return m_imageView;
 		}

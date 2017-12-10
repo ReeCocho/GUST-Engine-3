@@ -164,11 +164,17 @@ namespace gust
 	{
 		auto logicalDevice = m_graphics->getLogicalDevice();
 
-		logicalDevice.destroyBuffer(m_indexUniformBuffer.buffer);
-		logicalDevice.freeMemory(m_indexUniformBuffer.memory);
+		if(m_indexUniformBuffer.buffer)
+			logicalDevice.destroyBuffer(m_indexUniformBuffer.buffer);
 
-		logicalDevice.destroyBuffer(m_vertexUniformBuffer.buffer);
-		logicalDevice.freeMemory(m_vertexUniformBuffer.memory);
+		if(m_indexUniformBuffer.memory)
+			logicalDevice.freeMemory(m_indexUniformBuffer.memory);
+
+		if(m_vertexUniformBuffer.buffer)
+			logicalDevice.destroyBuffer(m_vertexUniformBuffer.buffer);
+
+		if(m_vertexUniformBuffer.memory)
+			logicalDevice.freeMemory(m_vertexUniformBuffer.memory);
 	}
 
 	void Mesh::initVertexBuffer()

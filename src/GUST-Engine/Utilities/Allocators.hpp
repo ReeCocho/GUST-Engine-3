@@ -250,7 +250,7 @@ namespace gust
 			m_alignment(alignment),
 			m_maxResourceCount(count)
 		{
-			m_clampedDataSize = static_cast<size_t>(ceil(sizeof(T) / m_alignment)) * m_alignment;
+			m_clampedDataSize = static_cast<size_t>(ceil(static_cast<float>(sizeof(T)) / static_cast<float>(m_alignment))) * m_alignment;
 			m_data = new unsigned char[(m_clampedDataSize * count) + m_alignment + count];
 			m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + count);
 
@@ -269,7 +269,7 @@ namespace gust
 			{
 				if (isAllocated(i))
 				{
-					T* data = reinterpret_cast<T*>(m_data[m_maxResourceCount + m_offset + (i * m_clampedDataSize)]);
+					T* data = reinterpret_cast<T*>(m_data + m_maxResourceCount + m_offset + (i * m_clampedDataSize));
 					data->~T();
 				}
 			}

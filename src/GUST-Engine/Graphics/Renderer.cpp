@@ -6,6 +6,7 @@ namespace gust
 	{
 		m_graphics = graphics;
 		m_threadPool = std::make_unique<ThreadPool>(threadCount);
+		m_cameraAllocator = std::make_unique<ResourceAllocator<VirtualCamera>>(10, 4);
 
 		initRenderPasses();
 		initSwapchain();
@@ -13,15 +14,40 @@ namespace gust
 		initSwapchainBuffers();
 		initSemaphores();
 		initCommandBuffers();
+		initLighting();
+		initShaders();
+		initDescriptorSetLayouts();
+		initDescriptorPool();
+		initDescriptorSets();
 	}
 
 	void Renderer::shutdown()
 	{
-		m_threadPool = nullptr;
-
 		auto logicalDevice = m_graphics->getLogicalDevice();
 
+		// Destroy thread pool
+		m_threadPool = nullptr;
+
+		// Destroy cameras
+		for(size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); i++)
+			if (m_cameraAllocator->isAllocated(i))
+			{
+				VirtualCamera* camera = m_cameraAllocator->getResourceByHandle(i);
+				logicalDevice.destroyFramebuffer(camera->frameBuffer);
+			}
+
+		m_cameraAllocator = nullptr;
+
 		// Cleanup
+		logicalDevice.destroyBuffer(m_lightingUniformBuffer.buffer);
+		logicalDevice.freeMemory(m_lightingUniformBuffer.memory);
+
+		logicalDevice.destroyDescriptorPool(m_descriptors.descriptorPool);
+
+		logicalDevice.destroyDescriptorSetLayout(m_descriptors.descriptorSetLayout);
+		logicalDevice.destroyDescriptorSetLayout(m_descriptors.screenDescriptorSetLayout);
+		logicalDevice.destroyDescriptorSetLayout(m_descriptors.lightingDescriptorSetLayout);
+
 		m_graphics->destroyCommandBuffer(m_primaryCommandBuffer);
 
 		logicalDevice.destroyRenderPass(m_renderPasses.onscreen);
@@ -50,6 +76,9 @@ namespace gust
 
 	void Renderer::render()
 	{
+		// Submit lighting data
+		submitLightingData();
+
 		// Get image to present
 		uint32_t imageIndex = m_graphics->getLogicalDevice().acquireNextImageKHR
 		(
@@ -134,6 +163,96 @@ namespace gust
 
 		// // Reset graphics command buffers
 		// m_commandManager.resetGraphicsCommandBuffers();
+	}
+
+	Handle<VirtualCamera> Renderer::createCamera()
+	{
+		// Resize the array if necessary
+		if (m_cameraAllocator->getResourceCount() == m_cameraAllocator->getMaxResourceCount())
+			m_cameraAllocator->resize(m_cameraAllocator->getMaxResourceCount() + 10, true);
+
+		// Allocate camera and call constructor
+		auto camera = Handle<VirtualCamera>(m_cameraAllocator.get(), m_cameraAllocator->allocate());
+		::new(camera.get())(VirtualCamera)();
+
+		camera->width = m_graphics->getWidth();
+		camera->height = m_graphics->getHeight();
+
+		// Color attachments
+
+		// (World space) Positions
+		FrameBufferAttachment position = createAttachment
+		(
+			vk::Format::eR16G16B16A16Sfloat,
+			vk::ImageUsageFlagBits::eColorAttachment
+		);
+
+		// (World space) Normals
+		FrameBufferAttachment normals = createAttachment
+		(
+			vk::Format::eR16G16B16A16Sfloat,
+			vk::ImageUsageFlagBits::eColorAttachment
+		);
+
+		// Albedo (color)
+		FrameBufferAttachment color = createAttachment
+		(
+			m_graphics->getSurfaceColorFormat(),
+			vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc
+		);
+
+		// Depth attachment
+		FrameBufferAttachment depth = createAttachment
+		(
+			m_graphics->getDepthFormat(),
+			vk::ImageUsageFlagBits::eDepthStencilAttachment
+		);
+
+		// Create sampler to sample from the attachments
+		vk::SamplerCreateInfo sampler = {};
+		sampler.setMagFilter(vk::Filter::eNearest);
+		sampler.setMinFilter(vk::Filter::eNearest);
+		sampler.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+		sampler.setAddressModeU(vk::SamplerAddressMode::eClampToEdge);
+		sampler.setAddressModeV(sampler.addressModeU);
+		sampler.setAddressModeW(sampler.addressModeU);
+		sampler.setMipLodBias(0.0f);
+		sampler.setMaxAnisotropy(1.0f);
+		sampler.setMinLod(0.0f);
+		sampler.setMaxLod(1.0f);
+		sampler.setBorderColor(vk::BorderColor::eFloatOpaqueWhite);
+
+		// Create samplers
+		vk::Sampler positionSampler = m_graphics->getLogicalDevice().createSampler(sampler);
+		vk::Sampler normalSampler = m_graphics->getLogicalDevice().createSampler(sampler);
+		vk::Sampler colorSampler = m_graphics->getLogicalDevice().createSampler(sampler);
+		vk::Sampler depthSampler = m_graphics->getLogicalDevice().createSampler(sampler);
+
+		// Set attachments
+		camera->position	= std::make_unique<Texture>(m_graphics, position.image, position.view, positionSampler, position.memory, camera->width, camera->height);
+		camera->normal		= std::make_unique<Texture>(m_graphics, normals.image, normals.view, normalSampler, normals.memory, camera->width, camera->height);
+		camera->color		= std::make_unique<Texture>(m_graphics, color.image, color.view, colorSampler, color.memory, camera->width, camera->height);
+		camera->depth		= std::make_unique<Texture>(m_graphics, depth.image, depth.view, depthSampler, depth.memory, camera->width, camera->height);
+
+		std::array<vk::ImageView, 4> attachments;
+		attachments[0] = camera->position->getImageView();
+		attachments[1] = camera->normal->getImageView();
+		attachments[2] = camera->color->getImageView();
+		attachments[3] = camera->depth->getImageView();
+
+		vk::FramebufferCreateInfo fbufCreateInfo = {};
+		fbufCreateInfo.setPNext(nullptr);
+		fbufCreateInfo.setRenderPass(m_renderPasses.offscreen);
+		fbufCreateInfo.setPAttachments(attachments.data());
+		fbufCreateInfo.setAttachmentCount(static_cast<uint32_t>(attachments.size()));
+		fbufCreateInfo.setWidth(camera->width);
+		fbufCreateInfo.setHeight(camera->height);
+		fbufCreateInfo.setLayers(1);
+
+		// Create framebuffer
+		camera->frameBuffer = m_graphics->getLogicalDevice().createFramebuffer(fbufCreateInfo);
+
+		return camera;
 	}
 
 	void Renderer::initRenderPasses()
@@ -493,5 +612,218 @@ namespace gust
 	void Renderer::initCommandBuffers()
 	{
 		m_primaryCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
+	}
+
+	void Renderer::initLighting()
+	{
+		// create lighting uniform buffer
+		m_lightingUniformBuffer = m_graphics->createBuffer
+		(
+			static_cast<vk::DeviceSize>(sizeof(LightingData)),
+			vk::BufferUsageFlagBits::eUniformBuffer,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
+		);
+	}
+
+	void Renderer::initShaders()
+	{
+
+	}
+
+	void Renderer::initDescriptorSetLayouts()
+	{
+		// Standard material descriptor set layout
+		{
+			std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {};
+
+			// Vertex bindings
+			bindings[0].setBinding(0);
+			bindings[0].setDescriptorType(vk::DescriptorType::eUniformBuffer);
+			bindings[0].setDescriptorCount(1);
+			bindings[0].setStageFlags(vk::ShaderStageFlagBits::eVertex);
+
+			// Fragment bindings
+			bindings[1].setBinding(1);
+			bindings[1].setDescriptorType(vk::DescriptorType::eUniformBuffer);
+			bindings[1].setDescriptorCount(1);
+			bindings[1].setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+			vk::DescriptorSetLayoutCreateInfo createInfo = {};
+			createInfo.setBindingCount(static_cast<uint32_t>(bindings.size()));
+			createInfo.setPBindings(bindings.data());
+
+			// Create descriptor set layout
+			m_descriptors.descriptorSetLayout = m_graphics->getLogicalDevice().createDescriptorSetLayout(createInfo);
+		}
+
+		// Lighting descriptor set Layout
+		{
+			std::array<vk::DescriptorSetLayoutBinding, 4> bindings = {};
+
+			// Lighting
+			bindings[0].setBinding(0);
+			bindings[0].setDescriptorType(vk::DescriptorType::eUniformBuffer);
+			bindings[0].setDescriptorCount(1);
+			bindings[0].setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+			// Position binding
+			bindings[1].setBinding(1);
+			bindings[1].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+			bindings[1].setDescriptorCount(1);
+			bindings[1].setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+			// Normal binding
+			bindings[2].setBinding(2);
+			bindings[2].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+			bindings[2].setDescriptorCount(1);
+			bindings[2].setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+			// Color binding
+			bindings[3].setBinding(3);
+			bindings[3].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+			bindings[3].setDescriptorCount(1);
+			bindings[3].setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+			vk::DescriptorSetLayoutCreateInfo createInfo = {};
+			createInfo.setBindingCount(static_cast<uint32_t>(bindings.size()));
+			createInfo.setPBindings(bindings.data());
+
+			// Create descriptor set layout
+			m_descriptors.lightingDescriptorSetLayout = m_graphics->getLogicalDevice().createDescriptorSetLayout(createInfo);
+		}
+
+		// Screen descriptor set Layout
+		{
+			std::array<vk::DescriptorSetLayoutBinding, 1> bindings = {};
+
+			// Color binding
+			bindings[0].setBinding(0);
+			bindings[0].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+			bindings[0].setDescriptorCount(1);
+			bindings[0].setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+			vk::DescriptorSetLayoutCreateInfo createInfo = {};
+			createInfo.setBindingCount(static_cast<uint32_t>(bindings.size()));
+			createInfo.setPBindings(bindings.data());
+
+			// Create descriptor set layout
+			m_descriptors.screenDescriptorSetLayout = m_graphics->getLogicalDevice().createDescriptorSetLayout(createInfo);
+		}
+	}
+
+	void Renderer::initDescriptorPool()
+	{
+		std::array<vk::DescriptorPoolSize, 2> poolSizes = {};
+		poolSizes[0].setDescriptorCount(2);
+		poolSizes[0].setType(vk::DescriptorType::eUniformBuffer);
+
+		poolSizes[1].setDescriptorCount(4);
+		poolSizes[1].setType(vk::DescriptorType::eCombinedImageSampler);
+
+		vk::DescriptorPoolCreateInfo poolInfo = {};
+		poolInfo.setPoolSizeCount(static_cast<uint32_t>(poolSizes.size()));
+		poolInfo.setPPoolSizes(poolSizes.data());
+		poolInfo.setMaxSets(2);
+
+		m_descriptors.descriptorPool = m_graphics->getLogicalDevice().createDescriptorPool(poolInfo);
+	}
+
+	void Renderer::initDescriptorSets()
+	{
+		// Lighting descriptor set
+		{
+			vk::DescriptorSetAllocateInfo allocInfo = {};
+			allocInfo.setDescriptorPool(m_descriptors.descriptorPool);
+			allocInfo.setDescriptorSetCount(1);
+			allocInfo.setPSetLayouts(&m_descriptors.lightingDescriptorSetLayout);
+
+			// Allocate descriptor sets
+			m_descriptors.lightingDescriptorSet = m_graphics->getLogicalDevice().allocateDescriptorSets(allocInfo)[0];
+
+			// Lighting
+			vk::DescriptorBufferInfo bufferInfo = {};
+			bufferInfo.setBuffer(m_lightingUniformBuffer.buffer);
+			bufferInfo.setOffset(0);
+			bufferInfo.setRange(static_cast<VkDeviceSize>(sizeof(LightingData)));
+
+			vk::WriteDescriptorSet descWrite = {};
+			descWrite.setDstSet(m_descriptors.lightingDescriptorSet);
+			descWrite.setDstBinding(0);
+			descWrite.setDstArrayElement(0);
+			descWrite.setDescriptorType(vk::DescriptorType::eUniformBuffer);
+			descWrite.setDescriptorCount(1);
+			descWrite.setPBufferInfo(&bufferInfo);
+			descWrite.setPImageInfo(nullptr);
+			descWrite.setPTexelBufferView(nullptr);
+
+			m_graphics->getLogicalDevice().updateDescriptorSets(1, &descWrite, 0, nullptr);
+		}
+
+		// Screen descriptor set
+		{
+			vk::DescriptorSetAllocateInfo allocInfo = {};
+			allocInfo.setDescriptorPool(m_descriptors.descriptorPool);
+			allocInfo.setDescriptorSetCount(1);
+			allocInfo.setPSetLayouts(&m_descriptors.screenDescriptorSetLayout);
+
+			// Allocate descriptor sets
+			m_descriptors.screenDescriptorSet = m_graphics->getLogicalDevice().allocateDescriptorSets(allocInfo)[0];
+		}
+	}
+
+	FrameBufferAttachment Renderer::createAttachment(vk::Format format, vk::ImageUsageFlags usage)
+	{
+		FrameBufferAttachment newAttachment = {};
+
+		vk::ImageAspectFlags aspectMask = (vk::ImageAspectFlagBits)0;
+		vk::ImageLayout imageLayout;
+
+		newAttachment.format = format;
+
+		// Get aspect mask and image layout
+		if (usage & vk::ImageUsageFlagBits::eColorAttachment)
+		{
+			aspectMask = vk::ImageAspectFlagBits::eColor;
+			imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		}
+		if (usage & vk::ImageUsageFlagBits::eDepthStencilAttachment)
+		{
+			aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+			imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+		}
+
+		vk::ImageCreateInfo image = {};
+		image.setImageType(vk::ImageType::e2D);
+		image.setFormat(format);
+		image.extent.width = m_graphics->getWidth();
+		image.extent.height = m_graphics->getHeight();
+		image.extent.depth = 1;
+		image.setMipLevels(1);
+		image.setArrayLayers(1);
+		image.setSamples(vk::SampleCountFlagBits::e1);
+		image.setTiling(vk::ImageTiling::eOptimal);
+		image.setUsage(usage | vk::ImageUsageFlagBits::eSampled);
+
+		// Create image
+		newAttachment.image = m_graphics->getLogicalDevice().createImage(image);
+
+		vk::MemoryAllocateInfo memAlloc = {};
+		vk::MemoryRequirements memReqs = m_graphics->getLogicalDevice().getImageMemoryRequirements(newAttachment.image);
+
+		memAlloc.allocationSize = memReqs.size;
+		memAlloc.memoryTypeIndex = m_graphics->findMemoryType(memReqs.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+		// Allocate and bind image memory
+		newAttachment.memory = m_graphics->getLogicalDevice().allocateMemory(memAlloc);
+		m_graphics->getLogicalDevice().bindImageMemory(newAttachment.image, newAttachment.memory, 0);
+
+		newAttachment.view = m_graphics->createImageView(newAttachment.image, format, aspectMask);
+
+		return newAttachment;
+	}
+
+	void Renderer::submitLightingData()
+	{
+
 	}
 }
