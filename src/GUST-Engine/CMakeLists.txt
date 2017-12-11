@@ -42,7 +42,7 @@ ADD_LIBRARY(
 	${GUST_UTILITIES}
 	${GUST_ENGINE_SRCS}
 	${GUST_ENGINE_HDRS}
-)   
+) 
 
 # Grouping
 source_group("Core" FILES ${GUST_CORE})

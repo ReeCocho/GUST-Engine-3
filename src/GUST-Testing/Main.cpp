@@ -11,7 +11,6 @@ struct TestStruct
 int main()
 {
 	gust::Engine::get().startup("Test Game", 1280, 720);
-	gust::Engine::get().renderer.createCamera();
 	gust::Engine::get().simulate();
 	gust::Engine::get().shutdown();
 

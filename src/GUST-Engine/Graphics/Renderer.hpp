@@ -26,6 +26,30 @@
  */
 #define GUST_SPOT_LIGHT_COUNT 16
 
+/**
+ * @def GUST_LIGHTING_FRAGMENT_SHADER_PATH
+ * @brief Path to the file containing the lighting rendering fragment shader.
+ */
+#define GUST_LIGHTING_FRAGMENT_SHADER_PATH "./Shaders/lighting-frag.spv"
+
+/**
+ * @def GUST_LIGHTING_VERTEX_SHADER_PATH
+ * @brief Path to the file containing the lighting rendering vertex shader.
+ */
+#define GUST_LIGHTING_VERTEX_SHADER_PATH "./Shaders/lighting-vert.spv"
+
+/**
+ * @def GUST_SCREEN_FRAGMENT_SHADER_PATH
+ * @brief Path to the file containing the screen rendering fragment shader.
+ */
+#define GUST_SCREEN_FRAGMENT_SHADER_PATH "./Shaders/screen-frag.spv"
+
+/**
+ * @def GUST_SCREEN_VERTEX_SHADER_PATH
+ * @brief Path to the file containing the screen rendering vertex shader.
+ */
+#define GUST_SCREEN_VERTEX_SHADER_PATH "./Shaders/screen-vert.spv"
+
 /** Includes. */
 #include <queue>
 #include "../Graphics/Graphics.hpp"
@@ -45,6 +69,9 @@ namespace gust
 
 		/** Material to render the mesh with. */
 		Handle<Material> material;
+
+		/** Descriptor sets. */
+		std::vector<vk::DescriptorSet> descriptorSets;
 
 		/** Command buffer to render the mesh with. */
 		vk::CommandBuffer commandBuffer;
@@ -125,6 +152,9 @@ namespace gust
 		/** Framebuffer height. */
 		uint32_t height = 0;
 
+		/** Command buffer for drawing to. */
+		vk::CommandBuffer commandBuffer = {};
+
 		/** Framebuffer. */
 		vk::Framebuffer frameBuffer = {};
 
@@ -186,6 +216,24 @@ namespace gust
 		void render();
 
 		/**
+		 * @brief Get offscreen render pass.
+		 * @return Offscreen render pass.
+		 */
+		inline const vk::RenderPass& getOffscreenRenderPass()
+		{
+			return m_renderPasses.offscreen;
+		}
+
+		/**
+		 * @brief Get descriptor set layouts for a standard shader.
+		 * @return Descriptor set layouts for a standard shader.
+		 */
+		inline const vk::DescriptorSetLayout& getStandardLayout()
+		{
+			return m_descriptors.descriptorSetLayout;
+		}
+
+		/**
 		 * @brief Get swapchain.
 		 * @return Swapchain.
 		 */
@@ -219,7 +267,7 @@ namespace gust
 		 */
 		inline void draw(MeshData& mesh)
 		{
-			m_meshes.push(mesh);
+			m_meshes.push_back(mesh);
 		}
 
 		/**
@@ -261,6 +309,7 @@ namespace gust
 		 */
 		inline void destroyCamera(const Handle<VirtualCamera>& camera)
 		{
+			m_graphics->destroyCommandBuffer(camera->commandBuffer);
 			m_graphics->getLogicalDevice().destroyFramebuffer(camera->frameBuffer);
 			m_cameraAllocator->deallocate(camera.getHandle());
 		}
@@ -303,11 +352,6 @@ namespace gust
 		void initLighting();
 
 		/**
-		 * @brief Initialize in engine shaders.
-		 */
-		void initShaders();
-
-		/**
 		 * @brief Initialize descriptor set layouts.
 		 */
 		void initDescriptorSetLayouts();
@@ -323,6 +367,11 @@ namespace gust
 		void initDescriptorSets();
 
 		/**
+		 * @brief Initialize in engine shaders.
+		 */
+		void initShaders();
+
+		/**
 		 * @brief Create a frame buffer attachment.
 		 * @param Frame buffer format.
 		 * @param Frame buffer image usage.
@@ -334,6 +383,25 @@ namespace gust
 		 * @brief Submit lighting data.
 		 */
 		void submitLightingData();
+
+		/**
+		 * @brief Draw mesh to a framebuffer.
+		 * @param Mesh to render.
+		 * @param Command buffer inheritence info.
+		 */
+		void drawMeshToFramebuffer(const MeshData& mesh, const vk::CommandBufferInheritanceInfo& inheritanceInfo);
+
+		/**
+		 * @brief Draw meshes to camera framebuffer.
+		 * @param Camera to draw to.
+		 */
+		void drawToCamera(const VirtualCamera* camera);
+
+		/**
+		 * @brief Performs lighting operations on the cameras framebuffer.
+		 * @param Camera to draw to.
+		 */
+		void performCameraLighting(const VirtualCamera* camera);
 
 
 
@@ -530,6 +598,12 @@ namespace gust
 		/** Primary command buffer. */
 		vk::CommandBuffer m_primaryCommandBuffer;
 
+		/** Offscreen command buffer. */
+		vk::CommandBuffer m_offscreenCommandBuffer;
+
+		/** Lighting command buffer. */
+		vk::CommandBuffer m_lightingCommandBuffer;
+
 		/** Thread pool for rendering meshes. */
 		std::unique_ptr<ThreadPool> m_threadPool;
 
@@ -540,7 +614,7 @@ namespace gust
 		Buffer m_lightingUniformBuffer = {};
 
 		/** List of meshes to render. */
-		std::queue<MeshData> m_meshes = {};
+		std::vector<MeshData> m_meshes = {};
 
 		/** Point lights to be rendered. */
 		std::queue<PointLightData> m_pointLights = {};

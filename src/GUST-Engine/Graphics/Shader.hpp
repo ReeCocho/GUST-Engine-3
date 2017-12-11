@@ -34,7 +34,7 @@ namespace gust
 		 * @param Fragment shader byte code.
 		 * @param Size of data sent to vertex shader.
 		 * @param Size of data sent to fragment shader.
-		 * @param Number of textures used by the shader
+		 * @param Number of textures used by the shader.
 		 * @param Should the shader perform depth testing?
 		 */
 		Shader

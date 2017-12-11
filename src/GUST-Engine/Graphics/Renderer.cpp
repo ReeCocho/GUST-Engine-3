@@ -1,3 +1,4 @@
+#include "../Utilities/FileIO.hpp"
 #include "Renderer.hpp"
 
 namespace gust
@@ -15,10 +16,10 @@ namespace gust
 		initSemaphores();
 		initCommandBuffers();
 		initLighting();
-		initShaders();
 		initDescriptorSetLayouts();
 		initDescriptorPool();
 		initDescriptorSets();
+		initShaders();
 	}
 
 	void Renderer::shutdown()
@@ -34,11 +35,28 @@ namespace gust
 			{
 				VirtualCamera* camera = m_cameraAllocator->getResourceByHandle(i);
 				logicalDevice.destroyFramebuffer(camera->frameBuffer);
+				m_graphics->destroyCommandBuffer(camera->commandBuffer);
 			}
 
+		// Destroy cameras
 		m_cameraAllocator = nullptr;
 
+		// Destroy screen quad
+		m_screenQuad = nullptr;
+
 		// Cleanup
+		logicalDevice.destroyShaderModule(m_lightingShader.vertexShader);
+		logicalDevice.destroyShaderModule(m_lightingShader.fragmentShader);
+		logicalDevice.destroyDescriptorSetLayout(m_lightingShader.textureDescriptorSetLayout);
+		logicalDevice.destroyPipelineLayout(m_lightingShader.graphicsPipelineLayout);
+		logicalDevice.destroyPipeline(m_lightingShader.graphicsPipeline);
+
+		logicalDevice.destroyShaderModule(m_screenShader.vertexShader);
+		logicalDevice.destroyShaderModule(m_screenShader.fragmentShader);
+		logicalDevice.destroyDescriptorSetLayout(m_screenShader.textureDescriptorSetLayout);
+		logicalDevice.destroyPipelineLayout(m_screenShader.graphicsPipelineLayout);
+		logicalDevice.destroyPipeline(m_screenShader.graphicsPipeline);
+
 		logicalDevice.destroyBuffer(m_lightingUniformBuffer.buffer);
 		logicalDevice.freeMemory(m_lightingUniformBuffer.memory);
 
@@ -49,6 +67,8 @@ namespace gust
 		logicalDevice.destroyDescriptorSetLayout(m_descriptors.lightingDescriptorSetLayout);
 
 		m_graphics->destroyCommandBuffer(m_primaryCommandBuffer);
+		m_graphics->destroyCommandBuffer(m_offscreenCommandBuffer);
+		m_graphics->destroyCommandBuffer(m_lightingCommandBuffer);
 
 		logicalDevice.destroyRenderPass(m_renderPasses.onscreen);
 		logicalDevice.destroyRenderPass(m_renderPasses.offscreen);
@@ -78,6 +98,21 @@ namespace gust
 	{
 		// Submit lighting data
 		submitLightingData();
+
+		// Draw everything to every camera
+		bool drew = false;
+
+		for (size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); i++)
+			if (m_cameraAllocator->isAllocated(i))
+			{
+				VirtualCamera* camera = m_cameraAllocator->getResourceByHandle(i);
+				drawToCamera(camera);
+				drew = true;
+			}
+
+		// Return early if we didn't draw anything (No need to present again)
+		if (!drew)
+			return;
 
 		// Get image to present
 		uint32_t imageIndex = m_graphics->getLogicalDevice().acquireNextImageKHR
@@ -111,8 +146,8 @@ namespace gust
 
 			// Set viewport
 			vk::Viewport viewport = {};
-			viewport.setHeight((float)m_graphics->getHeight());
-			viewport.setWidth((float)m_graphics->getWidth());
+			viewport.setHeight(static_cast<float>(m_graphics->getHeight()));
+			viewport.setWidth(static_cast<float>(m_graphics->getWidth()));
 			m_primaryCommandBuffer.setViewport(0, 1, &viewport);
 
 			// Set scissor
@@ -121,20 +156,23 @@ namespace gust
 			scissor.setOffset({ 0, 0 });
 			m_primaryCommandBuffer.setScissor(0, 1, &scissor);
 
+			// Generate command buffers
+			// ...
+
 			m_primaryCommandBuffer.endRenderPass();
 			m_primaryCommandBuffer.end();
 		}
 
-		std::array<vk::Semaphore, 1> semaphores =
+		std::array<vk::Semaphore, 2> semaphores =
 		{
-			m_semaphores.imageAvailable
-			// m_offscreen
+			m_semaphores.imageAvailable,
+			m_semaphores.offscreen
 		};
 
-		std::array<vk::PipelineStageFlags, 1> waitStages =
+		std::array<vk::PipelineStageFlags, 2> waitStages =
 		{
+			vk::PipelineStageFlagBits::eColorAttachmentOutput,
 			vk::PipelineStageFlagBits::eColorAttachmentOutput
-			// vk::PipelineStageFlagBits::eColorAttachmentOutput
 		};
 
 		vk::SubmitInfo submitInfo = {};
@@ -177,6 +215,8 @@ namespace gust
 
 		camera->width = m_graphics->getWidth();
 		camera->height = m_graphics->getHeight();
+
+		camera->commandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
 
 		// Color attachments
 
@@ -612,6 +652,8 @@ namespace gust
 	void Renderer::initCommandBuffers()
 	{
 		m_primaryCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
+		m_offscreenCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
+		m_lightingCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
 	}
 
 	void Renderer::initLighting()
@@ -625,16 +667,11 @@ namespace gust
 		);
 	}
 
-	void Renderer::initShaders()
-	{
-
-	}
-
 	void Renderer::initDescriptorSetLayouts()
 	{
 		// Standard material descriptor set layout
 		{
-			std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {};
+			std::array<vk::DescriptorSetLayoutBinding, 4> bindings = {};
 
 			// Vertex bindings
 			bindings[0].setBinding(0);
@@ -642,11 +679,21 @@ namespace gust
 			bindings[0].setDescriptorCount(1);
 			bindings[0].setStageFlags(vk::ShaderStageFlagBits::eVertex);
 
-			// Fragment bindings
 			bindings[1].setBinding(1);
 			bindings[1].setDescriptorType(vk::DescriptorType::eUniformBuffer);
 			bindings[1].setDescriptorCount(1);
-			bindings[1].setStageFlags(vk::ShaderStageFlagBits::eFragment);
+			bindings[1].setStageFlags(vk::ShaderStageFlagBits::eVertex);
+
+			// Fragment bindings
+			bindings[2].setBinding(2);
+			bindings[2].setDescriptorType(vk::DescriptorType::eUniformBuffer);
+			bindings[2].setDescriptorCount(1);
+			bindings[2].setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+			bindings[3].setBinding(3);
+			bindings[3].setDescriptorType(vk::DescriptorType::eUniformBuffer);
+			bindings[3].setDescriptorCount(1);
+			bindings[3].setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 			vk::DescriptorSetLayoutCreateInfo createInfo = {};
 			createInfo.setBindingCount(static_cast<uint32_t>(bindings.size()));
@@ -771,6 +818,399 @@ namespace gust
 		}
 	}
 
+	void Renderer::initShaders()
+	{
+		std::vector<uint32_t> inds = 
+		{
+			0, 2, 1,
+			2, 3, 1
+		};
+
+		std::vector<glm::vec3> verts =
+		{
+			glm::vec3(-1, -1, 0),
+			glm::vec3(-1,  1, 0),
+			glm::vec3( 1, -1, 0),
+			glm::vec3( 1,  1, 0)
+		};
+
+		std::vector<glm::vec2> uvs =
+		{
+			glm::vec2(0, 0),
+			glm::vec2(0, 1),
+			glm::vec2(1, 0),
+			glm::vec2(1, 1)
+		};
+
+		// Make quad
+		m_screenQuad = std::make_unique<Mesh>
+		(
+			m_graphics,
+			inds,
+			verts,
+			uvs
+		);
+
+		// Create screen shader
+		{
+			// Load shader byte code
+			std::vector<char> fragSource = readBinary(GUST_SCREEN_FRAGMENT_SHADER_PATH);
+			std::vector<char> vertSource = readBinary(GUST_SCREEN_VERTEX_SHADER_PATH);
+
+			// Vertex shader module
+			{
+				// Align code
+				std::vector<uint32_t> codeAligned(vertSource.size() / sizeof(uint32_t) + 1);
+				memcpy(codeAligned.data(), vertSource.data(), vertSource.size());
+
+				vk::ShaderModuleCreateInfo createInfo = {};
+				createInfo.setCodeSize(vertSource.size());
+				createInfo.setPCode(codeAligned.data());
+
+				// Create shader module
+				m_screenShader.vertexShader = m_graphics->getLogicalDevice().createShaderModule(createInfo);
+			}
+
+			// Fragment shader module
+			{
+				// Align code
+				std::vector<uint32_t> codeAligned(fragSource.size() / sizeof(uint32_t) + 1);
+				memcpy(codeAligned.data(), fragSource.data(), fragSource.size());
+
+				vk::ShaderModuleCreateInfo createInfo = {};
+				createInfo.setCodeSize(fragSource.size());
+				createInfo.setPCode(codeAligned.data());
+
+				// Create shader module
+				m_screenShader.fragmentShader = m_graphics->getLogicalDevice().createShaderModule(createInfo);
+			}
+
+			// Vertex shader stage create info
+			vk::PipelineShaderStageCreateInfo vertShaderStageInfo = {};
+			vertShaderStageInfo.setStage(vk::ShaderStageFlagBits::eVertex);
+			vertShaderStageInfo.setModule(m_screenShader.vertexShader);
+			vertShaderStageInfo.setPName("main");
+
+			// Fragment shader stage create info
+			vk::PipelineShaderStageCreateInfo fragShaderStageInfo = {};
+			fragShaderStageInfo.setStage(vk::ShaderStageFlagBits::eFragment);
+			fragShaderStageInfo.setModule(m_screenShader.fragmentShader);
+			fragShaderStageInfo.setPName("main");
+
+			m_screenShader.shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
+		}
+
+		// Create lighting shader
+		{
+			// Load shader byte code
+			std::vector<char> fragSource = readBinary(GUST_LIGHTING_FRAGMENT_SHADER_PATH);
+			std::vector<char> vertSource = readBinary(GUST_LIGHTING_VERTEX_SHADER_PATH);
+
+			// Vertex shader module
+			{
+				// Align code
+				std::vector<uint32_t> codeAligned(vertSource.size() / sizeof(uint32_t) + 1);
+				memcpy(codeAligned.data(), vertSource.data(), vertSource.size());
+
+				vk::ShaderModuleCreateInfo createInfo = {};
+				createInfo.setCodeSize(vertSource.size());
+				createInfo.setPCode(codeAligned.data());
+
+				// Create shader module
+				m_lightingShader.vertexShader = m_graphics->getLogicalDevice().createShaderModule(createInfo);
+			}
+
+			// Fragment shader module
+			{
+				// Align code
+				std::vector<uint32_t> codeAligned(fragSource.size() / sizeof(uint32_t) + 1);
+				memcpy(codeAligned.data(), fragSource.data(), fragSource.size());
+
+				vk::ShaderModuleCreateInfo createInfo = {};
+				createInfo.setCodeSize(fragSource.size());
+				createInfo.setPCode(codeAligned.data());
+
+				// Create shader module
+				m_lightingShader.fragmentShader = m_graphics->getLogicalDevice().createShaderModule(createInfo);
+			}
+
+			// Vertex shader stage create info
+			vk::PipelineShaderStageCreateInfo vertShaderStageInfo = {};
+			vertShaderStageInfo.setStage(vk::ShaderStageFlagBits::eVertex);
+			vertShaderStageInfo.setModule(m_lightingShader.vertexShader);
+			vertShaderStageInfo.setPName("main");
+
+			// Fragment shader stage create info
+			vk::PipelineShaderStageCreateInfo fragShaderStageInfo = {};
+			fragShaderStageInfo.setStage(vk::ShaderStageFlagBits::eFragment);
+			fragShaderStageInfo.setModule(m_lightingShader.fragmentShader);
+			fragShaderStageInfo.setPName("main");
+
+			m_lightingShader.shaderStages = { vertShaderStageInfo, fragShaderStageInfo };
+		}
+
+		// Create lighting graphics pipeline
+		{
+			auto bindingDescription = Vertex::getBindingDescription();
+			auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+			vk::PipelineVertexInputStateCreateInfo vertexInputInfo = {};
+			vertexInputInfo.setVertexBindingDescriptionCount(1);
+			vertexInputInfo.setVertexAttributeDescriptionCount(static_cast<uint32_t>(attributeDescriptions.size()));
+			vertexInputInfo.setPVertexBindingDescriptions(&bindingDescription);
+			vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
+
+			vk::PipelineInputAssemblyStateCreateInfo inputAssembly = {};
+			inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList);
+			inputAssembly.setPrimitiveRestartEnable(false);
+
+			vk::Viewport viewport = {};
+			viewport.setX(0.0f);
+			viewport.setY(0.0f);
+			viewport.setWidth((float)m_graphics->getWidth());
+			viewport.setHeight((float)m_graphics->getHeight());
+			viewport.setMinDepth(0.0f);
+			viewport.setMaxDepth(1.0f);
+
+			vk::Extent2D extents = {};
+			extents.setHeight(m_graphics->getHeight());
+			extents.setWidth(m_graphics->getWidth());
+
+			vk::Rect2D scissor = {};
+			scissor.setOffset({ 0, 0 });
+			scissor.setExtent(extents);
+
+			vk::PipelineViewportStateCreateInfo viewportState = {};
+			viewportState.setViewportCount(1);
+			viewportState.setPViewports(&viewport);
+			viewportState.setScissorCount(1);
+			viewportState.setPScissors(&scissor);
+
+			vk::PipelineRasterizationStateCreateInfo rasterizer = {};
+			rasterizer.setDepthClampEnable(false);
+			rasterizer.setRasterizerDiscardEnable(false);
+			rasterizer.setPolygonMode(vk::PolygonMode::eFill);
+			rasterizer.setLineWidth(1.0f);
+			rasterizer.setCullMode(vk::CullModeFlagBits::eBack);
+			rasterizer.setFrontFace(vk::FrontFace::eClockwise);
+			rasterizer.setDepthBiasEnable(false);
+			rasterizer.setDepthBiasConstantFactor(0.0f);
+			rasterizer.setDepthBiasClamp(0.0f);
+			rasterizer.setDepthBiasSlopeFactor(0.0f);
+
+			vk::PipelineMultisampleStateCreateInfo multisampling = {};
+			multisampling.setSampleShadingEnable(false);
+			multisampling.setRasterizationSamples(vk::SampleCountFlagBits::e1);
+			multisampling.setMinSampleShading(1.0f);
+			multisampling.setPSampleMask(nullptr);
+			multisampling.setAlphaToCoverageEnable(false);
+			multisampling.setAlphaToOneEnable(false);
+
+			vk::StencilOpState stencil = {};
+			stencil.setFailOp(vk::StencilOp::eKeep);
+			stencil.setPassOp(vk::StencilOp::eReplace);
+			stencil.setDepthFailOp(vk::StencilOp::eKeep);
+			stencil.setCompareOp(vk::CompareOp::eEqual);
+			stencil.setWriteMask(1);
+			stencil.setReference(1);
+			stencil.setCompareMask(1);
+
+			vk::PipelineDepthStencilStateCreateInfo depthStencil = {};
+			depthStencil.setDepthTestEnable(false);
+			depthStencil.setDepthWriteEnable(false);
+			depthStencil.setDepthCompareOp(vk::CompareOp::eLess);
+			depthStencil.setDepthBoundsTestEnable(false);
+			depthStencil.setMinDepthBounds(0.0f);
+			depthStencil.setMaxDepthBounds(1.0f);
+			depthStencil.setStencilTestEnable(true);
+			depthStencil.setFront(stencil);
+			depthStencil.setBack(stencil);
+
+			std::array<vk::PipelineColorBlendAttachmentState, 3> colorBlendAttachments = {};
+
+			for (size_t i = 0; i < 3; i++)
+			{
+				colorBlendAttachments[i].setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
+				colorBlendAttachments[i].setBlendEnable(true);
+				colorBlendAttachments[i].setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha);
+				colorBlendAttachments[i].setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha);
+				colorBlendAttachments[i].setColorBlendOp(vk::BlendOp::eAdd);
+				colorBlendAttachments[i].setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
+				colorBlendAttachments[i].setDstAlphaBlendFactor(vk::BlendFactor::eZero);
+				colorBlendAttachments[i].setAlphaBlendOp(vk::BlendOp::eAdd);
+			}
+
+			vk::PipelineColorBlendStateCreateInfo colorBlending = {};
+			colorBlending.setLogicOpEnable(false);
+			colorBlending.setLogicOp(vk::LogicOp::eCopy);
+			colorBlending.setAttachmentCount(static_cast<uint32_t>(colorBlendAttachments.size()));
+			colorBlending.setPAttachments(colorBlendAttachments.data());
+			colorBlending.setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
+
+			vk::DynamicState dynamicStates[] =
+			{
+				vk::DynamicState::eViewport,
+				vk::DynamicState::eLineWidth
+			};
+
+			vk::PipelineDynamicStateCreateInfo dynamicState = {};
+			dynamicState.setDynamicStateCount(2);
+			dynamicState.setPDynamicStates(dynamicStates);
+
+			vk::PipelineLayoutCreateInfo pipelineLayoutInfo = {};
+			pipelineLayoutInfo.setSetLayoutCount(1);
+			pipelineLayoutInfo.setPSetLayouts(&m_descriptors.lightingDescriptorSetLayout);
+
+			// Create pipeline layout
+			m_lightingShader.graphicsPipelineLayout = m_graphics->getLogicalDevice().createPipelineLayout(pipelineLayoutInfo);
+
+			vk::GraphicsPipelineCreateInfo pipelineInfo = {};
+			pipelineInfo.setStageCount(2);
+			pipelineInfo.setPStages(m_lightingShader.shaderStages.data());
+			pipelineInfo.setPVertexInputState(&vertexInputInfo);
+			pipelineInfo.setPInputAssemblyState(&inputAssembly);
+			pipelineInfo.setPViewportState(&viewportState);
+			pipelineInfo.setPRasterizationState(&rasterizer);
+			pipelineInfo.setPMultisampleState(&multisampling);
+			pipelineInfo.setPDepthStencilState(nullptr);
+			pipelineInfo.setPColorBlendState(&colorBlending);
+			pipelineInfo.setPDynamicState(nullptr);
+			pipelineInfo.setLayout(m_lightingShader.graphicsPipelineLayout);
+			pipelineInfo.setRenderPass(m_renderPasses.offscreen);
+			pipelineInfo.setSubpass(0);
+			pipelineInfo.setBasePipelineHandle({ nullptr });
+			pipelineInfo.setBasePipelineIndex(-1);
+			pipelineInfo.setPDepthStencilState(&depthStencil);
+
+			// Create graphics pipeline
+			m_lightingShader.graphicsPipeline = m_graphics->getLogicalDevice().createGraphicsPipeline({}, pipelineInfo);
+		}
+
+		// Create screen graphics pipeline
+		{
+			auto bindingDescription = Vertex::getBindingDescription();
+			auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+			vk::PipelineVertexInputStateCreateInfo vertexInputInfo = {};
+			vertexInputInfo.setVertexBindingDescriptionCount(1);
+			vertexInputInfo.setVertexAttributeDescriptionCount(static_cast<uint32_t>(attributeDescriptions.size()));
+			vertexInputInfo.setPVertexBindingDescriptions(&bindingDescription);
+			vertexInputInfo.setPVertexAttributeDescriptions(attributeDescriptions.data());
+
+			vk::PipelineInputAssemblyStateCreateInfo inputAssembly = {};
+			inputAssembly.setTopology(vk::PrimitiveTopology::eTriangleList);
+			inputAssembly.setPrimitiveRestartEnable(false);
+
+			vk::Viewport viewport = {};
+			viewport.setX(0.0f);
+			viewport.setY(0.0f);
+			viewport.setWidth((float)m_graphics->getWidth());
+			viewport.setHeight((float)m_graphics->getHeight());
+			viewport.setMinDepth(0.0f);
+			viewport.setMaxDepth(1.0f);
+
+			vk::Extent2D extents = {};
+			extents.setHeight(m_graphics->getHeight());
+			extents.setWidth(m_graphics->getWidth());
+
+			vk::Rect2D scissor = {};
+			scissor.setOffset({ 0, 0 });
+			scissor.setExtent(extents);
+
+			vk::PipelineViewportStateCreateInfo viewportState = {};
+			viewportState.setViewportCount(1);
+			viewportState.setPViewports(&viewport);
+			viewportState.setScissorCount(1);
+			viewportState.setPScissors(&scissor);
+
+			vk::PipelineRasterizationStateCreateInfo rasterizer = {};
+			rasterizer.setDepthClampEnable(false);
+			rasterizer.setRasterizerDiscardEnable(false);
+			rasterizer.setPolygonMode(vk::PolygonMode::eFill);
+			rasterizer.setLineWidth(1.0f);
+			rasterizer.setCullMode(vk::CullModeFlagBits::eBack);
+			rasterizer.setFrontFace(vk::FrontFace::eClockwise);
+			rasterizer.setDepthBiasEnable(false);
+			rasterizer.setDepthBiasConstantFactor(0.0f);
+			rasterizer.setDepthBiasClamp(0.0f);
+			rasterizer.setDepthBiasSlopeFactor(0.0f);
+
+			vk::PipelineMultisampleStateCreateInfo multisampling = {};
+			multisampling.setSampleShadingEnable(false);
+			multisampling.setRasterizationSamples(vk::SampleCountFlagBits::e1);
+			multisampling.setMinSampleShading(1.0f);
+			multisampling.setPSampleMask(nullptr);
+			multisampling.setAlphaToCoverageEnable(false);
+			multisampling.setAlphaToOneEnable(false);
+
+			vk::PipelineDepthStencilStateCreateInfo depthStencil = {};
+			depthStencil.setDepthTestEnable(false);
+			depthStencil.setDepthWriteEnable(false);
+			depthStencil.setDepthCompareOp(vk::CompareOp::eLess);
+			depthStencil.setDepthBoundsTestEnable(false);
+			depthStencil.setMinDepthBounds(0.0f);
+			depthStencil.setMaxDepthBounds(1.0f);
+			depthStencil.setStencilTestEnable(false);
+			depthStencil.setFront({});
+			depthStencil.setBack({});
+
+			vk::PipelineColorBlendAttachmentState colorBlendAttachment = {};
+			colorBlendAttachment.setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
+			colorBlendAttachment.setBlendEnable(false);
+			colorBlendAttachment.setSrcColorBlendFactor(vk::BlendFactor::eOne);
+			colorBlendAttachment.setDstColorBlendFactor(vk::BlendFactor::eZero);
+			colorBlendAttachment.setColorBlendOp(vk::BlendOp::eAdd);
+			colorBlendAttachment.setSrcAlphaBlendFactor(vk::BlendFactor::eOne);
+			colorBlendAttachment.setDstAlphaBlendFactor(vk::BlendFactor::eZero);
+			colorBlendAttachment.setAlphaBlendOp(vk::BlendOp::eAdd);
+
+			vk::PipelineColorBlendStateCreateInfo colorBlending = {};
+			colorBlending.setLogicOpEnable(false);
+			colorBlending.setLogicOp(vk::LogicOp::eCopy);
+			colorBlending.setAttachmentCount(1);
+			colorBlending.setPAttachments(&colorBlendAttachment);
+			colorBlending.setBlendConstants({ 0.0f, 0.0f, 0.0f, 0.0f });
+
+			vk::DynamicState dynamicStates[] =
+			{
+				vk::DynamicState::eViewport,
+				vk::DynamicState::eLineWidth
+			};
+
+			vk::PipelineDynamicStateCreateInfo dynamicState = {};
+			dynamicState.setDynamicStateCount(2);
+			dynamicState.setPDynamicStates(dynamicStates);
+
+			vk::PipelineLayoutCreateInfo pipelineLayoutInfo = {};
+			pipelineLayoutInfo.setSetLayoutCount(1);
+			pipelineLayoutInfo.setPSetLayouts(&m_descriptors.screenDescriptorSetLayout);
+
+			// Create pipeline layout
+			m_screenShader.graphicsPipelineLayout = m_graphics->getLogicalDevice().createPipelineLayout(pipelineLayoutInfo);
+
+			vk::GraphicsPipelineCreateInfo pipelineInfo = {};
+			pipelineInfo.setStageCount(2);
+			pipelineInfo.setPStages(m_screenShader.shaderStages.data());
+			pipelineInfo.setPVertexInputState(&vertexInputInfo);
+			pipelineInfo.setPInputAssemblyState(&inputAssembly);
+			pipelineInfo.setPViewportState(&viewportState);
+			pipelineInfo.setPRasterizationState(&rasterizer);
+			pipelineInfo.setPMultisampleState(&multisampling);
+			pipelineInfo.setPDepthStencilState(nullptr);
+			pipelineInfo.setPColorBlendState(&colorBlending);
+			pipelineInfo.setPDynamicState(nullptr);
+			pipelineInfo.setLayout(m_screenShader.graphicsPipelineLayout);
+			pipelineInfo.setRenderPass(m_renderPasses.onscreen);
+			pipelineInfo.setSubpass(0);
+			pipelineInfo.setBasePipelineHandle({ nullptr });
+			pipelineInfo.setBasePipelineIndex(-1);
+			pipelineInfo.setPDepthStencilState(&depthStencil);
+
+			// Create graphics pipeline
+			m_screenShader.graphicsPipeline = m_graphics->getLogicalDevice().createGraphicsPipeline({}, pipelineInfo);
+		}
+	}
+
 	FrameBufferAttachment Renderer::createAttachment(vk::Format format, vk::ImageUsageFlags usage)
 	{
 		FrameBufferAttachment newAttachment = {};
@@ -824,6 +1264,213 @@ namespace gust
 
 	void Renderer::submitLightingData()
 	{
+		// Set camera position
+		m_lightingData.viewPosition = glm::vec4(0, 0, 0, 1); // glm::vec4(Camera::getMainCamera()->getGameObject().getComponent<Transform>()->getPosition(), 1.0f);
 
+		// Set light counts
+		m_lightingData.directionalLightCount = static_cast<uint32_t>(m_directionalLights.size());
+		m_lightingData.pointLightCount = static_cast<uint32_t>(m_pointLights.size());
+		m_lightingData.spotLightCount = static_cast<uint32_t>(m_spotLights.size());
+
+		// Set point lights
+		for (size_t i = 0; i < m_lightingData.pointLightCount; i++)
+		{
+			m_lightingData.pointLights[i] = m_pointLights.front();
+			m_pointLights.pop();
+		}
+
+		// Set directional lights
+		for (size_t i = 0; i < m_lightingData.directionalLightCount; i++)
+		{
+			m_lightingData.directionalLights[i] = m_directionalLights.front();
+			m_directionalLights.pop();
+		}
+
+		// Set spot lights
+		for (size_t i = 0; i < m_lightingData.spotLightCount; i++)
+		{
+			m_lightingData.spotLights[i] = m_spotLights.front();
+			m_spotLights.pop();
+		}
+
+		// Set lighting data
+		{
+			void* cpyData;
+
+			m_graphics->getLogicalDevice().mapMemory
+			(
+				m_lightingUniformBuffer.memory,
+				0,
+				static_cast<vk::DeviceSize>(sizeof(LightingData)),
+				(vk::MemoryMapFlagBits)0,
+				&cpyData
+			);
+
+			memcpy(cpyData, &m_lightingData, sizeof(LightingData));
+			m_graphics->getLogicalDevice().unmapMemory(m_lightingUniformBuffer.memory);
+		}
+	}
+
+	void Renderer::drawMeshToFramebuffer(const MeshData& mesh, const vk::CommandBufferInheritanceInfo& inheritanceInfo)
+	{
+		vk::CommandBufferBeginInfo beginInfo = {};
+		beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+		beginInfo.setPInheritanceInfo(&inheritanceInfo);
+
+		mesh.commandBuffer.begin(beginInfo);
+
+		// Bind graphics pipeline
+		mesh.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mesh.material->getShader()->getGraphicsPipeline());
+
+		// Bind descriptor sets
+		mesh.commandBuffer.bindDescriptorSets
+		(
+			vk::PipelineBindPoint::eGraphics,
+			mesh.material->getShader()->getGraphicsPipelineLayout(),
+			0,
+			static_cast<uint32_t>(mesh.descriptorSets.size()),
+			mesh.descriptorSets.data(),
+			0,
+			nullptr
+		);
+
+		// Bind vertex and index buffer
+		vk::Buffer vertexBuffer = mesh.mesh->getVertexUniformBuffer().buffer;
+		vk::DeviceSize offset = 0;
+		mesh.commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+		mesh.commandBuffer.bindIndexBuffer(mesh.mesh->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+
+		// Draw
+		mesh.commandBuffer.drawIndexed(static_cast<uint32_t>(mesh.mesh->getIndexCount()), 1, 0, 0, 0);
+		mesh.commandBuffer.end();
+	}
+
+	void Renderer::drawToCamera(const VirtualCamera* camera)
+	{
+		vk::CommandBufferBeginInfo cmdBufInfo = {};
+		cmdBufInfo.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+		cmdBufInfo.setPInheritanceInfo(nullptr);
+
+		// Begin renderpass
+		camera->commandBuffer.begin(cmdBufInfo);
+
+		// Clear values for all attachments written in the fragment shader
+		std::array<vk::ClearValue, 4> clearValues;
+		clearValues[0].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
+		clearValues[1].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
+		clearValues[2].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
+		clearValues[3].setDepthStencil({ 1.0f, 0 });
+
+		vk::RenderPassBeginInfo renderPassBeginInfo = {};
+		renderPassBeginInfo.setRenderPass(m_renderPasses.offscreen);
+		renderPassBeginInfo.setFramebuffer(camera->frameBuffer);
+		renderPassBeginInfo.renderArea.setExtent(vk::Extent2D(m_graphics->getWidth(), m_graphics->getHeight()));
+		renderPassBeginInfo.renderArea.offset = { 0, 0 };
+		renderPassBeginInfo.setClearValueCount(static_cast<uint32_t>(clearValues.size()));
+		renderPassBeginInfo.setPClearValues(clearValues.data());
+
+		// Inheritance info for the meshes command buffers
+		vk::CommandBufferInheritanceInfo inheritanceInfo = {};
+		inheritanceInfo.setRenderPass(m_renderPasses.offscreen);
+		inheritanceInfo.setFramebuffer(camera->frameBuffer);
+
+		camera->commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
+
+		std::vector<vk::CommandBuffer> commandBuffers(m_meshes.size());
+
+		m_threadPool->wait();
+
+		// Loop over meshes
+		for (size_t i = 0; i < m_meshes.size(); i++)
+		{
+			commandBuffers[i] = m_meshes[i].commandBuffer;
+
+			m_threadPool->addJob([this, i, inheritanceInfo]()
+			{
+				this->drawMeshToFramebuffer(m_meshes[i], inheritanceInfo);
+			});
+		}
+
+		m_threadPool->wait();
+
+		// Execute command buffers and perform lighting
+		if (commandBuffers.size() > 0)
+			camera->commandBuffer.executeCommands(commandBuffers);
+
+		camera->commandBuffer.endRenderPass();
+		camera->commandBuffer.end();
+
+		vk::SubmitInfo submitInfo = {};
+		submitInfo.setCommandBufferCount(1);
+		submitInfo.setPCommandBuffers(&camera->commandBuffer);
+		submitInfo.setSignalSemaphoreCount(1);
+		submitInfo.setPSignalSemaphores(&m_semaphores.offscreen);
+
+		// Submit draw command
+		m_graphics->getGraphicsQueue().submit(1, &submitInfo, { nullptr });
+
+		// Do lighting
+		performCameraLighting(camera);
+	}
+
+	void Renderer::performCameraLighting(const VirtualCamera* camera)
+	{
+		vk::CommandBufferBeginInfo cmdBufInfo = {};
+		cmdBufInfo.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+		cmdBufInfo.setPInheritanceInfo(nullptr);
+
+		// Begin renderpass
+		m_lightingCommandBuffer.begin(cmdBufInfo);
+
+		vk::RenderPassBeginInfo renderPassBeginInfo = {};
+		renderPassBeginInfo.setRenderPass(m_renderPasses.lighting);
+		renderPassBeginInfo.setFramebuffer(camera->frameBuffer);
+		renderPassBeginInfo.renderArea.setExtent(vk::Extent2D(m_graphics->getWidth(), m_graphics->getHeight()));
+		renderPassBeginInfo.renderArea.offset = { 0, 0 };
+		renderPassBeginInfo.setClearValueCount(0);
+		renderPassBeginInfo.setPClearValues(nullptr);
+
+		m_lightingCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+
+		// Bind descriptor sets
+		m_lightingCommandBuffer.bindDescriptorSets
+		(
+			vk::PipelineBindPoint::eGraphics,
+			m_lightingShader.graphicsPipelineLayout,
+			0,
+			1,
+			&m_descriptors.lightingDescriptorSet,
+			0,
+			nullptr
+		);
+
+		// Bind graphics pipeline
+		m_lightingCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_lightingShader.graphicsPipeline);
+
+		// Bind vertex and index buffer
+		vk::Buffer vertexBuffer = m_screenQuad->getVertexUniformBuffer().buffer;
+		vk::DeviceSize offset = 0;
+		m_lightingCommandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+		m_lightingCommandBuffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+
+		// Draw
+		m_lightingCommandBuffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
+
+		m_lightingCommandBuffer.endRenderPass();
+		m_lightingCommandBuffer.end();
+
+		vk::PipelineStageFlags flags = vk::PipelineStageFlagBits::eAllGraphics;
+
+		vk::SubmitInfo submitInfo = {};
+		submitInfo.setCommandBufferCount(1);
+		submitInfo.setPCommandBuffers(&m_lightingCommandBuffer);
+		submitInfo.setWaitSemaphoreCount(1);
+		submitInfo.setPWaitSemaphores(&m_semaphores.offscreen);
+		submitInfo.setSignalSemaphoreCount(1);
+		submitInfo.setPSignalSemaphores(&m_semaphores.offscreen);
+		submitInfo.setPWaitDstStageMask(&flags);
+
+		// Submit draw command
+		m_graphics->getGraphicsQueue().submit(1, &submitInfo, { nullptr });
 	}
 }

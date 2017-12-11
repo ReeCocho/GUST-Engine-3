@@ -97,6 +97,25 @@ namespace gust
 			uint32_t width, 
 			uint32_t height
 		);
+		
+		/**
+		 * @brief Create a shader.
+		 * @param Path to vertex shader.
+		 * @param Path to fragment shader.
+		 * @param Size of data sent to vertex shader.
+		 * @param Size of data sent to fragment shader.
+		 * @param Number of textures used by the shader.
+		 * @param Should the shader perform depth testing?
+		 */
+		Handle<Shader> createShader
+		(
+			const std::string& vertexPath,
+			const std::string& fragmentPath,
+			size_t vertexDataSize,
+			size_t fragmentDataSize,
+			size_t textureCount,
+			bool depthTesting
+		);
 
 		/**
 		 * @brief Destroy a mesh.
@@ -109,6 +128,12 @@ namespace gust
 		 * @param Texture handle.
 		 */
 		void destroyTexture(const Handle<Texture>& texture);
+
+		/**
+		 * @brief Destroy a shader.
+		 * @param Shader handle.
+		 */
+		void destroyShader(const Handle<Shader>& shader);
 
 	private:
 

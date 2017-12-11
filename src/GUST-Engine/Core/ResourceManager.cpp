@@ -69,11 +69,43 @@ namespace gust
 		if (m_textureAllocator.getResourceCount() == m_textureAllocator.getMaxResourceCount())
 			m_textureAllocator.resize(m_textureAllocator.getMaxResourceCount() + 100, true);
 
-		// Allocate mesh and call constructor
+		// Allocate texture and call constructor
 		auto texture = Handle<Texture>(&m_textureAllocator, m_textureAllocator.allocate());
 		::new(texture.get())(Texture)(m_graphics, image, imageView, sampler, memory, width, height);
 
 		return texture;
+	}
+
+	Handle<Shader> ResourceManager::createShader
+	(
+		const std::string& vertexPath,
+		const std::string& fragmentPath,
+		size_t vertexDataSize,
+		size_t fragmentDataSize,
+		size_t textureCount,
+		bool depthTesting
+	)
+	{
+		// Resize the array if necessary
+		if (m_shaderAllocator.getResourceCount() == m_shaderAllocator.getMaxResourceCount())
+			m_shaderAllocator.resize(m_shaderAllocator.getMaxResourceCount() + 100, true);
+
+		// Allocate shader and call constructor
+		auto shader = Handle<Shader>(&m_shaderAllocator, m_shaderAllocator.allocate());
+		::new(shader.get())(Shader)
+			(
+				m_graphics, 
+				{m_renderer->getStandardLayout()}, 
+				m_renderer->getOffscreenRenderPass(), 
+				vertexPath, 
+				fragmentPath,
+				vertexDataSize,
+				fragmentDataSize,
+				textureCount,
+				depthTesting
+			);
+
+		return shader;
 	}
 
 	void ResourceManager::destroyMesh(const Handle<Mesh>& mesh)
@@ -84,5 +116,10 @@ namespace gust
 	void ResourceManager::destroyTexture(const Handle<Texture>& texture)
 	{
 		m_textureAllocator.deallocate(texture.getHandle());
+	}
+
+	void ResourceManager::destroyShader(const Handle<Shader>& shader)
+	{
+		m_shaderAllocator.deallocate(shader.getHandle());
 	}
 }

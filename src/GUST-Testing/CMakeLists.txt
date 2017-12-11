@@ -36,3 +36,10 @@ target_link_libraries(
 	${VULKAN_LIBRARY}
 	# ${LINK_LIBRARY}
 )
+
+# Move shader folder into build directory
+add_custom_command(
+	TARGET GUST-Testing POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	${CMAKE_SOURCE_DIR}/src/Shaders/Output $<TARGET_FILE_DIR:GUST-Testing>/Shaders
+)

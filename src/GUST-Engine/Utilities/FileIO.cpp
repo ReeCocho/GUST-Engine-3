@@ -41,16 +41,11 @@ namespace gust
 		size_t size = stream.tellg();
 
 		// Go back to the beginning
-		stream.seekg(0, std::ios::beg);
+		stream.seekg(0);
 
 		// Read data
-		char* data = nullptr;
-		stream.read(data, size);
-
-		// Put the data into a vector
 		std::vector<char> vectorData(size);
-		for (size_t i = 0; i < size; i++)
-			vectorData[i] = data[i];
+		stream.read(vectorData.data(), size);
 
 		return vectorData;
 	}
