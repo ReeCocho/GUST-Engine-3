@@ -217,25 +217,65 @@ namespace gust
 	};
 
 	/**
-	 * @class ResourceAllocator
-	 * @brief A pool allocator that allows for deleting data mid stack.
-	 * and resizing the stack.
-	 * @see Handle
+	 * @class ResourceAllocatorBase
+	 * @brief Base class for resource allocators.
 	 */
-	template<class T>
-	class ResourceAllocator
+	class ResourceAllocatorBase
 	{
 	public:
 
 		/**
 		 * @brief Default constructor.
 		 */
-		ResourceAllocator() : 
-			m_data(nullptr), 
-			m_alignment(0),
-			m_maxResourceCount(0),
-			m_offset(0),
-			m_clampedDataSize(0)
+		ResourceAllocatorBase();
+
+		/**
+		 * @brief Default destructor.
+		 */
+		virtual ~ResourceAllocatorBase() = default;
+
+		/**
+		 * @brief Get max number of resources.
+		 * @return Max number of resources.
+		 */
+		inline size_t getMaxResourceCount() const
+		{
+			return m_maxResourceCount;
+		}
+
+	protected:
+
+		/** Pointer to base of the stack. */
+		unsigned char* m_data;
+
+		/** Max number of resources. */
+		size_t m_maxResourceCount;
+
+		/** Data offset. */
+		size_t m_offset;
+
+		/** Size of data clamped to be a multiple of the alignment. */
+		size_t m_clampedDataSize;
+
+		/** Resource alignment. */
+		size_t m_alignment;
+	};
+
+	/**
+	 * @class ResourceAllocator
+	 * @brief A pool allocator that allows for deleting data mid stack.
+	 * and resizing the stack.
+	 * @see Handle
+	 */
+	template<class T>
+	class ResourceAllocator : public ResourceAllocatorBase
+	{
+	public:
+
+		/**
+		 * @brief Default constructor.
+		 */
+		ResourceAllocator() : ResourceAllocatorBase()
 		{
 
 		}
@@ -246,10 +286,11 @@ namespace gust
 		 * @param Resource alignment.
 		 * @note Chunk alignment must be a power of 2.
 		 */
-		ResourceAllocator(size_t count, size_t alignment) : 
-			m_alignment(alignment),
-			m_maxResourceCount(count)
+		ResourceAllocator(size_t count, size_t alignment) : ResourceAllocatorBase()
 		{
+			m_alignment = alignment;
+			m_maxResourceCount = count;
+
 			m_clampedDataSize = static_cast<size_t>(ceil(static_cast<float>(sizeof(T)) / static_cast<float>(m_alignment))) * m_alignment;
 			m_data = new unsigned char[(m_clampedDataSize * count) + m_alignment + count];
 			m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + count);
@@ -284,15 +325,6 @@ namespace gust
 		inline constexpr size_t getResourceSize() const
 		{
 			return sizeof(T);
-		}
-
-		/**
-		 * @brief Get max number of resources.
-		 * @return Max number of resources.
-		 */
-		inline size_t getMaxResourceCount() const
-		{
-			return m_maxResourceCount;
 		}
 
 		/**
@@ -424,23 +456,6 @@ namespace gust
 					m_data[i] = 0;
 			}
 		}
-
-	private:
-
-		/** Pointer to base of the stack. */
-		unsigned char* m_data;
-
-		/** Max number of resources. */
-		size_t m_maxResourceCount;
-
-		/** Data offset. */
-		size_t m_offset;
-
-		/** Size of data clamped to be a multiple of the alignment. */
-		size_t m_clampedDataSize;
-
-		/** Resource alignment. */
-		size_t m_alignment;
 	};
 
 	/**

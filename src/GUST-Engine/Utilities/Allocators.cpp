@@ -108,4 +108,14 @@ namespace gust
 		size_t offset = (alignment - 1) & reinterpret_cast<size_t>(m_data);
 		m_top = m_data + offset;
 	}
+
+	ResourceAllocatorBase::ResourceAllocatorBase() :
+		m_data(nullptr),
+		m_alignment(0),
+		m_maxResourceCount(0),
+		m_offset(0),
+		m_clampedDataSize(0)
+	{
+
+	}
 }
