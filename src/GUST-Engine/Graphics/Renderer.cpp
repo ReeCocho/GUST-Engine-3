@@ -36,6 +36,7 @@ namespace gust
 				VirtualCamera* camera = m_cameraAllocator->getResourceByHandle(i);
 				logicalDevice.destroyFramebuffer(camera->frameBuffer);
 				m_graphics->destroyCommandBuffer(camera->commandBuffer);
+				m_graphics->destroyCommandBuffer(camera->lightingCommandBuffer);
 			}
 
 		// Destroy cameras
@@ -67,8 +68,6 @@ namespace gust
 		logicalDevice.destroyDescriptorSetLayout(m_descriptors.lightingDescriptorSetLayout);
 
 		m_graphics->destroyCommandBuffer(m_primaryCommandBuffer);
-		m_graphics->destroyCommandBuffer(m_offscreenCommandBuffer);
-		m_graphics->destroyCommandBuffer(m_lightingCommandBuffer);
 
 		logicalDevice.destroyRenderPass(m_renderPasses.onscreen);
 		logicalDevice.destroyRenderPass(m_renderPasses.offscreen);
@@ -156,8 +155,33 @@ namespace gust
 			scissor.setOffset({ 0, 0 });
 			m_primaryCommandBuffer.setScissor(0, 1, &scissor);
 
-			// Generate command buffers
-			// ...
+			// If the main camera is valid draw it's framebuffer
+			if (m_mainCamera.getResourceAllocator() && m_mainCamera.get())
+			{
+				// Bind descriptor sets
+				m_primaryCommandBuffer.bindDescriptorSets
+				(
+					vk::PipelineBindPoint::eGraphics,
+					m_screenShader.graphicsPipelineLayout,
+					0,
+					1,
+					&m_descriptors.screenDescriptorSet,
+					0,
+					nullptr
+				);
+
+				// Bind graphics pipeline
+				m_primaryCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_screenShader.graphicsPipeline);
+
+				// Bind vertex and index buffer
+				vk::Buffer vertexBuffer = m_screenQuad->getVertexUniformBuffer().buffer;
+				vk::DeviceSize offset = 0;
+				m_primaryCommandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+				m_primaryCommandBuffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+
+				// Draw
+				m_primaryCommandBuffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
+			}
 
 			m_primaryCommandBuffer.endRenderPass();
 			m_primaryCommandBuffer.end();
@@ -217,6 +241,7 @@ namespace gust
 		camera->height = m_graphics->getHeight();
 
 		camera->commandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
+		camera->lightingCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
 
 		// Color attachments
 
@@ -652,8 +677,6 @@ namespace gust
 	void Renderer::initCommandBuffers()
 	{
 		m_primaryCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
-		m_offscreenCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
-		m_lightingCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
 	}
 
 	void Renderer::initLighting()
@@ -1415,12 +1438,53 @@ namespace gust
 
 	void Renderer::performCameraLighting(const VirtualCamera* camera)
 	{
+		std::array<vk::WriteDescriptorSet, 3> sets = {};
+
+		vk::DescriptorImageInfo position = {};
+		position.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		position.setImageView(m_mainCamera->position->getImageView());
+		position.setSampler(m_mainCamera->position->getSampler());
+
+		vk::DescriptorImageInfo normal = {};
+		normal.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		normal.setImageView(m_mainCamera->normal->getImageView());
+		normal.setSampler(m_mainCamera->normal->getSampler());
+
+		vk::DescriptorImageInfo color = {};
+		color.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		color.setImageView(m_mainCamera->color->getImageView());
+		color.setSampler(m_mainCamera->color->getSampler());
+
+		sets[0].setDstSet(m_descriptors.lightingDescriptorSet);
+		sets[0].setDstBinding(1);
+		sets[0].setDstArrayElement(0);
+		sets[0].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+		sets[0].setDescriptorCount(1);
+		sets[0].setPImageInfo(&position);
+
+		sets[1].setDstSet(m_descriptors.lightingDescriptorSet);
+		sets[1].setDstBinding(2);
+		sets[1].setDstArrayElement(0);
+		sets[1].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+		sets[1].setDescriptorCount(1);
+		sets[1].setPImageInfo(&normal);
+
+		sets[2].setDstSet(m_descriptors.lightingDescriptorSet);
+		sets[2].setDstBinding(3);
+		sets[2].setDstArrayElement(0);
+		sets[2].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+		sets[2].setDescriptorCount(1);
+		sets[2].setPImageInfo(&color);
+
+		// Update lighting descriptor set
+		m_graphics->getLogicalDevice().updateDescriptorSets(static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+
 		vk::CommandBufferBeginInfo cmdBufInfo = {};
 		cmdBufInfo.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 		cmdBufInfo.setPInheritanceInfo(nullptr);
 
 		// Begin renderpass
-		m_lightingCommandBuffer.begin(cmdBufInfo);
+		camera->lightingCommandBuffer.begin(cmdBufInfo);
 
 		vk::RenderPassBeginInfo renderPassBeginInfo = {};
 		renderPassBeginInfo.setRenderPass(m_renderPasses.lighting);
@@ -1430,10 +1494,10 @@ namespace gust
 		renderPassBeginInfo.setClearValueCount(0);
 		renderPassBeginInfo.setPClearValues(nullptr);
 
-		m_lightingCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+		camera->lightingCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 
 		// Bind descriptor sets
-		m_lightingCommandBuffer.bindDescriptorSets
+		camera->lightingCommandBuffer.bindDescriptorSets
 		(
 			vk::PipelineBindPoint::eGraphics,
 			m_lightingShader.graphicsPipelineLayout,
@@ -1445,25 +1509,25 @@ namespace gust
 		);
 
 		// Bind graphics pipeline
-		m_lightingCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_lightingShader.graphicsPipeline);
+		camera->lightingCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_lightingShader.graphicsPipeline);
 
 		// Bind vertex and index buffer
 		vk::Buffer vertexBuffer = m_screenQuad->getVertexUniformBuffer().buffer;
 		vk::DeviceSize offset = 0;
-		m_lightingCommandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
-		m_lightingCommandBuffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+		camera->lightingCommandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+		camera->lightingCommandBuffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
 
 		// Draw
-		m_lightingCommandBuffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
+		camera->lightingCommandBuffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
 
-		m_lightingCommandBuffer.endRenderPass();
-		m_lightingCommandBuffer.end();
+		camera->lightingCommandBuffer.endRenderPass();
+		camera->lightingCommandBuffer.end();
 
 		vk::PipelineStageFlags flags = vk::PipelineStageFlagBits::eAllGraphics;
 
 		vk::SubmitInfo submitInfo = {};
 		submitInfo.setCommandBufferCount(1);
-		submitInfo.setPCommandBuffers(&m_lightingCommandBuffer);
+		submitInfo.setPCommandBuffers(&camera->lightingCommandBuffer);
 		submitInfo.setWaitSemaphoreCount(1);
 		submitInfo.setPWaitSemaphores(&m_semaphores.offscreen);
 		submitInfo.setSignalSemaphoreCount(1);

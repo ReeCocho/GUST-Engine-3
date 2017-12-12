@@ -514,6 +514,16 @@ namespace gust
 			return m_resourceAllocator->getResourceByHandle(m_handle);
 		}
 		
+		/**
+		 * @brief Equvilence check.
+		 * @param Other.
+		 * @return If the handles are equal.
+		 */
+		bool operator==(const Handle<T>& other)
+		{
+			return other.m_resourceAllocator == m_resourceAllocator && other.m_handle == m_handle;
+		}
+
 	private:
 
 		/** Resource allocator. */

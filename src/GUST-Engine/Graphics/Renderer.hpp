@@ -155,6 +155,9 @@ namespace gust
 		/** Command buffer for drawing to. */
 		vk::CommandBuffer commandBuffer = {};
 
+		/** Command buffer for lighting. */
+		vk::CommandBuffer lightingCommandBuffer = {};
+
 		/** Framebuffer. */
 		vk::Framebuffer frameBuffer = {};
 
@@ -310,8 +313,47 @@ namespace gust
 		inline void destroyCamera(const Handle<VirtualCamera>& camera)
 		{
 			m_graphics->destroyCommandBuffer(camera->commandBuffer);
+			m_graphics->destroyCommandBuffer(camera->lightingCommandBuffer);
 			m_graphics->getLogicalDevice().destroyFramebuffer(camera->frameBuffer);
 			m_cameraAllocator->deallocate(camera.getHandle());
+		}
+
+		/**
+		 * @brief Set the main camera.
+		 * @param New main camera.
+		 * @return New main camera.
+		 */
+		inline Handle<VirtualCamera> setMainCamera(const Handle<VirtualCamera>& camera)
+		{
+			m_mainCamera = camera;
+
+			vk::WriteDescriptorSet set = {};
+
+			vk::DescriptorImageInfo color = {};
+			color.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+			color.setImageView(m_mainCamera->color->getImageView());
+			color.setSampler(m_mainCamera->color->getSampler());
+
+			set.setDstSet(m_descriptors.screenDescriptorSet);
+			set.setDstBinding(0);
+			set.setDstArrayElement(0);
+			set.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+			set.setDescriptorCount(1);
+			set.setPImageInfo(&color);
+
+			// Update lighting descriptor set
+			m_graphics->getLogicalDevice().updateDescriptorSets(1, &set, 0, nullptr);
+
+			return m_mainCamera;
+		}
+
+		/**
+		 * @brief Get the main camera.
+		 * @return The main camera.
+		 */
+		inline Handle<VirtualCamera> getMainCamera() const
+		{
+			return m_mainCamera;
 		}
 
 	private:
@@ -598,17 +640,14 @@ namespace gust
 		/** Primary command buffer. */
 		vk::CommandBuffer m_primaryCommandBuffer;
 
-		/** Offscreen command buffer. */
-		vk::CommandBuffer m_offscreenCommandBuffer;
-
-		/** Lighting command buffer. */
-		vk::CommandBuffer m_lightingCommandBuffer;
-
 		/** Thread pool for rendering meshes. */
 		std::unique_ptr<ThreadPool> m_threadPool;
 
 		/** Screen quad. */
 		std::unique_ptr<Mesh> m_screenQuad;
+
+		/** Main camera. */
+		Handle<VirtualCamera> m_mainCamera = {};
 
 		/** Uniform buffer for lighting data. */
 		Buffer m_lightingUniformBuffer = {};
