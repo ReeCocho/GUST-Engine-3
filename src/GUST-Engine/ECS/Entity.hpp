@@ -46,6 +46,26 @@ namespace gust
 		~Entity() = default;
 
 		/**
+		 * @brief Equvilence check.
+		 * @param Other.
+		 * @return If the entities are the same.
+		 */
+		friend bool operator==(const Entity& lh, const Entity& rh)
+		{
+			return (lh.m_handle == rh.m_handle) && (lh.m_scene == rh.m_scene);
+		}
+
+		/**
+		 * @brief Unequvilence check.
+		 * @param Other.
+		 * @return If the entities are not the same.
+		 */
+		friend bool operator!=(const Entity& lh, const Entity& rh)
+		{
+			return (lh.m_handle != rh.m_handle) || (lh.m_scene != rh.m_scene);
+		}
+
+		/**
 		 * @brief Get scene the entity is in.
 		 * @return Scene the entity is in.
 		 */

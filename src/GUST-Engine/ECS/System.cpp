@@ -2,22 +2,27 @@
 
 namespace gust
 {
-	SystemBase::SystemBase(Scene* scene, size_t id) : m_scene(scene), m_id(id)
+	void System::onBegin()
 	{
 
 	}
 
-	void SystemBase::callOnTick(float deltaTime)
+	void System::onTick(float deltaTime)
 	{
 
 	}
 
-	void SystemBase::callOnLateTick(float deltaTime)
+	void System::onLateTick(float deltaTime)
 	{
 
 	}
 
-	void SystemBase::callOnPreRender(float deltaTime)
+	void System::onPreRender(float deltaTime)
+	{
+
+	}
+
+	void System::onEnd()
 	{
 
 	}

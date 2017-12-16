@@ -370,7 +370,7 @@ namespace gust
 	 * @class TransformSystem
 	 * @brief Tranform system.
 	 */
-	class TransformSystem : public System<Transform>
+	class TransformSystem : public System
 	{
 	public:
 
@@ -389,6 +389,6 @@ namespace gust
 		 * @brief Called when a component is added to the system.
 		 * @param Component to act upon.
 		 */
-		void onBegin(Handle<Transform> transform) override;
+		void onBegin() override;
 	};
 }

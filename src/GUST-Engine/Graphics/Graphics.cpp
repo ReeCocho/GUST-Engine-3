@@ -357,6 +357,7 @@ namespace gust
 				return i;
 
 		throwError("VULKAN: Failed to find suitable memory type");
+		return 0;
 	}
 
 	void Graphics::createImage

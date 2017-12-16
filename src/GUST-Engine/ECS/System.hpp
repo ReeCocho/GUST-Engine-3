@@ -7,6 +7,7 @@
  */
 
 /** Includes. */
+#include <functional>
 #include <memory>
 #include "../Utilities/Allocators.hpp"
 #include "Component.hpp"
@@ -14,87 +15,13 @@
 namespace gust
 {
 	/**
-	 * @class SystemBase
-	 * @brief Base class for systems.
-	 */
-	class SystemBase
-	{
-		friend class Scene;
-
-	public:
-
-		/**
-		 * @brief Default constructor.
-		 */
-		SystemBase() = default;
-
-		/**
-		 * @brief Constructor.
-		 * @param Scene the system is in.
-		 * @param ID of the component we are acting upon.
-		 */
-		SystemBase(Scene* scene, size_t id);
-
-		/**
-		 * @brief Default destructor.
-		 */
-		virtual ~SystemBase() = default;
-
-		/**
-		 * @brief Call onTick() for every component.
-		 * @param Delta time.
-		 * @note Used internally. Do not call.
-		 */
-		virtual void callOnTick(float deltaTime);
-
-		/**
-		 * @brief Call onLateTick() for every component.
-		 * @param Delta time.
-		 * @note Used internally. Do not call.
-		 */
-		virtual void callOnLateTick(float deltaTime);
-
-		/**
-		 * @brief Call onPreRender() for every component.
-		 * @param Delta time.
-		 * @note Used internally. Do not call.
-		 */
-		virtual void callOnPreRender(float deltaTime);
-
-		/**
-		 * @brief Get ID of the component being acted upon.
-		 * @return ID of the component being acted upon.
-		 */
-		size_t getID() const
-		{
-			return m_id;
-		}
-
-		/**
-		 * @brief Get scene the system is in.
-		 * @return Scene the system is in.
-		 */
-		Scene* getScene()
-		{
-			return m_scene;
-		}
-
-	private:
-
-		/** ID of the component being acted upon. */
-		size_t m_id;
-
-		/** Scene the system is running in. */
-		Scene* m_scene;
-	};
-
-	/**
 	 * @class System
 	 * @brief Manages components and running game code.
 	 */
-	template<class T>
-	class System : public SystemBase
+	class System
 	{
+		friend class Scene;
+
 	public:
 
 		/**
@@ -106,9 +33,89 @@ namespace gust
 		 * @brief Constructor.
 		 * @param Scene the system is in.
 		 */
-		System(Scene* scene) : SystemBase(scene, TypeID<T>::id())
+		System(Scene* scene) : m_scene(scene), m_id(0), m_componentHandle(0)
 		{
-			m_components = ResourceAllocator<T>(50, alignof(T));
+			
+		}
+
+		/**
+		 * @brief Initialize the system for use.
+		 * @tparam Component type the system will work with.
+		 */
+		template<class T>
+		void initialize()
+		{
+			if (m_id == 0)
+			{
+				m_id = TypeID<T>::id();
+				m_components = std::make_unique<ResourceAllocator<T>>(50, alignof(T));
+
+				m_runOnTick = [this](float deltaTime) 
+				{ 
+					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
+
+					for(size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+						if (allocator->isAllocated(i))
+						{
+							m_componentHandle = i;
+							onTick(deltaTime);
+						}
+				};
+
+				m_runOnLateTick = [this](float deltaTime)
+				{
+					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
+
+					for (size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+						if (allocator->isAllocated(i))
+						{
+							m_componentHandle = i;
+							onLateTick(deltaTime);
+						}
+				};
+
+				m_runOnPreRender = [this](float deltaTime)
+				{
+					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
+
+					for (size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+						if (allocator->isAllocated(i))
+						{
+							m_componentHandle = i;
+							onPreRender(deltaTime);
+						}
+				};
+
+				m_destroyByEntity = [this](Entity entity)
+				{
+					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
+
+					for (size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+						if (allocator->isAllocated(i))
+						{
+							T* component = allocator->getResourceByHandle(i);
+							if (component->getEntity() == entity)
+								allocator->deallocate(i);
+						}
+				};
+
+				m_componentByEntity = [this](Entity entity)
+				{
+					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
+
+					ComponentBase* component = nullptr;
+
+					for (size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+						if (allocator->isAllocated(i))
+						{
+							component = static_cast<ComponentBase*>(allocator->getResourceByHandle(i));
+							if (component->getEntity() == entity)
+								return component;
+						}
+
+					return component;
+				};
+			}
 		}
 
 		/**
@@ -116,97 +123,90 @@ namespace gust
 		 */
 		virtual ~System() = default;
 
-
-
 		/**
-		 * @brief Call onTick() for every component.
-		 * @param Delta time.
-		 * @note Used internally. Do not call.
+		 * @brief Get ID of the component being acted upon.
+		 * @return ID of the component being acted upon.
 		 */
-		void callOnTick(float deltaTime) override
+		inline size_t getID() const
 		{
-			for(size_t i = 0; i < m_components.getMaxResourceCount(); i++)
-				if (m_components.isAllocated(i))
-					onTick(Handle<T>(&m_components, i), deltaTime);
+			return m_id;
 		}
 
 		/**
-		 * @brief Call onLateTick() for every component.
-		 * @param Delta time.
-		 * @note Used internally. Do not call.
+		 * @brief Get scene the system is in.
+		 * @return Scene the system is in.
 		 */
-		void callOnLateTick(float deltaTime) override
+		inline Scene* getScene() const
 		{
-			for (size_t i = 0; i < m_components.getMaxResourceCount(); i++)
-				if (m_components.isAllocated(i))
-					onLateTick(Handle<T>(&m_components, i), deltaTime);
+			return m_scene;
 		}
-
-		/**
-		 * @brief Call onPreRender() for every component.
-		 * @param Delta time.
-		 * @note Used internally. Do not call.
-		 */
-		void callOnPreRender(float deltaTime) override
-		{
-			for (size_t i = 0; i < m_components.getMaxResourceCount(); i++)
-				if (m_components.isAllocated(i))
-					onPreRender(Handle<T>(&m_components, i), deltaTime);
-		}
-
-
 
 		/**
 		 * @brief Called when a component is added to the system.
-		 * @param Component to act upon.
 		 */
-		virtual void onBegin(Handle<T> component)
-		{
-
-		}
+		virtual void onBegin();
 
 		/**
 		 * @brief Called once per tick.
-		 * @param Component to act upon.
 		 * @param Delta time.
 		 */
-		virtual void onTick(Handle<T> component, float deltaTime)
-		{
+		virtual void onTick(float deltaTime);
 
-		}
-		
 		/**
 		 * @brief Called once per tick after onTick().
-		 * @param Component to act upon.
 		 * @param Delta time.
 		 */
-		virtual void onLateTick(Handle<T> component, float deltaTime)
-		{
-
-		}
+		virtual void onLateTick(float deltaTime);
 
 		/**
 		 * @brief Called once per tick, after onLateTick(), and before rendering.
-		 * @param Component to act upon.
 		 * @param Delta time.
 		 */
-		virtual void onPreRender(Handle<T> component, float deltaTime)
-		{
-
-		}
+		virtual void onPreRender(float deltaTime);
 
 		/**
 		 * @brief Called when a component is removed from the system.
-		 * @param Component to act upon.
 		 */
-		virtual void onEnd(Handle<T> component)
-		{
+		virtual void onEnd();
 
+		/**
+		 * @brief Get a handle to the component being acted upon.
+		 * @tparam Type of handle.
+		 */
+		template<class T>
+		inline Handle<T> getComponent()
+		{
+			auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
+			return Handle<T>(allocator, m_componentHandle);
 		}
 
 	private:
 
+		/** Scene the system is running in. */
+		Scene* m_scene;
+
 		/** Component allocator. */
-		ResourceAllocator<T> m_components;
+		std::unique_ptr<ResourceAllocatorBase> m_components;
+
+		/** Lambda function to run onTick(). */
+		std::function<void(float)> m_runOnTick;
+
+		/** Lambda function to run onTick(). */
+		std::function<void(float)> m_runOnLateTick;
+
+		/** Lambda function to run onTick(). */
+		std::function<void(float)> m_runOnPreRender;
+
+		/** Lambda function to destroy every component belonging to a given entity. */
+		std::function<void(Entity)> m_destroyByEntity;
+
+		/** Lambda function to get the component belonging to a given entity. */
+		std::function<ComponentBase*(Entity)> m_componentByEntity;
+
+		/** ID of the component being acted upon. */
+		size_t m_id;
+
+		/** Handle of the component being acted upon. */
+		size_t m_componentHandle;
 	};
 }

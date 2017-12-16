@@ -216,9 +216,9 @@ namespace gust
 
 
 
-	TransformSystem::TransformSystem(Scene* scene) : System<Transform>(scene)
+	TransformSystem::TransformSystem(Scene* scene) : System(scene)
 	{
-
+		initialize<Transform>();
 	}
 
 	TransformSystem::~TransformSystem()
@@ -226,8 +226,8 @@ namespace gust
 
 	}
 
-	void TransformSystem::onBegin(Handle<Transform> transform)
+	void TransformSystem::onBegin()
 	{
-		transform->generateModelMatrix();
+		getComponent<Transform>()->generateModelMatrix();
 	}
 }
