@@ -27,7 +27,7 @@ namespace gust
 			m_renderingThread->wait();
 
 			// Run game code
-			// ...
+			scene.tick(0);
 
 			// Start threads for rendering and physics
 			m_renderingThread->start();
@@ -40,6 +40,7 @@ namespace gust
 		m_renderingThread = nullptr;
 
 		// Shutdown modules
+		scene.shutdown();
 		renderer.shutdown();
 		resourceManager.shutdown();
 		graphics.shutdown();

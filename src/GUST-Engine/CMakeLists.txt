@@ -30,6 +30,14 @@ file(
 	"${CMAKE_SOURCE_DIR}/src/GUST-Engine/Utilities/*.hpp"
 )
 
+# Components
+file(
+	GLOB_RECURSE 
+	GUST_COMPONENTS
+	"${CMAKE_SOURCE_DIR}/src/GUST-Engine/Components/*.cpp"
+	"${CMAKE_SOURCE_DIR}/src/GUST-Engine/Components/*.hpp"
+)
+
 # Sources
 set(
 	GUST_ENGINE_SRCS
@@ -49,6 +57,7 @@ ADD_LIBRARY(
 	${GUST_GRAPHICS}
 	${GUST_UTILITIES}
 	${GUST_ECS}
+	${GUST_COMPONENTS}
 	${GUST_ENGINE_SRCS}
 	${GUST_ENGINE_HDRS}
 ) 
@@ -58,3 +67,4 @@ source_group("Core" FILES ${GUST_CORE})
 source_group("Utilites" FILES ${GUST_UTILITIES})
 source_group("Graphics" FILES ${GUST_GRAPHICS})
 source_group("ECS" FILES ${GUST_ECS})
+source_group("Components" FILES ${GUST_COMPONENTS})

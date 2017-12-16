@@ -12,6 +12,7 @@
 #include "Core\Input.hpp"
 #include "Core\ResourceManager.hpp"
 #include "Core\Threading.hpp"
+#include "ECS\Scene.hpp"
 
 namespace gust
 {
@@ -75,6 +76,9 @@ namespace gust
 
 		/** Rendering engine. */
 		Renderer renderer = {};
+
+		/** Primary scene. */
+		Scene scene = {};
 
 	private:
 

@@ -494,6 +494,15 @@ namespace gust
 		~Handle() = default;
 
 		/**
+		 * @brief Get a null handle.
+		 * @return A null handle.
+		 */
+		inline static Handle<T> nullHandle()
+		{
+			return Handle<T>(nullptr, 0);
+		}
+
+		/**
 		 * @brief Get handle.
 		 * @return Handle.
 		 */
@@ -517,7 +526,7 @@ namespace gust
 		 */
 		T* operator->() const 
 		{
-			return m_resourceAllocator->getResourceByHandle(m_handle);
+			return m_resourceAllocator == nullptr ? nullptr : m_resourceAllocator->getResourceByHandle(m_handle);
 		}
 
 		/**
@@ -534,9 +543,19 @@ namespace gust
 		 * @param Other.
 		 * @return If the handles are equal.
 		 */
-		bool operator==(const Handle<T>& other)
+		friend bool operator==(const Handle<T>& lh, const Handle<T>& rh)
 		{
-			return other.m_resourceAllocator == m_resourceAllocator && other.m_handle == m_handle;
+			return (lh.m_resourceAllocator == rh.m_resourceAllocator) && (lh.m_handle == rh.m_handle);
+		}
+
+		/**
+		 * @brief Unequvilence check.
+		 * @param Other.
+		 * @return If the handles are not equal.
+		 */
+		friend bool operator!=(const Handle<T>& lh, const Handle<T>& rh)
+		{
+			return (lh.m_resourceAllocator != rh.m_resourceAllocator) || (lh.m_handle != rh.m_handle);
 		}
 
 	private:
