@@ -109,6 +109,8 @@ namespace gust
 		m_top = m_data + offset;
 	}
 
+
+
 	ResourceAllocatorBase::ResourceAllocatorBase() :
 		m_data(nullptr),
 		m_alignment(0),

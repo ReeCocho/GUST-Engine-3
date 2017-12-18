@@ -69,55 +69,77 @@ namespace gust
 		std::atomic_bool m_stopping;
 	};
 
+
+
 	/**
-	 * @class ThreadPool
-	 * @brief A group of threads that take jobs from a primary queue.
+	 * @class WorkerThread
+	 * @brief Performs work for a thread pool.
+	 * @see ThreadPool
 	 */
-	class ThreadPool
+	class WorkerThread
 	{
-		friend class WorkerThread;
-
-		/**
-		 * @class WorkerThread
-		 * @brief A thread in a thread pool.
-		 */
-		class WorkerThread
-		{
-		public:
-
-			/**
-			 * @brief Constructor.
-			 * @param Thread pool the worker is in.
-			 */
-			WorkerThread(ThreadPool* pool);
-
-			/**
-			 * @brief Destructor.
-			 */
-			~WorkerThread();
-
-		private:
-
-			/** Thread pool the worker is in. */
-			ThreadPool* m_threadPool;
-
-			/** Should the worker be stopping? */
-			std::atomic_bool m_stopping;
-
-			/** Thread used by the worker. */
-			std::thread m_thread;
-		};
-
 	public:
 
 		/**
-		 * @brief Default constructor.
+		 * @brief Constructor.
 		 */
-		ThreadPool() = default;
+		WorkerThread();
+
+		/**
+		 * @brief Destructor.
+		 */
+		~WorkerThread();
+
+		/**
+		 * @brief Add a job to the worker thread.
+		 */
+		void addJob(std::function<void(void)> job);
+
+		/**
+		 * @brief Wait for the worker to finish working.
+		 */
+		void wait();
+
+	private:
+
+		/** Is the worker thread being destroyed? */
+		bool m_destroying = false;
+
+		/** Thread object. */
+		std::thread m_thread;
+
+		/** Job queue. */
+		std::queue<std::function<void(void)>> m_jobs;
+
+		/** Job queue mutex. */
+		std::mutex m_jobs_mutex;
+
+		/** Condition to wait for. */
+		std::condition_variable m_condition;
+
+		/** 
+		 * @brief Work method.
+		 */
+		void work();
+	};
+
+	/**
+	 * @class ThreadPool
+	 * @brief Manages worker threads.
+	 * @see WorkerThread
+	 */
+	class ThreadPool
+	{
+	public:
 
 		/**
 		 * @brief Constructor.
-		 * @param Thread count.
+		 */
+		ThreadPool();
+
+		/**
+		 * @brief Constructor.
+		 * @param Number of worker threads.
 		 */
 		ThreadPool(size_t threadCount);
 
@@ -126,38 +148,23 @@ namespace gust
 		 */
 		~ThreadPool();
 
-		/**
-		 * @brief Add a job.
-		 * @param Job to add.
-		 */
-		inline void addJob(std::function<void()> job)
-		{
-			std::lock_guard<std::mutex> lock(m_jobs_mutex);
-			m_jobQueue.push(std::move(job));
-			m_condition.notify_one();
-		}
+
 
 		/**
-		 * @brief Wait for the workers to finish working.
+		 * @brief Wait for the thread pool to finish working.
 		 */
-		void wait()
-		{
-			std::unique_lock<std::mutex> lock(m_jobs_mutex);
-			m_condition.wait(lock, [this]() { return m_jobQueue.empty(); });
-		}
+		void wait();
 
-	private:
+		/**
+		 * @brief Get number of worker threads.
+		 * @return Number of worker threads.
+		 */
+		inline size_t getWorkerCount() const
+		{
+			return workers.size();
+		}
 
 		/** Worker threads. */
-		std::vector<std::unique_ptr<WorkerThread>> m_workers;
-
-		/** List of jobs in the job queue */
-		std::queue<std::function<void()>> m_jobQueue;
-
-		/** Job queue mutex. */
-		std::mutex m_jobs_mutex;
-
-		/** Condition to wait for. */
-		std::condition_variable m_condition;
+		std::vector<WorkerThread*> workers = {};	
 	};
 }

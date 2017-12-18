@@ -278,7 +278,7 @@ namespace gust
 		 */
 		inline bool getAxisDown(const std::string& axis) const
 		{
-			for (size_t i = 0; i < m_axis.at(axis).size(); i++)
+			for (size_t i = 0; i < m_axis.at(axis).size(); ++i)
 				if (getKeyDown(std::get<0>(m_axis.at(axis)[i])))
 					return true;
 
@@ -292,7 +292,7 @@ namespace gust
 		 */
 		inline bool getAxisUp(const std::string& axis) const
 		{
-			for (size_t i = 0; i < m_axis.at(axis).size(); i++)
+			for (size_t i = 0; i < m_axis.at(axis).size(); ++i)
 				if (getKeyUp(std::get<0>(m_axis.at(axis)[i])))
 					return true;
 
@@ -306,7 +306,7 @@ namespace gust
 		 */
 		inline bool getAxisHeld(const std::string& axis) const
 		{
-			for (size_t i = 0; i < m_axis.at(axis).size(); i++)
+			for (size_t i = 0; i < m_axis.at(axis).size(); ++i)
 				if (getKeyHeld(std::get<0>(m_axis.at(axis)[i])))
 					return true;
 
@@ -322,7 +322,7 @@ namespace gust
 		{
 			float total = 0;
 
-			for (size_t i = 0; i < m_axis.at(axis).size(); i++)
+			for (size_t i = 0; i < m_axis.at(axis).size(); ++i)
 				if (getKeyHeld(std::get<0>(m_axis.at(axis)[i])))
 					total += std::get<1>(m_axis.at(axis)[i]);
 

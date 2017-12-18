@@ -112,7 +112,7 @@ namespace gust
 		template<class T>
 		Handle<T> getComponent()
 		{
-			return m_scene->getComponent<T>();
+			return m_scene->getComponent<T>(*this);
 		}
 
 	private:

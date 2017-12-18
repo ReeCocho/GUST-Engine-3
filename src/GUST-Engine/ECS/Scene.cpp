@@ -10,6 +10,9 @@ namespace gust
 
 	void Scene::shutdown()
 	{
+		for (auto& system : m_systems)
+			system->m_destroyAllComponents();
+
 		m_systems.clear();
 	}
 
@@ -42,7 +45,7 @@ namespace gust
 			size_t oldSize = m_markedComponents.size();
 			m_markedComponents.resize(oldSize + components.size());
 
-			for (size_t i = 0; i < components.size(); i++)
+			for (size_t i = 0; i < components.size(); ++i)
 				m_markedComponents[oldSize + i] = components[i];
 		}
 

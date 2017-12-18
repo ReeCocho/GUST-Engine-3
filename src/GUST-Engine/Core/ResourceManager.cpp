@@ -15,10 +15,10 @@ namespace gust
 	{
 		m_graphics = graphics;
 		m_renderer = renderer;
-		m_meshAllocator = ResourceAllocator<Mesh>(meshCount, 4);
-		m_shaderAllocator = ResourceAllocator<Shader>(shaderCount, 4);
-		m_materialAllocator = ResourceAllocator<Material>(materialCount, 4);
-		m_textureAllocator = ResourceAllocator<Texture>(textureCount, 4);
+		m_meshAllocator = std::make_unique<ResourceAllocator<Mesh>>(meshCount, alignof(Mesh));
+		m_shaderAllocator = std::make_unique<ResourceAllocator<Shader>>(shaderCount, alignof(Shader));
+		m_materialAllocator = std::make_unique<ResourceAllocator<Material>>(materialCount, alignof(Material));
+		m_textureAllocator = std::make_unique<ResourceAllocator<Texture>>(textureCount, alignof(Texture));
 	}
 
 	void ResourceManager::shutdown()
@@ -32,11 +32,11 @@ namespace gust
 	Handle<Mesh> ResourceManager::createMesh(const std::string& path)
 	{
 		// Resize the array if necessary
-		if (m_meshAllocator.getResourceCount() == m_meshAllocator.getMaxResourceCount())
-			m_meshAllocator.resize(m_meshAllocator.getMaxResourceCount() + 100, true);
+		if (m_meshAllocator->getResourceCount() == m_meshAllocator->getMaxResourceCount())
+			m_meshAllocator->resize(m_meshAllocator->getMaxResourceCount() + 100, true);
 
 		// Allocate mesh and call constructor
-		auto mesh = Handle<Mesh>(&m_meshAllocator, m_meshAllocator.allocate());
+		auto mesh = Handle<Mesh>(m_meshAllocator.get(), m_meshAllocator->allocate());
 		::new(mesh.get())(Mesh)(m_graphics, path);
 
 		return mesh;
@@ -45,11 +45,11 @@ namespace gust
 	Handle<Texture> ResourceManager::createTexture(const std::string& path, vk::Filter filtering)
 	{
 		// Resize the array if necessary
-		if (m_textureAllocator.getResourceCount() == m_textureAllocator.getMaxResourceCount())
-			m_textureAllocator.resize(m_textureAllocator.getMaxResourceCount() + 100, true);
+		if (m_textureAllocator->getResourceCount() == m_textureAllocator->getMaxResourceCount())
+			m_textureAllocator->resize(m_textureAllocator->getMaxResourceCount() + 100, true);
 
 		// Allocate mesh and call constructor
-		auto texture = Handle<Texture>(&m_textureAllocator, m_textureAllocator.allocate());
+		auto texture = Handle<Texture>(m_textureAllocator.get(), m_textureAllocator->allocate());
 		::new(texture.get())(Texture)(m_graphics, path, filtering);
 
 		return texture;
@@ -66,11 +66,11 @@ namespace gust
 	)
 	{
 		// Resize the array if necessary
-		if (m_textureAllocator.getResourceCount() == m_textureAllocator.getMaxResourceCount())
-			m_textureAllocator.resize(m_textureAllocator.getMaxResourceCount() + 100, true);
+		if (m_textureAllocator->getResourceCount() == m_textureAllocator->getMaxResourceCount())
+			m_textureAllocator->resize(m_textureAllocator->getMaxResourceCount() + 100, true);
 
 		// Allocate texture and call constructor
-		auto texture = Handle<Texture>(&m_textureAllocator, m_textureAllocator.allocate());
+		auto texture = Handle<Texture>(m_textureAllocator.get(), m_textureAllocator->allocate());
 		::new(texture.get())(Texture)(m_graphics, image, imageView, sampler, memory, width, height);
 
 		return texture;
@@ -87,11 +87,11 @@ namespace gust
 	)
 	{
 		// Resize the array if necessary
-		if (m_shaderAllocator.getResourceCount() == m_shaderAllocator.getMaxResourceCount())
-			m_shaderAllocator.resize(m_shaderAllocator.getMaxResourceCount() + 100, true);
+		if (m_shaderAllocator->getResourceCount() == m_shaderAllocator->getMaxResourceCount())
+			m_shaderAllocator->resize(m_shaderAllocator->getMaxResourceCount() + 100, true);
 
 		// Allocate shader and call constructor
-		auto shader = Handle<Shader>(&m_shaderAllocator, m_shaderAllocator.allocate());
+		auto shader = Handle<Shader>(m_shaderAllocator.get(), m_shaderAllocator->allocate());
 		::new(shader.get())(Shader)
 			(
 				m_graphics, 
@@ -108,18 +108,40 @@ namespace gust
 		return shader;
 	}
 
-	void ResourceManager::destroyMesh(const Handle<Mesh>& mesh)
+	Handle<Material> ResourceManager::createMaterial(Handle<Shader> shader)
 	{
-		m_meshAllocator.deallocate(mesh.getHandle());
+		// Resize the array if necessary
+		if (m_materialAllocator->getResourceCount() == m_materialAllocator->getMaxResourceCount())
+			m_materialAllocator->resize(m_materialAllocator->getMaxResourceCount() + 100, true);
+
+		// Allocate material and call constructor
+		auto material = Handle<Material>(m_materialAllocator.get(), m_materialAllocator->allocate());
+		::new(material.get())(Material)
+		(
+			m_graphics,
+			shader
+		);
+
+		return material;
 	}
 
-	void ResourceManager::destroyTexture(const Handle<Texture>& texture)
+	void ResourceManager::destroyMesh(Handle<Mesh> mesh)
 	{
-		m_textureAllocator.deallocate(texture.getHandle());
+		m_meshAllocator->deallocate(mesh.getHandle());
 	}
 
-	void ResourceManager::destroyShader(const Handle<Shader>& shader)
+	void ResourceManager::destroyTexture(Handle<Texture> texture)
 	{
-		m_shaderAllocator.deallocate(shader.getHandle());
+		m_textureAllocator->deallocate(texture.getHandle());
+	}
+
+	void ResourceManager::destroyShader(Handle<Shader> shader)
+	{
+		m_shaderAllocator->deallocate(shader.getHandle());
+	}
+
+	void ResourceManager::destroyMaterial(Handle<Material> material)
+	{
+		m_materialAllocator->deallocate(material.getHandle());
 	}
 }

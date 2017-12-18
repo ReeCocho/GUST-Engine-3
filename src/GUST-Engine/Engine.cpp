@@ -10,7 +10,8 @@ namespace gust
 		input.startup();
 		graphics.startup(name, width, height);
 		resourceManager.startup(&graphics, &renderer, 20, 20, 10, 10);
-		renderer.startup(&graphics, 4);
+		renderer.startup(&graphics, 1);
+		scene.startup();
 
 		// Start threads
 		m_renderingThread = std::make_unique<SimulationThread>([this]() { renderer.render(); });

@@ -11,7 +11,12 @@ layout(location = 0) out vec4 GUST_OUT_POSITION;
 layout(location = 1) out vec4 GUST_OUT_NORMAL;
 layout(location = 2) out vec4 GUST_OUT_COLOR;
 
-layout(std140, set = 0, binding = 1) uniform GUST_FRAG_DATA
+layout(std140, set = 0, binding = 2) uniform GUST_FRAG_DATA
 {
 	layout(offset = 0) vec4 VIEW_POSITION;
 } GUST_DATA;
+
+// layout(std140, set = 0, binding = 3) uniform CUSTOM_FRAG_DATA
+// {
+// 	layout(offset = 0) float test;
+// } CUSTOM_DATA;

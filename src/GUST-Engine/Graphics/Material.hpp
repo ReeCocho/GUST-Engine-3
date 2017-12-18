@@ -9,6 +9,7 @@
 /** Includes. */
 #include "Shader.hpp"
 #include "Texture.hpp"
+#include "../Utilities/Allocators.hpp"
 
 namespace gust
 {
@@ -29,9 +30,8 @@ namespace gust
 		 * @brief Constructor.
 		 * @param Graphics context.
 		 * @param Shader used by the material.
-		 * @param Descriptor set layout used for the data set.
 		 */
-		Material(Graphics* graphics, Shader* shader, const vk::DescriptorSetLayout& layout);
+		Material(Graphics* graphics, Handle<Shader> shader);
 
 		/**
 		 * @brief Destructor.
@@ -42,7 +42,7 @@ namespace gust
 		 * @brief Get shader.
 		 * @return Shader.
 		 */
-		inline Shader* getShader() const
+		inline Handle<Shader> getShader() const
 		{
 			return m_shader;
 		}
@@ -124,14 +124,14 @@ namespace gust
 		 * @param Texture.
 		 * @param Which texture to set.
 		 */
-		void setTexture(Texture* texture, size_t index);
+		void setTexture(Handle<Texture> texture, size_t index);
 		
 		/**
 		 * @brief Get Nth texture.
 		 * @param Texture index.
 		 * @return Nth texture.
 		 */
-		inline Texture* getTexture(size_t index) const
+		inline Handle<Texture> getTexture(size_t index) const
 		{
 			return m_textures[index];
 		}
@@ -145,15 +145,6 @@ namespace gust
 			return m_textureDescriptorSet;
 		}
 
-		/**
-		 * @brief Get data descriptor set.
-		 * @return Data descriptor set.
-		 */
-		inline const vk::DescriptorSet& getDataDescriptorSet() const
-		{
-			return m_dataDescriptorSet;
-		}
-
 	private:
 
 		/**
@@ -163,17 +154,14 @@ namespace gust
 
 		/**
 		 * @brief Initialize descriptor sets.
-		 * @param Descriptor set layout to use.
 		 */
-		void initDescriptorSets(const vk::DescriptorSetLayout& layout);
-
-
+		void initDescriptorSets();
 
 		/** Graphics context. */
 		Graphics* m_graphics = nullptr;
 
 		/** Shader used by the material. */
-		Shader* m_shader = nullptr;
+		Handle<Shader> m_shader = Handle<Shader>::nullHandle();
 
 		/** GUST fragment uniform buffer. */
 		Buffer m_fragmentUniformBuffer = {};
@@ -182,13 +170,10 @@ namespace gust
 		Buffer m_vertexUniformBuffer = {};
 
 		/** Textures. */
-		std::vector<Texture*> m_textures = {};
+		std::vector<Handle<Texture>> m_textures = {};
 
 		/** Descriptor pool. */
 		vk::DescriptorPool m_descriptorPool = {};
-
-		/** GUST data descriptor set. */
-		vk::DescriptorSet m_dataDescriptorSet = {};
 
 		/** Texture descriptor set. */
 		vk::DescriptorSet m_textureDescriptorSet = {};

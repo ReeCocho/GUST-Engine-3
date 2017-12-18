@@ -10,8 +10,12 @@ layout(std140, set = 0, binding = 0) uniform GUST_VERT_DATA
 {
 	layout(offset = 0) mat4 MVP;
 	layout(offset = 64) mat4 MODEL;
-	
 } GUST_DATA;
+
+// layout(std140, set = 0, binding = 1) uniform CUSTOM_VERT_DATA
+// {
+// 	layout(offset = 0) float test;
+// } CUSTOM_DATA;
 
 layout(location = 0) out vec3 GUST_NORMAL;
 layout(location = 1) out vec3 GUST_FRAG_POS;

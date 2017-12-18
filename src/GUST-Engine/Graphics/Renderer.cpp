@@ -30,7 +30,7 @@ namespace gust
 		m_threadPool = nullptr;
 
 		// Destroy cameras
-		for(size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); i++)
+		for(size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); ++i)
 			if (m_cameraAllocator->isAllocated(i))
 			{
 				VirtualCamera* camera = m_cameraAllocator->getResourceByHandle(i);
@@ -101,7 +101,7 @@ namespace gust
 		// Draw everything to every camera
 		bool drew = false;
 
-		for (size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); i++)
+		for (size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); ++i)
 			if (m_cameraAllocator->isAllocated(i))
 			{
 				VirtualCamera* camera = m_cameraAllocator->getResourceByHandle(i);
@@ -371,7 +371,7 @@ namespace gust
 			std::array<vk::AttachmentDescription, 4> attachmentDescs = {};
 
 			// Input attachment properties
-			for (size_t i = 0; i < 4; i++)
+			for (size_t i = 0; i < 4; ++i)
 			{
 				attachmentDescs[i].setSamples(vk::SampleCountFlagBits::e1);
 				attachmentDescs[i].setLoadOp(vk::AttachmentLoadOp::eClear);
@@ -455,7 +455,7 @@ namespace gust
 			std::array<vk::AttachmentDescription, 4> attachmentDescs = {};
 
 			// Input attachment properties
-			for (size_t i = 0; i < 4; i++)
+			for (size_t i = 0; i < 4; ++i)
 			{
 				attachmentDescs[i].setSamples(vk::SampleCountFlagBits::e1);
 				attachmentDescs[i].setLoadOp(vk::AttachmentLoadOp::eLoad);
@@ -636,7 +636,7 @@ namespace gust
 		auto logicalDevice = m_graphics->getLogicalDevice();
 		m_swapchain.buffers.resize(m_swapchain.images.size());
 
-		for (size_t i = 0; i < m_swapchain.images.size(); i++)
+		for (size_t i = 0; i < m_swapchain.images.size(); ++i)
 		{
 			m_swapchain.buffers[i].image = m_swapchain.images[i];
 
@@ -1051,7 +1051,7 @@ namespace gust
 
 			std::array<vk::PipelineColorBlendAttachmentState, 3> colorBlendAttachments = {};
 
-			for (size_t i = 0; i < 3; i++)
+			for (size_t i = 0; i < 3; ++i)
 			{
 				colorBlendAttachments[i].setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
 				colorBlendAttachments[i].setBlendEnable(true);
@@ -1296,21 +1296,21 @@ namespace gust
 		m_lightingData.spotLightCount = static_cast<uint32_t>(m_spotLights.size());
 
 		// Set point lights
-		for (size_t i = 0; i < m_lightingData.pointLightCount; i++)
+		for (size_t i = 0; i < m_lightingData.pointLightCount; ++i)
 		{
 			m_lightingData.pointLights[i] = m_pointLights.front();
 			m_pointLights.pop();
 		}
 
 		// Set directional lights
-		for (size_t i = 0; i < m_lightingData.directionalLightCount; i++)
+		for (size_t i = 0; i < m_lightingData.directionalLightCount; ++i)
 		{
 			m_lightingData.directionalLights[i] = m_directionalLights.front();
 			m_directionalLights.pop();
 		}
 
 		// Set spot lights
-		for (size_t i = 0; i < m_lightingData.spotLightCount; i++)
+		for (size_t i = 0; i < m_lightingData.spotLightCount; ++i)
 		{
 			m_lightingData.spotLights[i] = m_spotLights.front();
 			m_spotLights.pop();
@@ -1334,19 +1334,33 @@ namespace gust
 		}
 	}
 
-	void Renderer::drawMeshToFramebuffer(const MeshData& mesh, const vk::CommandBufferInheritanceInfo& inheritanceInfo)
+	void Renderer::drawMeshToFramebuffer(const MeshData& mesh, const vk::CommandBufferInheritanceInfo& inheritanceInfo, size_t threadIndex)
 	{
 		vk::CommandBufferBeginInfo beginInfo = {};
 		beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 		beginInfo.setPInheritanceInfo(&inheritanceInfo);
 
-		mesh.commandBuffer.begin(beginInfo);
+		mesh.commandBuffers[threadIndex].begin(beginInfo);
+
+		// Set viewport
+		vk::Viewport viewport = {};
+		viewport.setHeight((float)m_graphics->getHeight());
+		viewport.setWidth((float)m_graphics->getWidth());
+		viewport.setMinDepth(0);
+		viewport.setMaxDepth(1);
+		mesh.commandBuffers[threadIndex].setViewport(0, 1, &viewport);
+
+		// Set scissor
+		vk::Rect2D scissor = {};
+		scissor.setExtent({ m_graphics->getWidth(), m_graphics->getHeight() });
+		scissor.setOffset({ 0, 0 });
+		mesh.commandBuffers[threadIndex].setScissor(0, 1, &scissor);
 
 		// Bind graphics pipeline
-		mesh.commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mesh.material->getShader()->getGraphicsPipeline());
+		mesh.commandBuffers[threadIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, mesh.material->getShader()->getGraphicsPipeline());
 
 		// Bind descriptor sets
-		mesh.commandBuffer.bindDescriptorSets
+		mesh.commandBuffers[threadIndex].bindDescriptorSets
 		(
 			vk::PipelineBindPoint::eGraphics,
 			mesh.material->getShader()->getGraphicsPipelineLayout(),
@@ -1360,12 +1374,12 @@ namespace gust
 		// Bind vertex and index buffer
 		vk::Buffer vertexBuffer = mesh.mesh->getVertexUniformBuffer().buffer;
 		vk::DeviceSize offset = 0;
-		mesh.commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
-		mesh.commandBuffer.bindIndexBuffer(mesh.mesh->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+		mesh.commandBuffers[threadIndex].bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+		mesh.commandBuffers[threadIndex].bindIndexBuffer(mesh.mesh->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
 
 		// Draw
-		mesh.commandBuffer.drawIndexed(static_cast<uint32_t>(mesh.mesh->getIndexCount()), 1, 0, 0, 0);
-		mesh.commandBuffer.end();
+		mesh.commandBuffers[threadIndex].drawIndexed(static_cast<uint32_t>(mesh.mesh->getIndexCount()), 1, 0, 0, 0);
+		mesh.commandBuffers[threadIndex].end();
 	}
 
 	void Renderer::drawToCamera(const VirtualCamera* camera)
@@ -1404,14 +1418,17 @@ namespace gust
 		m_threadPool->wait();
 
 		// Loop over meshes
-		for (size_t i = 0; i < m_meshes.size(); i++)
+		size_t threadIndex = 0;
+		for (size_t i = 0; i < m_meshes.size(); ++i)
 		{
-			commandBuffers[i] = m_meshes[i].commandBuffer;
+			commandBuffers[i] = m_meshes[i].commandBuffers[threadIndex];
 
-			m_threadPool->addJob([this, i, inheritanceInfo]()
+			m_threadPool->workers[threadIndex]->addJob([this, i, inheritanceInfo, threadIndex]()
 			{
-				this->drawMeshToFramebuffer(m_meshes[i], inheritanceInfo);
+				this->drawMeshToFramebuffer(m_meshes[i], inheritanceInfo, threadIndex);
 			});
+
+			threadIndex = (threadIndex + 1) % m_threadPool->workers.size();
 		}
 
 		m_threadPool->wait();

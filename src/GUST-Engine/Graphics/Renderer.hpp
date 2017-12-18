@@ -73,8 +73,8 @@ namespace gust
 		/** Descriptor sets. */
 		std::vector<vk::DescriptorSet> descriptorSets;
 
-		/** Command buffer to render the mesh with. */
-		vk::CommandBuffer commandBuffer;
+		/** Command buffers to render the mesh with. */
+		std::vector<vk::CommandBuffer> commandBuffers;
 	};
 
 	/**
@@ -217,6 +217,15 @@ namespace gust
 		 * @note Used internally. Do not call.
 		 */
 		void render();
+
+		/**
+		 * @brief Get thread count.
+		 * @return Thread count.
+		 */
+		inline size_t getThreadCount() const
+		{
+			return m_threadPool->workers.size();
+		}
 
 		/**
 		 * @brief Get offscreen render pass.
@@ -430,8 +439,9 @@ namespace gust
 		 * @brief Draw mesh to a framebuffer.
 		 * @param Mesh to render.
 		 * @param Command buffer inheritence info.
+		 * @param Thread index.
 		 */
-		void drawMeshToFramebuffer(const MeshData& mesh, const vk::CommandBufferInheritanceInfo& inheritanceInfo);
+		void drawMeshToFramebuffer(const MeshData& mesh, const vk::CommandBufferInheritanceInfo& inheritanceInfo, size_t threadIndex);
 
 		/**
 		 * @brief Draw meshes to camera framebuffer.

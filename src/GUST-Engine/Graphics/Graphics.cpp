@@ -67,7 +67,7 @@ namespace gust
 		};
 
 		// Add extensions required by SDL
-		for (size_t i = 0; i < extensionCount; i++)
+		for (size_t i = 0; i < extensionCount; ++i)
 			requestedExtensions.push_back(extensions[i]);
 
 		// Describes application information
@@ -352,7 +352,7 @@ namespace gust
 		auto memProperties = m_physicalDevice.getMemoryProperties();
 
 		// Find memory type
-		for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++)
+		for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i)
 			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
 				return i;
 
@@ -578,7 +578,7 @@ namespace gust
 				break;
 
 			// Increment index counter
-			i++;
+			++i;
 		}
 
 		return indices;

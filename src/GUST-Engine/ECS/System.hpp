@@ -33,10 +33,12 @@ namespace gust
 		 * @brief Constructor.
 		 * @param Scene the system is in.
 		 */
-		System(Scene* scene) : m_scene(scene), m_id(0), m_componentHandle(0)
-		{
-			
-		}
+		System(Scene* scene);
+
+		/**
+		 * @brief Destructor.
+		 */
+		virtual ~System();
 
 		/**
 		 * @brief Initialize the system for use.
@@ -54,7 +56,7 @@ namespace gust
 				{ 
 					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
 
-					for(size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+					for(size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
 						if (allocator->isAllocated(i))
 						{
 							m_componentHandle = i;
@@ -66,7 +68,7 @@ namespace gust
 				{
 					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
 
-					for (size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+					for (size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
 						if (allocator->isAllocated(i))
 						{
 							m_componentHandle = i;
@@ -78,7 +80,7 @@ namespace gust
 				{
 					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
 
-					for (size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+					for (size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
 						if (allocator->isAllocated(i))
 						{
 							m_componentHandle = i;
@@ -90,12 +92,29 @@ namespace gust
 				{
 					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
 
-					for (size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+					for (size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
 						if (allocator->isAllocated(i))
 						{
 							T* component = allocator->getResourceByHandle(i);
 							if (component->getEntity() == entity)
+							{
+								m_componentHandle = i;
+								onEnd();
 								allocator->deallocate(i);
+							}
+						}
+				};
+
+				m_destroyAllComponents = [this]()
+				{
+					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
+
+					for (size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
+						if (allocator->isAllocated(i))
+						{
+							m_componentHandle = i;
+							onEnd();
+							allocator->deallocate(i);
 						}
 				};
 
@@ -105,7 +124,7 @@ namespace gust
 
 					ComponentBase* component = nullptr;
 
-					for (size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+					for (size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
 						if (allocator->isAllocated(i))
 						{
 							component = static_cast<ComponentBase*>(allocator->getResourceByHandle(i));
@@ -117,11 +136,6 @@ namespace gust
 				};
 			}
 		}
-
-		/**
-		 * @brief Default destructor.
-		 */
-		virtual ~System() = default;
 
 		/**
 		 * @brief Get ID of the component being acted upon.
@@ -199,6 +213,9 @@ namespace gust
 
 		/** Lambda function to destroy every component belonging to a given entity. */
 		std::function<void(Entity)> m_destroyByEntity;
+
+		/** Lambda function to destroy every component. */
+		std::function<void()> m_destroyAllComponents;
 
 		/** Lambda function to get the component belonging to a given entity. */
 		std::function<ComponentBase*(Entity)> m_componentByEntity;

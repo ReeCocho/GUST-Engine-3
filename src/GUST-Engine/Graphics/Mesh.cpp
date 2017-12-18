@@ -57,7 +57,7 @@ namespace gust
 				// Check if duplicate vertex
 				bool isUnique = true;
 	
-				for (size_t i = 0; i < uniqueVertices.size(); i++)
+				for (size_t i = 0; i < uniqueVertices.size(); ++i)
 					if (uniqueVertices[i] == vertex)
 					{
 						indices.push_back(static_cast<uint32_t>(i));
@@ -148,7 +148,7 @@ namespace gust
 	{
 		m_vertices.resize(vertices.size());
 
-		for (size_t i = 0; i < vertices.size(); i++)
+		for (size_t i = 0; i < vertices.size(); ++i)
 		{
 			m_vertices[i].position = vertices[i];
 			m_vertices[i].uv = uvs[i];
@@ -294,7 +294,7 @@ namespace gust
 			v2.tangent += tangent;
 		}
 
-		for (size_t i = 0; i < m_vertices.size(); i++)
+		for (size_t i = 0; i < m_vertices.size(); ++i)
 			m_vertices[i].tangent = glm::normalize(m_vertices[i].tangent);
 
 		initVertexBuffer();

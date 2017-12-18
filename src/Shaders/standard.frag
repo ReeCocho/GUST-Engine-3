@@ -2,12 +2,12 @@
 
 #include "GUST_Fragment.frag"
 
-layout(set = 3, binding = 0) uniform sampler2D tex;
+// layout(set = 3, binding = 0) uniform sampler2D tex;
 
 void main()
 {
 	// Color
-	vec3 color = texture(tex, GUST_UV).rgb;
+	vec3 color = vec3(1, 1, 1); // texture(tex, GUST_UV).rgb;
 	
 	// Normal
 	vec3 normal = normalize(GUST_NORMAL);

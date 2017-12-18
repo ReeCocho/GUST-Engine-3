@@ -147,7 +147,7 @@ namespace gust
 		std::vector<vk::DescriptorSetLayoutBinding> bindings(m_textureCount);
 
 		// Texture bindings
-		for (size_t i = 0; i < m_textureCount; i++)
+		for (size_t i = 0; i < m_textureCount; ++i)
 		{
 			bindings[i].setBinding(static_cast<uint32_t>(i));
 			bindings[i].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
@@ -238,7 +238,7 @@ namespace gust
 		
 		std::array<vk::PipelineColorBlendAttachmentState, 3> colorBlendAttachments = {};
 		
-		for (size_t i = 0; i < colorBlendAttachments.size(); i++)
+		for (size_t i = 0; i < colorBlendAttachments.size(); ++i)
 		{
 			colorBlendAttachments[i].setColorWriteMask
 			(
@@ -275,13 +275,12 @@ namespace gust
 		dynamicState.setDynamicStateCount(static_cast<uint32_t>(dynamicStates.size()));
 		dynamicState.setPDynamicStates(dynamicStates.data());
 		
-		vk::PipelineLayoutCreateInfo pipelineLayoutInfo = {};
-		
-		std::vector<vk::DescriptorSetLayout> layouts = m_descriptorSetLayouts;
-		
+		// Layouts
+		auto layouts = m_descriptorSetLayouts;
 		if (m_textureCount > 0)
 			layouts.push_back(m_textureDescriptorSetLayout);
-		
+
+		vk::PipelineLayoutCreateInfo pipelineLayoutInfo = {};	
 		pipelineLayoutInfo.setSetLayoutCount(static_cast<uint32_t>(layouts.size()));
 		pipelineLayoutInfo.setPSetLayouts(layouts.data());
 		

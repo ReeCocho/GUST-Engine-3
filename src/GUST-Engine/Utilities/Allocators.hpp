@@ -261,6 +261,8 @@ namespace gust
 		size_t m_alignment;
 	};
 
+
+
 	/**
 	 * @class ResourceAllocator
 	 * @brief A pool allocator that allows for deleting data mid stack.
@@ -277,7 +279,7 @@ namespace gust
 		 */
 		ResourceAllocator() : ResourceAllocatorBase()
 		{
-
+			
 		}
 
 		/**
@@ -296,7 +298,7 @@ namespace gust
 			m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + count);
 
 			// Reset allocation table
-			for (size_t i = 0; i < m_maxResourceCount; i++)
+			for (size_t i = 0; i < m_maxResourceCount; ++i)
 				m_data[i] = 0;
 		}
 
@@ -305,17 +307,20 @@ namespace gust
 		 */
 		~ResourceAllocator()
 		{
-			// Call destructors for all allocated data
-			for (size_t i = 0; i < m_maxResourceCount; i++)
+			if (m_data != nullptr)
 			{
-				if (isAllocated(i))
+				// Call destructors for all allocated data
+				for (size_t i = 0; i < m_maxResourceCount; ++i)
 				{
-					T* data = reinterpret_cast<T*>(m_data + m_maxResourceCount + m_offset + (i * m_clampedDataSize));
-					data->~T();
+					if (isAllocated(i))
+					{
+						T* data = reinterpret_cast<T*>(m_data + m_maxResourceCount + m_offset + (i * m_clampedDataSize));
+						data->~T();
+					}
 				}
-			}
 
-			delete m_data;
+				delete[] m_data;
+			}
 		}
 
 		/**
@@ -345,7 +350,7 @@ namespace gust
 		{
 			size_t counter = 0;
 
-			for (size_t i = 0; i < m_maxResourceCount; i++)
+			for (size_t i = 0; i < m_maxResourceCount; ++i)
 				if (isAllocated(i))
 					++counter;
 
@@ -379,7 +384,7 @@ namespace gust
 
 			// Search for an appropriate index
 			size_t index = 0;
-			for(size_t i = 0; i < m_maxResourceCount; i++)
+			for(size_t i = 0; i < m_maxResourceCount; ++i)
 				if (!isAllocated(i))
 				{
 					index = i;
@@ -427,11 +432,11 @@ namespace gust
 				m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + newSize);
 
 				// Reset allocation table
-				for (size_t i = 0; i < m_maxResourceCount; i++)
+				for (size_t i = 0; i < m_maxResourceCount; ++i)
 					m_data[i] = (i < oldSize ? oldData[i] : 0);
 
 				// Set old data
-				for (size_t i = 0; i < oldSize * m_clampedDataSize; i++)
+				for (size_t i = 0; i < oldSize * m_clampedDataSize; ++i)
 				{
 					size_t newIndex = (m_maxResourceCount + m_offset) + i;
 					size_t oldIndex = (oldSize + oldOffset) + i;
@@ -439,12 +444,12 @@ namespace gust
 				}
 
 				// Delete old data.
-				delete oldData;
+				delete[] oldData;
 			}
 			// Ignore old data
 			else
 			{
-				delete m_data;
+				delete[] m_data;
 
 				// Create new data
 				m_maxResourceCount = newSize;
@@ -452,7 +457,7 @@ namespace gust
 				m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + newSize);
 
 				// Reset allocation table
-				for (size_t i = 0; i < m_maxResourceCount; i++)
+				for (size_t i = 0; i < m_maxResourceCount; ++i)
 					m_data[i] = 0;
 			}
 		}

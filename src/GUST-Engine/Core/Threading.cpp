@@ -60,57 +60,89 @@ namespace gust
 
 
 
+	WorkerThread::WorkerThread()
+	{
+		m_thread = std::thread(&WorkerThread::work, this);
+	}
+
+	WorkerThread::~WorkerThread()
+	{
+		if (m_thread.joinable())
+		{
+			wait();
+
+			{
+				std::lock_guard<std::mutex> lock(m_jobs_mutex);
+				m_destroying = true;
+				m_condition.notify_one();
+			}
+
+			m_thread.join();
+		}
+	}
+
+	void WorkerThread::addJob(std::function<void(void)> job)
+	{
+		std::lock_guard<std::mutex> lock(m_jobs_mutex);
+		m_jobs.push(move(job));
+		m_condition.notify_one();
+	}
+
+	void WorkerThread::wait()
+	{
+		std::unique_lock<std::mutex> lock(m_jobs_mutex);
+		m_condition.wait(lock, [this]() { return m_jobs.empty(); });
+	}
+
+	void WorkerThread::work()
+	{
+		while (true)
+		{
+			std::function<void(void)> job;
+			{
+				std::unique_lock<std::mutex> lock(m_jobs_mutex);
+				m_condition.wait(lock, [this] { return !m_jobs.empty() || m_destroying; });
+
+				if (m_destroying)
+					break;
+
+				job = m_jobs.front();
+			}
+
+			job();
+
+			{
+				std::lock_guard<std::mutex> lock(m_jobs_mutex);
+				m_jobs.pop();
+				m_condition.notify_one();
+			}
+		}
+	}
+
+
+
+	ThreadPool::ThreadPool()
+	{
+		
+	}
+
 	ThreadPool::ThreadPool(size_t threadCount)
 	{
-		m_workers.resize(threadCount);
 		for (size_t i = 0; i < threadCount; i++)
-			m_workers[i] = std::make_unique<WorkerThread>(this);
+			workers.push_back(new WorkerThread());
 	}
 
 	ThreadPool::~ThreadPool()
 	{
 		wait();
+
+		for (size_t i = 0; i < workers.size(); i++)
+			delete workers[i];
 	}
 
-	ThreadPool::WorkerThread::WorkerThread(ThreadPool* pool) : m_threadPool(pool), m_stopping(false)
+	void ThreadPool::wait()
 	{
-		m_thread = std::thread
-		([this]()
-		{
-			// While we aren't stopping the worker...
-			while (!m_stopping)
-			{
-				// Find a job in the job queue
-				std::function<void(void)> job;
-				{
-					// Wait until the job queue isn't empty
-					std::unique_lock<std::mutex> lock(m_threadPool->m_jobs_mutex);
-					m_threadPool->m_condition.wait(lock, [this] { return !m_threadPool->m_jobQueue.empty() || m_stopping; });
-
-					// Make sure we can stop mid loop
-					if (m_stopping)
-						break;
-
-					// Take a job out of the queue
-					job = m_threadPool->m_jobQueue.front();
-					m_threadPool->m_jobQueue.pop();
-					m_threadPool->m_condition.notify_one();
-				}
-
-				// Run the job
-				job();
-			}
-		});
-	}
-
-	ThreadPool::WorkerThread::~WorkerThread()
-	{
-		{
-			std::unique_lock<std::mutex> lock(m_threadPool->m_jobs_mutex);
-			m_stopping = true;
-			m_threadPool->m_condition.notify_one();
-		}
-
-		m_thread.join();
+		for (size_t i = 0; i < workers.size(); i++)
+			workers[i]->wait();
 	}
 }

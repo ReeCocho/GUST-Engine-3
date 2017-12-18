@@ -84,7 +84,7 @@ namespace gust
 		void removeComponent(Entity entity)
 		{
 			static_assert(std::is_base_of<Component<T>, T>::value, "T must derive from gust::Component");
-			static_assert(typeid(Transform) != typeid(T), "T must not be of type gust::Transform");
+			static_assert(!std::is_same<T, Transform>::value, "T must not be of type gust::Transform");
 
 			// Get ID of the component
 			size_t id = TypeID<T>::id();
@@ -98,14 +98,14 @@ namespace gust
 				auto allocator = static_cast<ResourceAllocator<T>*>(system->m_components.get());
 
 				// Loop over every component in the allocator
-				for(size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+				for(size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
 					if (allocator->isAllocated(i))
 					{
 						T* component = allocator->getResourceByHandle(i);
-						assert(allocator == component.getResourceAllocator() && entity.getHandle() == component->getEntity().getHandle());
+						assert(entity.getHandle() == component->getEntity().getHandle());
 						system->m_componentHandle = i;
 						system->onEnd();
-						allocator->deallocate(component.getHandle());
+						allocator->deallocate(i);
 					}
 			}
 		}
@@ -135,7 +135,7 @@ namespace gust
 				auto allocator = static_cast<ResourceAllocator<T>*>(system->m_components.get());
 
 				// Loop over every component in the allocator to check if the component already exists
-				for(size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+				for(size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
 					if (allocator->isAllocated(i))
 					{
 						T* component = allocator->getResourceByHandle(i);
@@ -174,7 +174,7 @@ namespace gust
 			static_assert(std::is_base_of<Component<T>, T>::value, "T must derive from gust::Component");
 
 			// Get ID of the component
-			constexpr size_t id = TypeID<T>::id();
+			size_t id = TypeID<T>::id();
 
 			// Get system of required type
 			System* system = getSystemOfType<T>();
@@ -186,7 +186,7 @@ namespace gust
 				auto allocator = static_cast<ResourceAllocator<T>*>(system->m_components.get());
 
 				// Loop over every component and check for the one we want
-				for(size_t i = 0; i < allocator->getMaxResourceCount(); i++)
+				for(size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
 					if (allocator->isAllocated(i))
 					{
 						T* component = allocator->getResourceByHandle(i);
