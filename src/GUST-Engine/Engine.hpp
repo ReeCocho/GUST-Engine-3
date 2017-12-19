@@ -18,96 +18,45 @@
 namespace gust
 {
 	/**
-	 * @class Engine
-	 * @brief Game engine singleton.
+	 * @brief Startup the engine.
+	 * @param Window name.
+	 * @param Window width.
+	 * @param Window height.
+	 * @note This is called internally. Do not use.
+	 */	
+	extern void startup(const std::string& name, uint32_t width, uint32_t height);
+
+	/**
+	 * @brief Simulate the engine until completion.
+	 * @note This is called internally. Do not use.
 	 */
-	class Engine
-	{
-	public:
+	extern void simulate();
 
-		/**
-		 * @brief Default constructor.
-		 */
-		Engine() = default;
+	/**
+	 * @brief Shutdown the engine.
+	 * @note This is called internally. Do not use.
+	 */
+	extern void shutdown();
 
-		/**
-		 * @brief Default destructor.
-		 */
-		~Engine() = default;
-
-		/**
-		 * @brief Startup the engine.
-		 * @param Window name.
-		 * @param Window width.
-		 * @param Window height.
-		 * @note This is called internally. Do not use.
-		 */	
-		void startup(const std::string& name, uint32_t width, uint32_t height);
-
-		/**
-		 * @brief Simulate the engine until completion.
-		 * @note This is called internally. Do not use.
-		 */
-		void simulate();
-
-		/**
-		 * @brief Shutdown the engine.
-		 * @note This is called internally. Do not use.
-		 */
-		void shutdown();
-
-		/**
-		 * @brief Get engine singleton.
-		 * @return Engine singleton.
-		 */
-		static inline Engine& get()
-		{
-			return engine;
-		}
-
-		/**
-		 * @brief Get the frame rate.
-		 * @return Frame rate.
-		 */
-		inline uint32_t getFrameRate() const
-		{
-			return m_frameRate;
-		}
+	/**
+	 * @brief Get the frame rate.
+	 * @return Frame rate.
+	 */
+	extern uint32_t getFrameRate();
 
 
-		/** Graphics context. */
-		Graphics graphics = {};
+	/** Graphics context. */
+	extern Graphics graphics;
 
-		/** Input manager. */
-		Input input = {};
+	/** Input manager. */
+	extern Input input;
 
-		/** Resource manager. */
-		ResourceManager resourceManager = {};
+	/** Resource manager. */
+	extern ResourceManager resourceManager;
 
-		/** Rendering engine. */
-		Renderer renderer = {};
+	/** Rendering engine. */
+	extern Renderer renderer;
 
-		/** Primary scene. */
-		Scene scene = {};
-
-	private:
-
-		/** Game clock. */
-		Clock m_clock = {};
-
-		/** Frame counter. */
-		uint64_t m_frameCounter = 0;
-
-		/** Time elapsed since last measuring the framerate. */
-		float m_frameRateTimer = 0;
-
-		/** Frame rate. */
-		uint32_t m_frameRate = 0;
-
-		/** Rendering thread. */
-		std::unique_ptr<SimulationThread> m_renderingThread;
-
-		/** Singleton. */
-		static Engine engine;
-	};
+	/** Primary scene. */
+	extern Scene scene;
 }

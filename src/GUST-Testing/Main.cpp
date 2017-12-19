@@ -41,19 +41,18 @@ public:
 
 int main()
 {
-	gust::Engine::get().startup("Test Game", 1280, 720);
+	gust::startup("Test Game", 1280, 720);
 	
 	std::cout << (gust::TypeID<gust::Transform>::id() == gust::TypeID<gust::MeshRenderer>::id()) << '\n';
 
-	auto& scene = gust::Engine::get().scene;
-	scene.addSystem<gust::TransformSystem>();
-	scene.addSystem<TestComponentSystem>();
-	scene.addSystem<gust::PointLightSystem>();
-	scene.addSystem<gust::DirectionalLightSystem>();
-	scene.addSystem<gust::MeshRendererSystem>();
-	scene.addSystem<gust::CameraSystem>();
+	gust::scene.addSystem<gust::TransformSystem>();
+	gust::scene.addSystem<TestComponentSystem>();
+	gust::scene.addSystem<gust::PointLightSystem>();
+	gust::scene.addSystem<gust::DirectionalLightSystem>();
+	gust::scene.addSystem<gust::MeshRendererSystem>();
+	gust::scene.addSystem<gust::CameraSystem>();
 	
-	auto shader = gust::Engine::get().resourceManager.createShader
+	auto shader = gust::resourceManager.createShader
 	(
 		"./Shaders/standard-vert.spv",
 		"./Shaders/standard-frag.spv",
@@ -64,13 +63,13 @@ int main()
 		true
 	);
 	
-	auto material = gust::Engine::get().resourceManager.createMaterial(shader);
+	auto material = gust::resourceManager.createMaterial(shader);
 	
-	auto mesh = gust::Engine::get().resourceManager.createMesh("./Meshes/Cube.obj");
+	auto mesh = gust::resourceManager.createMesh("./Meshes/Cube.obj");
 
 	// Create cube
 	{
-		auto entity = gust::Entity(&scene);
+		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
 		transform->setPosition({ 1, 0, 3 });
@@ -82,7 +81,7 @@ int main()
 	
 	// Create camera
 	{
-		auto entity = gust::Entity(&scene);
+		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
 		transform->setPosition({ 1, 0, -2 });
@@ -93,7 +92,7 @@ int main()
 	
 	// Create light
 	{
-		auto entity = gust::Entity(&scene);
+		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
 		transform->setEulerAngles({ 45, 45, 0 });
@@ -101,8 +100,8 @@ int main()
 		auto directionalLight = entity.addComponent<gust::DirectionalLight>();
 	}
 	
-	gust::Engine::get().simulate();
-	gust::Engine::get().shutdown();
+	gust::simulate();
+	gust::shutdown();
 
 	std::cin.get();
 	return 0;

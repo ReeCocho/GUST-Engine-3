@@ -38,7 +38,7 @@ namespace gust
 		data.range = pointLight->m_range;
 		data.position = { pointLight->m_transform->getPosition(), 1 };
 
-		Engine::get().renderer.draw(data);
+		gust::renderer.draw(data);
 	}
 
 
@@ -78,7 +78,7 @@ namespace gust
 		data.intensity = directionalLight->getIntensity();
 		data.direction = { directionalLight->m_transform->getForward(), 1 };
 
-		Engine::get().renderer.draw(data);
+		gust::renderer.draw(data);
 	}
 
 
@@ -121,6 +121,6 @@ namespace gust
 		data.range = spotLight->m_range;
 		data.position = { spotLight->m_transform->getPosition(), 1 };
 
-		Engine::get().renderer.draw(data);
+		gust::renderer.draw(data);
 	}
 }

@@ -18,8 +18,8 @@ namespace gust
 
 	void Camera::generateProjectionMatrix()
 	{
-		float width = static_cast<float>(Engine::get().graphics.getWidth());
-		float height = static_cast<float>(Engine::get().graphics.getHeight());
+		float width = static_cast<float>(gust::graphics.getWidth());
+		float height = static_cast<float>(gust::graphics.getHeight());
 
 		m_projection = glm::perspective
 		(
@@ -56,9 +56,9 @@ namespace gust
 	{
 		auto camera = getComponent<Camera>();
 		camera->m_transform = camera->getEntity().getComponent<Transform>();
-		camera->m_virtualCamera = Engine::get().renderer.createCamera();
+		camera->m_virtualCamera = gust::renderer.createCamera();
 
-		Engine::get().renderer.setMainCamera(camera->m_virtualCamera);
+		gust::renderer.setMainCamera(camera->m_virtualCamera);
 	}
 
 	void CameraSystem::onPreRender(float deltaTime)
@@ -75,6 +75,6 @@ namespace gust
 	void CameraSystem::onEnd()
 	{
 		auto camera = getComponent<Camera>();
-		Engine::get().renderer.destroyCamera(camera->m_virtualCamera);
+		gust::renderer.destroyCamera(camera->m_virtualCamera);
 	}
 }

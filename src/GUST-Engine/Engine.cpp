@@ -1,11 +1,42 @@
 #include <iostream>
 #include "Engine.hpp"
 
+namespace
+{
+	/** Game clock. */
+	gust::Clock m_clock = {};
+
+	/** Frame counter. */
+	uint64_t m_frameCounter = 0;
+
+	/** Time elapsed since last measuring the framerate. */
+	float m_frameRateTimer = 0;
+
+	/** Frame rate. */
+	uint32_t m_frameRate = 0;
+
+	/** Rendering thread. */
+	std::unique_ptr<gust::SimulationThread> m_renderingThread;
+}
+
 namespace gust
 {
-	Engine Engine::engine = {};
+	/** Graphics context. */
+	Graphics graphics = {};
 
-	void Engine::startup(const std::string& name, uint32_t width, uint32_t height)
+	/** Input manager. */
+	Input input = {};
+
+	/** Resource manager. */
+	ResourceManager resourceManager = {};
+
+	/** Rendering engine. */
+	Renderer renderer = {};
+
+	/** Primary scene. */
+	Scene scene = {};
+
+	void startup(const std::string& name, uint32_t width, uint32_t height)
 	{
 		// Start modules
 		input.startup();
@@ -15,10 +46,10 @@ namespace gust
 		scene.startup();
 
 		// Start threads
-		m_renderingThread = std::make_unique<SimulationThread>([this]() { renderer.render(); });
+		m_renderingThread = std::make_unique<SimulationThread>([]() { renderer.render(); });
 	}
 
-	void Engine::simulate()
+	void simulate()
 	{
 		while (!input.isClosing())
 		{
@@ -52,7 +83,7 @@ namespace gust
 		}
 	}
 
-	void Engine::shutdown()
+	void shutdown()
 	{
 		// Stop threads
 		m_renderingThread = nullptr;
@@ -63,5 +94,10 @@ namespace gust
 		resourceManager.shutdown();
 		graphics.shutdown();
 		input.shutdown();
+	}
+
+	uint32_t getFrameRate()
+	{
+		return m_frameRate;
 	}
 }

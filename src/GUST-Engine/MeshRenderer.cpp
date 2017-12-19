@@ -27,14 +27,14 @@ namespace gust
 	void MeshRendererSystem::onBegin()
 	{
 		auto meshRenderer = getComponent<MeshRenderer>();
-		Graphics* graphics = &Engine::get().graphics;
-		Renderer* renderer = &Engine::get().renderer;
+		Graphics* graphics = &gust::graphics;
+		Renderer* renderer = &gust::renderer;
 		
 		// Get transform
 		meshRenderer->m_transform = meshRenderer->getEntity().getComponent<Transform>();
 		
 		// Create command buffers
-		meshRenderer->m_commandBuffer = Engine::get().renderer.createCommandBuffer(vk::CommandBufferLevel::eSecondary);
+		meshRenderer->m_commandBuffer = gust::renderer.createCommandBuffer(vk::CommandBufferLevel::eSecondary);
 		
 		// Fragment uniform buffer
 		meshRenderer->m_fragmentUniformBuffer = graphics->createBuffer
@@ -136,18 +136,18 @@ namespace gust
 				data.descriptorSets[0] = meshRenderer->m_descriptorSet;
 			}
 		
-			Engine::get().renderer.draw(data);
+			gust::renderer.draw(data);
 		}
 	}
 
 	void MeshRendererSystem::onEnd()
 	{
 		auto meshRenderer = getComponent<MeshRenderer>();
-		auto& graphics = Engine::get().graphics;
+		auto& graphics = gust::graphics;
 		auto& logicalDevice = graphics.getLogicalDevice();
 		
 		// Destroy command buffer
-		Engine::get().renderer.destroyCommandBuffer(meshRenderer->m_commandBuffer);
+		gust::renderer.destroyCommandBuffer(meshRenderer->m_commandBuffer);
 		
 		// Destroy pool
 		logicalDevice.destroyDescriptorPool(meshRenderer->m_descriptorPool);

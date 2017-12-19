@@ -88,7 +88,7 @@ namespace gust
 				writeSets[1].setPTexelBufferView(nullptr);
 				
 				// Update descriptor sets
-				Engine::get().graphics.getLogicalDevice().updateDescriptorSets(static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
+				gust::graphics.getLogicalDevice().updateDescriptorSets(static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
 			}
 			
 			return m_material;

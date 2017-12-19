@@ -132,7 +132,7 @@ namespace gust
 		inline static Handle<Camera> setMainCamera(Handle<Camera> camera)
 		{
 			mainCamera = camera;
-			Engine::get().renderer.setMainCamera(camera->m_virtualCamera);
+			gust::renderer.setMainCamera(camera->m_virtualCamera);
 			return mainCamera;
 		}
 
