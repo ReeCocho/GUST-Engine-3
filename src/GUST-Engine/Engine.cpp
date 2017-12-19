@@ -11,7 +11,7 @@ namespace gust
 		input.startup();
 		graphics.startup(name, width, height);
 		resourceManager.startup(&graphics, &renderer, 20, 20, 10, 10);
-		renderer.startup(&graphics, 1);
+		renderer.startup(&graphics, 4);
 		scene.startup();
 
 		// Start threads

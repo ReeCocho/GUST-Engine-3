@@ -36,6 +36,7 @@ namespace gust
 		 * @param Size of data sent to fragment shader.
 		 * @param Number of textures used by the shader.
 		 * @param Should the shader perform depth testing?
+		 * @param Should the shader perform lighting calculations?
 		 */
 		Shader
 		(
@@ -47,7 +48,8 @@ namespace gust
 			size_t vertexDataSize,
 			size_t fragmentDataSize,
 			size_t textureCount,
-			bool depthTesting
+			bool depthTesting,
+			bool lighting
 		);
 
 		/**
@@ -61,6 +63,7 @@ namespace gust
 		 * @param Size of data sent to fragment shader.
 		 * @param Number of textures used by the shader
 		 * @param Should the shader perform depth testing?
+		 * @param Should the shader perform lighting calculations?
 		 */
 		Shader
 		(
@@ -72,7 +75,8 @@ namespace gust
 			size_t vertexDataSize,
 			size_t fragmentDataSize,
 			size_t textureCount,
-			bool depthTesting
+			bool depthTesting,
+			bool lighting
 		);
 
 		/**
@@ -172,6 +176,9 @@ namespace gust
 
 		/** Does the shader perform depth testing? */
 		const bool m_depthTesting;
+
+		/** Does the shader perform lighting calculations? */
+		const bool m_lighting;
 
 		/** Number of textures used by the shader. */
 		const size_t m_textureCount;

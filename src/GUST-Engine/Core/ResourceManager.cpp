@@ -83,7 +83,8 @@ namespace gust
 		size_t vertexDataSize,
 		size_t fragmentDataSize,
 		size_t textureCount,
-		bool depthTesting
+		bool depthTesting,
+		bool lighting
 	)
 	{
 		// Resize the array if necessary
@@ -102,7 +103,8 @@ namespace gust
 				vertexDataSize,
 				fragmentDataSize,
 				textureCount,
-				depthTesting
+				depthTesting,
+				lighting
 			);
 
 		return shader;

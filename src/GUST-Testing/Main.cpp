@@ -3,6 +3,7 @@
 #include <GUST-Engine\Components\Transform.hpp>
 #include <GUST-Engine\Components\MeshRenderer.hpp>
 #include <GUST-Engine\Components\Camera.hpp>
+#include <GUST-Engine\Components\Lights.hpp>
 
 class TestComponent : public gust::Component<TestComponent>
 {
@@ -42,9 +43,13 @@ int main()
 {
 	gust::Engine::get().startup("Test Game", 1280, 720);
 	
+	std::cout << (gust::TypeID<gust::Transform>::id() == gust::TypeID<gust::MeshRenderer>::id()) << '\n';
+
 	auto& scene = gust::Engine::get().scene;
 	scene.addSystem<gust::TransformSystem>();
 	scene.addSystem<TestComponentSystem>();
+	scene.addSystem<gust::PointLightSystem>();
+	scene.addSystem<gust::DirectionalLightSystem>();
 	scene.addSystem<gust::MeshRendererSystem>();
 	scene.addSystem<gust::CameraSystem>();
 	
@@ -55,20 +60,23 @@ int main()
 		sizeof(gust::EmptyVertexData),
 		sizeof(gust::EmptyFragmentData),
 		0,
+		true,
 		true
 	);
 	
 	auto material = gust::Engine::get().resourceManager.createMaterial(shader);
 	
 	auto mesh = gust::Engine::get().resourceManager.createMesh("./Meshes/Cube.obj");
-	
+
 	// Create cube
 	{
 		auto entity = gust::Entity(&scene);
-		// entity.addComponent<TestComponent>();
+	
+		auto transform = entity.getComponent<gust::Transform>();
+		transform->setPosition({ 1, 0, 3 });
 	
 		auto meshRenderer = entity.addComponent<gust::MeshRenderer>();
-		//meshRenderer->setMaterial(material);
+		meshRenderer->setMaterial(material);
 		meshRenderer->setMesh(mesh);
 	}
 	
@@ -81,6 +89,16 @@ int main()
 	
 		auto camera = entity.addComponent<gust::Camera>();
 		gust::Camera::setMainCamera(camera);
+	}
+	
+	// Create light
+	{
+		auto entity = gust::Entity(&scene);
+	
+		auto transform = entity.getComponent<gust::Transform>();
+		transform->setEulerAngles({ 45, 45, 0 });
+	
+		auto directionalLight = entity.addComponent<gust::DirectionalLight>();
 	}
 	
 	gust::Engine::get().simulate();

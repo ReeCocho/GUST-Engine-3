@@ -9,6 +9,7 @@ namespace gust
 		m_threadPool = std::make_unique<ThreadPool>(threadCount);
 		m_cameraAllocator = std::make_unique<ResourceAllocator<VirtualCamera>>(10, 4);
 
+		initCommandPools();
 		initRenderPasses();
 		initSwapchain();
 		initDepthResources();
@@ -35,8 +36,8 @@ namespace gust
 			{
 				VirtualCamera* camera = m_cameraAllocator->getResourceByHandle(i);
 				logicalDevice.destroyFramebuffer(camera->frameBuffer);
-				m_graphics->destroyCommandBuffer(camera->commandBuffer);
-				m_graphics->destroyCommandBuffer(camera->lightingCommandBuffer);
+				destroyCommandBuffer(camera->commandBuffer);
+				destroyCommandBuffer(camera->lightingCommandBuffer);
 			}
 
 		// Destroy cameras
@@ -67,7 +68,7 @@ namespace gust
 		logicalDevice.destroyDescriptorSetLayout(m_descriptors.screenDescriptorSetLayout);
 		logicalDevice.destroyDescriptorSetLayout(m_descriptors.lightingDescriptorSetLayout);
 
-		m_graphics->destroyCommandBuffer(m_primaryCommandBuffer);
+		destroyCommandBuffer(m_commands.primaryCommandBuffer);
 
 		logicalDevice.destroyRenderPass(m_renderPasses.onscreen);
 		logicalDevice.destroyRenderPass(m_renderPasses.offscreen);
@@ -88,6 +89,10 @@ namespace gust
 			logicalDevice.destroyFramebuffer(buffer.frameBuffer);
 			logicalDevice.destroyImageView(buffer.view);
 		}
+
+		// Destroy command pools
+		for (auto pool : m_commands.pools)
+			logicalDevice.destroyCommandPool(pool);
 
 		// Cleanup swapchain
 		logicalDevice.destroySwapchainKHR(m_swapchain.swapchain);
@@ -123,6 +128,8 @@ namespace gust
 
 		// Render
 		{
+			auto commandBuffer = m_commands.primaryCommandBuffer.buffer;
+
 			vk::CommandBufferBeginInfo beginInfo = {};
 			beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 			beginInfo.setPInheritanceInfo(nullptr);
@@ -139,26 +146,26 @@ namespace gust
 			renderPassInfo.setClearValueCount(static_cast<uint32_t>(clearValues.size()));
 			renderPassInfo.setPClearValues(clearValues.data());
 
-			m_primaryCommandBuffer.begin(beginInfo);
-			m_primaryCommandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+			commandBuffer.begin(beginInfo);
+			commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 
 			// Set viewport
 			vk::Viewport viewport = {};
 			viewport.setHeight(static_cast<float>(m_graphics->getHeight()));
 			viewport.setWidth(static_cast<float>(m_graphics->getWidth()));
-			m_primaryCommandBuffer.setViewport(0, 1, &viewport);
+			commandBuffer.setViewport(0, 1, &viewport);
 
 			// Set scissor
 			vk::Rect2D scissor = {};
 			scissor.setExtent({ m_graphics->getWidth(), m_graphics->getHeight() });
 			scissor.setOffset({ 0, 0 });
-			m_primaryCommandBuffer.setScissor(0, 1, &scissor);
+			commandBuffer.setScissor(0, 1, &scissor);
 
 			// If the main camera is valid draw it's framebuffer
 			if (m_mainCamera.getResourceAllocator() && m_mainCamera.get())
 			{
 				// Bind descriptor sets
-				m_primaryCommandBuffer.bindDescriptorSets
+				commandBuffer.bindDescriptorSets
 				(
 					vk::PipelineBindPoint::eGraphics,
 					m_screenShader.graphicsPipelineLayout,
@@ -170,20 +177,20 @@ namespace gust
 				);
 
 				// Bind graphics pipeline
-				m_primaryCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_screenShader.graphicsPipeline);
+				commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_screenShader.graphicsPipeline);
 
 				// Bind vertex and index buffer
 				vk::Buffer vertexBuffer = m_screenQuad->getVertexUniformBuffer().buffer;
 				vk::DeviceSize offset = 0;
-				m_primaryCommandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
-				m_primaryCommandBuffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+				commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+				commandBuffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
 
 				// Draw
-				m_primaryCommandBuffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
+				commandBuffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
 			}
 
-			m_primaryCommandBuffer.endRenderPass();
-			m_primaryCommandBuffer.end();
+			commandBuffer.endRenderPass();
+			commandBuffer.end();
 		}
 
 		std::array<vk::Semaphore, 2> semaphores =
@@ -203,7 +210,7 @@ namespace gust
 		submitInfo.setPWaitSemaphores(semaphores.data());
 		submitInfo.setPWaitDstStageMask(waitStages.data());
 		submitInfo.setCommandBufferCount(1);
-		submitInfo.setPCommandBuffers(&m_primaryCommandBuffer);
+		submitInfo.setPCommandBuffers(&m_commands.primaryCommandBuffer.buffer);
 		submitInfo.setSignalSemaphoreCount(1);
 		submitInfo.setPSignalSemaphores(&m_semaphores.renderFinished);
 
@@ -220,13 +227,10 @@ namespace gust
 
 		// Present and wait
 		m_graphics->getPresentationQueue().presentKHR(presentInfo);
-		m_graphics->getLogicalDevice().waitIdle();
+		m_graphics->getPresentationQueue().waitIdle();
 
 		// Clear mesh queue
 		m_meshes.clear();
-
-		// // Reset graphics command buffers
-		// m_commandManager.resetGraphicsCommandBuffers();
 	}
 
 	Handle<VirtualCamera> Renderer::createCamera()
@@ -242,8 +246,8 @@ namespace gust
 		camera->width = m_graphics->getWidth();
 		camera->height = m_graphics->getHeight();
 
-		camera->commandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
-		camera->lightingCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
+		camera->commandBuffer = createCommandBuffer(vk::CommandBufferLevel::ePrimary);
+		camera->lightingCommandBuffer = createCommandBuffer(vk::CommandBufferLevel::ePrimary);
 
 		// Color attachments
 
@@ -320,6 +324,20 @@ namespace gust
 		camera->frameBuffer = m_graphics->getLogicalDevice().createFramebuffer(fbufCreateInfo);
 
 		return camera;
+	}
+
+	void Renderer::initCommandPools()
+	{
+		// Create a command pools
+		auto commandPoolInfo = vk::CommandPoolCreateInfo
+		(
+			vk::CommandPoolCreateFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer),
+			m_graphics->getQueueFamilyIndices().graphicsFamily
+		);
+
+		m_commands.pools.resize(m_threadPool->getWorkerCount());
+		for (size_t i = 0; i < m_commands.pools.size(); ++i)
+			m_commands.pools[i] = m_graphics->getLogicalDevice().createCommandPool(commandPoolInfo);
 	}
 
 	void Renderer::initRenderPasses()
@@ -678,7 +696,7 @@ namespace gust
 
 	void Renderer::initCommandBuffers()
 	{
-		m_primaryCommandBuffer = m_graphics->createCommandBuffer(vk::CommandBufferLevel::ePrimary);
+		m_commands.primaryCommandBuffer = createCommandBuffer(vk::CommandBufferLevel::ePrimary);
 	}
 
 	void Renderer::initLighting()
@@ -1290,7 +1308,8 @@ namespace gust
 	void Renderer::submitLightingData()
 	{
 		// Set camera position
-		m_lightingData.viewPosition = glm::vec4(0, 0, 0, 1); // glm::vec4(Camera::getMainCamera()->getGameObject().getComponent<Transform>()->getPosition(), 1.0f);
+		if(m_mainCamera != Handle<VirtualCamera>::nullHandle())
+			m_lightingData.viewPosition = { m_mainCamera->viewPosition, 1 };
 
 		// Set light counts
 		m_lightingData.directionalLightCount = static_cast<uint32_t>(m_directionalLights.size());
@@ -1389,7 +1408,7 @@ namespace gust
 			m_graphics->getLogicalDevice().unmapMemory(mesh.fragmentUniformBuffer.memory);
 		}
 
-		mesh.commandBuffers[threadIndex].begin(beginInfo);
+		mesh.commandBuffer.buffer.begin(beginInfo);
 
 		// Set viewport
 		vk::Viewport viewport = {};
@@ -1397,19 +1416,19 @@ namespace gust
 		viewport.setWidth((float)m_graphics->getWidth());
 		viewport.setMinDepth(0);
 		viewport.setMaxDepth(1);
-		mesh.commandBuffers[threadIndex].setViewport(0, 1, &viewport);
+		mesh.commandBuffer.buffer.setViewport(0, 1, &viewport);
 
 		// Set scissor
 		vk::Rect2D scissor = {};
 		scissor.setExtent({ m_graphics->getWidth(), m_graphics->getHeight() });
 		scissor.setOffset({ 0, 0 });
-		mesh.commandBuffers[threadIndex].setScissor(0, 1, &scissor);
+		mesh.commandBuffer.buffer.setScissor(0, 1, &scissor);
 
 		// Bind graphics pipeline
-		mesh.commandBuffers[threadIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, mesh.material->getShader()->getGraphicsPipeline());
+		mesh.commandBuffer.buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mesh.material->getShader()->getGraphicsPipeline());
 
 		// Bind descriptor sets
-		mesh.commandBuffers[threadIndex].bindDescriptorSets
+		mesh.commandBuffer.buffer.bindDescriptorSets
 		(
 			vk::PipelineBindPoint::eGraphics,
 			mesh.material->getShader()->getGraphicsPipelineLayout(),
@@ -1423,12 +1442,12 @@ namespace gust
 		// Bind vertex and index buffer
 		vk::Buffer vertexBuffer = mesh.mesh->getVertexUniformBuffer().buffer;
 		vk::DeviceSize offset = 0;
-		mesh.commandBuffers[threadIndex].bindVertexBuffers(0, 1, &vertexBuffer, &offset);
-		mesh.commandBuffers[threadIndex].bindIndexBuffer(mesh.mesh->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+		mesh.commandBuffer.buffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+		mesh.commandBuffer.buffer.bindIndexBuffer(mesh.mesh->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
 
 		// Draw
-		mesh.commandBuffers[threadIndex].drawIndexed(static_cast<uint32_t>(mesh.mesh->getIndexCount()), 1, 0, 0, 0);
-		mesh.commandBuffers[threadIndex].end();
+		mesh.commandBuffer.buffer.drawIndexed(static_cast<uint32_t>(mesh.mesh->getIndexCount()), 1, 0, 0, 0);
+		mesh.commandBuffer.buffer.end();
 	}
 
 	void Renderer::drawToCamera(Handle<VirtualCamera> camera)
@@ -1438,7 +1457,7 @@ namespace gust
 		cmdBufInfo.setPInheritanceInfo(nullptr);
 
 		// Begin renderpass
-		camera->commandBuffer.begin(cmdBufInfo);
+		camera->commandBuffer.buffer.begin(cmdBufInfo);
 
 		// Clear values for all attachments written in the fragment shader
 		std::array<vk::ClearValue, 4> clearValues;
@@ -1460,38 +1479,35 @@ namespace gust
 		inheritanceInfo.setRenderPass(m_renderPasses.offscreen);
 		inheritanceInfo.setFramebuffer(camera->frameBuffer);
 
-		camera->commandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
+		camera->commandBuffer.buffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eSecondaryCommandBuffers);
 
 		std::vector<vk::CommandBuffer> commandBuffers(m_meshes.size());
 
 		m_threadPool->wait();
 
 		// Loop over meshes
-		size_t threadIndex = 0;
 		for (size_t i = 0; i < m_meshes.size(); ++i)
 		{
-			commandBuffers[i] = m_meshes[i].commandBuffers[threadIndex];
+			commandBuffers[i] = m_meshes[i].commandBuffer.buffer;
 
-			m_threadPool->workers[threadIndex]->addJob([this, i, inheritanceInfo, threadIndex, camera]()
+			m_threadPool->workers[m_meshes[i].commandBuffer.index]->addJob([this, i, inheritanceInfo, camera]()
 			{
-				this->drawMeshToFramebuffer(m_meshes[i], inheritanceInfo, threadIndex, camera);
+				this->drawMeshToFramebuffer(m_meshes[i], inheritanceInfo, m_meshes[i].commandBuffer.index, camera);
 			});
-
-			threadIndex = (threadIndex + 1) % m_threadPool->workers.size();
 		}
 
 		m_threadPool->wait();
 
 		// Execute command buffers and perform lighting
 		if (commandBuffers.size() > 0)
-			camera->commandBuffer.executeCommands(commandBuffers);
+			camera->commandBuffer.buffer.executeCommands(commandBuffers);
 
-		camera->commandBuffer.endRenderPass();
-		camera->commandBuffer.end();
+		camera->commandBuffer.buffer.endRenderPass();
+		camera->commandBuffer.buffer.end();
 
 		vk::SubmitInfo submitInfo = {};
 		submitInfo.setCommandBufferCount(1);
-		submitInfo.setPCommandBuffers(&camera->commandBuffer);
+		submitInfo.setPCommandBuffers(&camera->commandBuffer.buffer);
 		submitInfo.setSignalSemaphoreCount(1);
 		submitInfo.setPSignalSemaphores(&m_semaphores.offscreen);
 
@@ -1550,7 +1566,7 @@ namespace gust
 		cmdBufInfo.setPInheritanceInfo(nullptr);
 
 		// Begin renderpass
-		camera->lightingCommandBuffer.begin(cmdBufInfo);
+		camera->lightingCommandBuffer.buffer.begin(cmdBufInfo);
 
 		vk::RenderPassBeginInfo renderPassBeginInfo = {};
 		renderPassBeginInfo.setRenderPass(m_renderPasses.lighting);
@@ -1560,10 +1576,10 @@ namespace gust
 		renderPassBeginInfo.setClearValueCount(0);
 		renderPassBeginInfo.setPClearValues(nullptr);
 
-		camera->lightingCommandBuffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
+		camera->lightingCommandBuffer.buffer.beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 
 		// Bind descriptor sets
-		camera->lightingCommandBuffer.bindDescriptorSets
+		camera->lightingCommandBuffer.buffer.bindDescriptorSets
 		(
 			vk::PipelineBindPoint::eGraphics,
 			m_lightingShader.graphicsPipelineLayout,
@@ -1575,25 +1591,25 @@ namespace gust
 		);
 
 		// Bind graphics pipeline
-		camera->lightingCommandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_lightingShader.graphicsPipeline);
+		camera->lightingCommandBuffer.buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_lightingShader.graphicsPipeline);
 
 		// Bind vertex and index buffer
 		vk::Buffer vertexBuffer = m_screenQuad->getVertexUniformBuffer().buffer;
 		vk::DeviceSize offset = 0;
-		camera->lightingCommandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
-		camera->lightingCommandBuffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+		camera->lightingCommandBuffer.buffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+		camera->lightingCommandBuffer.buffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
 
 		// Draw
-		camera->lightingCommandBuffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
+		camera->lightingCommandBuffer.buffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
 
-		camera->lightingCommandBuffer.endRenderPass();
-		camera->lightingCommandBuffer.end();
+		camera->lightingCommandBuffer.buffer.endRenderPass();
+		camera->lightingCommandBuffer.buffer.end();
 
 		vk::PipelineStageFlags flags = vk::PipelineStageFlagBits::eAllGraphics;
 
 		vk::SubmitInfo submitInfo = {};
 		submitInfo.setCommandBufferCount(1);
-		submitInfo.setPCommandBuffers(&camera->lightingCommandBuffer);
+		submitInfo.setPCommandBuffers(&camera->lightingCommandBuffer.buffer);
 		submitInfo.setWaitSemaphoreCount(1);
 		submitInfo.setPWaitSemaphores(&m_semaphores.offscreen);
 		submitInfo.setSignalSemaphoreCount(1);
@@ -1602,5 +1618,24 @@ namespace gust
 
 		// Submit draw command
 		m_graphics->getGraphicsQueue().submit(1, &submitInfo, { nullptr });
+	}
+
+	CommandBuffer Renderer::createCommandBuffer(vk::CommandBufferLevel level)
+	{
+		// Allocate command buffer
+		auto commandBuffer = m_graphics->getLogicalDevice().allocateCommandBuffers
+		(
+			vk::CommandBufferAllocateInfo
+			(
+				m_commands.pools[m_commands.poolIndex],
+				level,
+				1
+			)
+		);
+
+		size_t poolIndex = m_commands.poolIndex;
+		m_commands.poolIndex = (m_commands.poolIndex + 1) % m_commands.pools.size();
+
+		return { commandBuffer[0], poolIndex };
 	}
 }

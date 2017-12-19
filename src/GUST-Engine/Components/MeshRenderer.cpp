@@ -34,9 +34,7 @@ namespace gust
 		meshRenderer->m_transform = meshRenderer->getEntity().getComponent<Transform>();
 		
 		// Create command buffers
-		meshRenderer->m_commandBuffers.resize(Engine::get().renderer.getThreadCount());
-		for(size_t i = 0; i < Engine::get().renderer.getThreadCount(); ++i)
-			meshRenderer->m_commandBuffers[i] = Engine::get().graphics.createCommandBuffer(vk::CommandBufferLevel::eSecondary);
+		meshRenderer->m_commandBuffer = Engine::get().renderer.createCommandBuffer(vk::CommandBufferLevel::eSecondary);
 		
 		// Fragment uniform buffer
 		meshRenderer->m_fragmentUniformBuffer = graphics->createBuffer
@@ -114,32 +112,32 @@ namespace gust
 
 	void MeshRendererSystem::onPreRender(float deltaTime)
 	{
-		// auto meshRenderer = getComponent<MeshRenderer>();
-		// 
-		// if (meshRenderer->m_material != Handle<Material>::nullHandle() && meshRenderer->m_mesh != Handle<Mesh>::nullHandle())
-		// {
-		// 	MeshData data = {};
-		// 	data.commandBuffers = meshRenderer->m_commandBuffers;
-		// 	data.material = meshRenderer->m_material;
-		// 	data.mesh = meshRenderer->m_mesh;
-		// 	data.model = meshRenderer->m_transform->getModelMatrix();
-		// 	data.fragmentUniformBuffer = meshRenderer->m_fragmentUniformBuffer;
-		// 	data.vertexUniformBuffer = meshRenderer->m_vertexUniformBuffer;
-		// 
-		// 	if (meshRenderer->m_material->getShader()->getTextureCount() > 0)
-		// 	{
-		// 		data.descriptorSets.resize(2);
-		// 		data.descriptorSets[0] = meshRenderer->m_descriptorSet;
-		// 		data.descriptorSets[1] = meshRenderer->m_material->getTextureDescriptorSet();
-		// 	}
-		// 	else
-		// 	{
-		// 		data.descriptorSets.resize(1);
-		// 		data.descriptorSets[0] = meshRenderer->m_descriptorSet;
-		// 	}
-		// 
-		// 	Engine::get().renderer.draw(data);
-		// }
+		auto meshRenderer = getComponent<MeshRenderer>();
+		
+		if (meshRenderer->m_material != Handle<Material>::nullHandle() && meshRenderer->m_mesh != Handle<Mesh>::nullHandle())
+		{
+			MeshData data = {};
+			data.commandBuffer = meshRenderer->m_commandBuffer;
+			data.material = meshRenderer->m_material;
+			data.mesh = meshRenderer->m_mesh;
+			data.model = meshRenderer->m_transform->getModelMatrix();
+			data.fragmentUniformBuffer = meshRenderer->m_fragmentUniformBuffer;
+			data.vertexUniformBuffer = meshRenderer->m_vertexUniformBuffer;
+		
+			if (meshRenderer->m_material->getShader()->getTextureCount() > 0)
+			{
+				data.descriptorSets.resize(2);
+				data.descriptorSets[0] = meshRenderer->m_descriptorSet;
+				data.descriptorSets[1] = meshRenderer->m_material->getTextureDescriptorSet();
+			}
+			else
+			{
+				data.descriptorSets.resize(1);
+				data.descriptorSets[0] = meshRenderer->m_descriptorSet;
+			}
+		
+			Engine::get().renderer.draw(data);
+		}
 	}
 
 	void MeshRendererSystem::onEnd()
@@ -149,8 +147,7 @@ namespace gust
 		auto& logicalDevice = graphics.getLogicalDevice();
 		
 		// Destroy command buffer
-		for (size_t i = 0; i < meshRenderer->m_commandBuffers.size(); i++)
-			graphics.destroyCommandBuffer(meshRenderer->m_commandBuffers[i]);
+		Engine::get().renderer.destroyCommandBuffer(meshRenderer->m_commandBuffer);
 		
 		// Destroy pool
 		logicalDevice.destroyDescriptorPool(meshRenderer->m_descriptorPool);

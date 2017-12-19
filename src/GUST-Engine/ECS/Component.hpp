@@ -72,14 +72,11 @@ namespace gust
 	 * @class TypeIDGenerator
 	 * @brief A template class with a static member function to get IDs.
 	 */
-	template<class T>
 	class TypeIDGenerator final
 	{
 	public:
 
-		static_assert(std::is_base_of<ComponentBase, T>::value, "T must derive from Component");
-
-		static constexpr void id() {}
+		static size_t idCounter;
 	};
 
 	/**
@@ -93,9 +90,10 @@ namespace gust
 
 		static_assert(std::is_base_of<ComponentBase, T>::value, "T must derive from Component");
 
-		static constexpr size_t id() 
+		static constexpr inline size_t id()
 		{
-			return reinterpret_cast<size_t>(&TypeIDGenerator<T>::id);
+			static size_t id = TypeIDGenerator::idCounter++;
+			return id;
 		}
 	};
 

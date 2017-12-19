@@ -73,8 +73,8 @@ namespace gust
 		/** Descriptor sets. */
 		std::vector<vk::DescriptorSet> descriptorSets = {};
 
-		/** Command buffers to render the mesh with. */
-		std::vector<vk::CommandBuffer> commandBuffers = {};
+		/** Command buffer to render the mesh with. */
+		CommandBuffer commandBuffer = {};
 
 		/** Vertex data uniform buffer. */
 		Buffer vertexUniformBuffer = {};
@@ -162,10 +162,10 @@ namespace gust
 		uint32_t height = 0;
 
 		/** Command buffer for drawing to. */
-		vk::CommandBuffer commandBuffer = {};
+		CommandBuffer commandBuffer = {};
 
 		/** Command buffer for lighting. */
-		vk::CommandBuffer lightingCommandBuffer = {};
+		CommandBuffer lightingCommandBuffer = {};
 
 		/** Framebuffer. */
 		vk::Framebuffer frameBuffer = {};
@@ -333,8 +333,8 @@ namespace gust
 		 */
 		inline void destroyCamera(const Handle<VirtualCamera>& camera)
 		{
-			m_graphics->destroyCommandBuffer(camera->commandBuffer);
-			m_graphics->destroyCommandBuffer(camera->lightingCommandBuffer);
+			destroyCommandBuffer(camera->commandBuffer);
+			destroyCommandBuffer(camera->lightingCommandBuffer);
 			m_graphics->getLogicalDevice().destroyFramebuffer(camera->frameBuffer);
 			m_cameraAllocator->deallocate(camera.getHandle());
 		}
@@ -363,7 +363,7 @@ namespace gust
 			set.setPImageInfo(&color);
 
 			// Update lighting descriptor set
-			//m_graphics->getLogicalDevice().updateDescriptorSets(1, &set, 0, nullptr);
+			m_graphics->getLogicalDevice().updateDescriptorSets(1, &set, 0, nullptr);
 
 			return m_mainCamera;
 		}
@@ -377,7 +377,28 @@ namespace gust
 			return m_mainCamera;
 		}
 
+		/**
+		 * @brief Create a command buffer.
+		 * @param Command buffer level.
+		 * @return New command buffer.
+		 */
+		CommandBuffer createCommandBuffer(vk::CommandBufferLevel level);
+
+		/**
+		 * @brief Destroy a command buffer.
+		 * @param Command buffer to destroy.
+		 */
+		inline void destroyCommandBuffer(CommandBuffer commandBuffer)
+		{
+			m_graphics->getLogicalDevice().freeCommandBuffers(m_commands.pools[commandBuffer.index], commandBuffer.buffer);
+		}
+
 	private:
+
+		/**
+		 * @brief Initialize command pools.
+		 */
+		void initCommandPools();
 
 		/**
 		 * @brief Initialize render passes.
@@ -663,11 +684,27 @@ namespace gust
 
 		} m_lightingData;
 
+		/**
+		 * @struct Commands
+		 * @brief Command buffers and pools.
+		 */
+		struct Commands
+		{
+			/** Command pools. */
+			std::vector<vk::CommandPool> pools = {};
+
+			/** Pool index to create the next buffer on. */
+			size_t poolIndex = 0;
+
+			/** Primary command buffer. */
+			CommandBuffer primaryCommandBuffer = {};
+
+		} m_commands;
+
 		/** Camera allocator. */
 		std::unique_ptr<ResourceAllocator<VirtualCamera>> m_cameraAllocator;
 
-		/** Primary command buffer. */
-		vk::CommandBuffer m_primaryCommandBuffer = {};
+
 
 		/** Thread pool for rendering meshes. */
 		std::unique_ptr<ThreadPool> m_threadPool = nullptr;

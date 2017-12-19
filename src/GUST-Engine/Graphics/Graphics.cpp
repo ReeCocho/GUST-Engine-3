@@ -51,18 +51,18 @@ namespace gust
 		// Requested layers
 		std::vector<const char*> requestedLayers =
 		{
-//#ifndef NDEBUG
+#ifndef NDEBUG
 			"VK_LAYER_LUNARG_standard_validation"		
-//#endif
+#endif
 		};
 
 		// Requested extensions
 		std::vector<const char*> requestedExtensions =
 		{
 			// Debugging
-//#ifndef NDEBUG
+#ifndef NDEBUG
 			VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-//#endif
+#endif
 			VK_KHR_SURFACE_EXTENSION_NAME
 		};
 
@@ -101,10 +101,10 @@ namespace gust
 		// Free extension memory
 		SDL_free(static_cast<void*>(extensions));
 
-//#ifndef NDEBUG
+#ifndef NDEBUG
 		// Create debugging manager
 		m_debugging = std::make_unique<VulkanDebugging>(m_instance);
-//#endif
+#endif
 
 		// Create surface
 		{
@@ -205,14 +205,6 @@ namespace gust
 			auto commandPoolInfo = vk::CommandPoolCreateInfo
 			(
 				vk::CommandPoolCreateFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer),
-				m_queueFamilyIndices.graphicsFamily
-			);
-
-			m_graphicsPool = m_logicalDevice.createCommandPool(commandPoolInfo);
-
-			commandPoolInfo = vk::CommandPoolCreateInfo
-			(
-				vk::CommandPoolCreateFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer),
 				m_queueFamilyIndices.transferFamily
 			);
 
@@ -235,7 +227,6 @@ namespace gust
 		m_logicalDevice.waitIdle();
 
 		// Cleanup pools
-		m_logicalDevice.destroyCommandPool(m_graphicsPool);
 		m_logicalDevice.destroyCommandPool(m_transferPool);
 		m_logicalDevice.destroyCommandPool(m_singleUsePool);
 
@@ -248,10 +239,10 @@ namespace gust
 		// Cleanup window
 		SDL_DestroyWindow(m_window);
 
-//#ifndef NDEBUG
+#ifndef NDEBUG
 		// Destroy debugger
 		m_debugging = nullptr;
-//#endif
+#endif
 
 		// Destroy instance
 		m_instance.destroy();
@@ -676,27 +667,6 @@ namespace gust
 				break;
 			}
 		}
-	}
-
-	vk::CommandBuffer Graphics::createCommandBuffer(vk::CommandBufferLevel level)
-	{
-		// Allocate command buffer
-		auto commandBuffer = m_logicalDevice.allocateCommandBuffers
-		(
-			vk::CommandBufferAllocateInfo
-			(
-				m_graphicsPool,
-				level,
-				1
-			)
-		);
-
-		return commandBuffer[0];
-	}
-
-	void Graphics::resetGraphicsCommandBuffers()
-	{
-		m_logicalDevice.resetCommandPool(m_graphicsPool, vk::CommandPoolResetFlagBits::eReleaseResources);
 	}
 
 	vk::CommandBuffer Graphics::beginSingleTimeCommands()

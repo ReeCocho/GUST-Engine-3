@@ -134,6 +134,10 @@ namespace gust
 				// Cast system as appropriate ResourceAllocator
 				auto allocator = static_cast<ResourceAllocator<T>*>(system->m_components.get());
 
+				// Resize the allocator if needed
+				if (allocator->getResourceCount() == allocator->getMaxResourceCount())
+					allocator->resize(allocator->getMaxResourceCount() + 100, true);
+
 				// Loop over every component in the allocator to check if the component already exists
 				for(size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
 					if (allocator->isAllocated(i))

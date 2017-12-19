@@ -52,42 +52,6 @@ namespace gust
 				m_id = TypeID<T>::id();
 				m_components = std::make_unique<ResourceAllocator<T>>(50, alignof(T));
 
-				m_runOnTick = [this](float deltaTime) 
-				{ 
-					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
-
-					for(size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
-						if (allocator->isAllocated(i))
-						{
-							m_componentHandle = i;
-							onTick(deltaTime);
-						}
-				};
-
-				m_runOnLateTick = [this](float deltaTime)
-				{
-					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
-
-					for (size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
-						if (allocator->isAllocated(i))
-						{
-							m_componentHandle = i;
-							onLateTick(deltaTime);
-						}
-				};
-
-				m_runOnPreRender = [this](float deltaTime)
-				{
-					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
-
-					for (size_t i = 0; i < allocator->getMaxResourceCount(); ++i)
-						if (allocator->isAllocated(i))
-						{
-							m_componentHandle = i;
-							onPreRender(deltaTime);
-						}
-				};
-
 				m_destroyByEntity = [this](Entity entity)
 				{
 					auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
@@ -201,15 +165,6 @@ namespace gust
 
 		/** Component allocator. */
 		std::unique_ptr<ResourceAllocatorBase> m_components;
-
-		/** Lambda function to run onTick(). */
-		std::function<void(float)> m_runOnTick;
-
-		/** Lambda function to run onTick(). */
-		std::function<void(float)> m_runOnLateTick;
-
-		/** Lambda function to run onTick(). */
-		std::function<void(float)> m_runOnPreRender;
 
 		/** Lambda function to destroy every component belonging to a given entity. */
 		std::function<void(Entity)> m_destroyByEntity;

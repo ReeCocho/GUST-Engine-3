@@ -216,6 +216,8 @@ namespace gust
 		size_t m_chunkSize;
 	};
 
+
+
 	/**
 	 * @class ResourceAllocatorBase
 	 * @brief Base class for resource allocators.
@@ -243,6 +245,32 @@ namespace gust
 			return m_maxResourceCount;
 		}
 
+		/**
+		 * @brief Check if a handle to a resource is allocated.
+		 * @param Handle to resource.
+		 * @return If it is allocated or not.
+		 */
+		inline bool isAllocated(size_t handle) const
+		{
+			assert(handle < m_maxResourceCount);
+			return m_data[handle] != 0;
+		}
+
+		/**
+		 * @brief Get number of resources in use.
+		 * @return Number of resources in use.
+		 */
+		inline size_t getResourceCount() const
+		{
+			size_t counter = 0;
+
+			for (size_t i = 0; i < m_maxResourceCount; ++i)
+				if (isAllocated(i))
+					++counter;
+
+			return counter;
+		}
+
 	protected:
 
 		/** Pointer to base of the stack. */
@@ -260,8 +288,6 @@ namespace gust
 		/** Resource alignment. */
 		size_t m_alignment;
 	};
-
-
 
 	/**
 	 * @class ResourceAllocator
@@ -330,31 +356,6 @@ namespace gust
 		inline constexpr size_t getResourceSize() const
 		{
 			return sizeof(T);
-		}
-
-		/**
-		 * @brief Check if a handle to a resource is allocated.
-		 * @param Handle to resource.
-		 * @return If it is allocated or not.
-		 */
-		inline bool isAllocated(size_t handle) const
-		{
-			return m_data[handle] != 0;
-		}
-
-		/**
-		 * @brief Get number of resources in use.
-		 * @return Number of resources in use.
-		 */
-		inline size_t getResourceCount() const
-		{
-			size_t counter = 0;
-
-			for (size_t i = 0; i < m_maxResourceCount; ++i)
-				if (isAllocated(i))
-					++counter;
-
-			return counter;
 		}
 
 		/**

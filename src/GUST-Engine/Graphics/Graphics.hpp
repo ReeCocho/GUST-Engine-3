@@ -162,22 +162,6 @@ namespace gust
 		}
 
 		/**
-		 * @brief Create a command buffer.
-		 * @param Command buffer level.
-		 * @return New command buffer.
-		 */
-		vk::CommandBuffer createCommandBuffer(vk::CommandBufferLevel level);
-
-		/**
-		 * @brief Destroy a command buffer.
-		 * @param Command buffer to destroy.
-		 */
-		inline void destroyCommandBuffer(vk::CommandBuffer commandBuffer)
-		{
-			m_logicalDevice.freeCommandBuffers(m_graphicsPool, commandBuffer);
-		}
-
-		/**
 		 * @brief Get transfer command pool.
 		 * @return Transfer command pool.
 		 */
@@ -197,12 +181,6 @@ namespace gust
 		 * @param Single use command buffer to end.
 		 */
 		void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
-
-		/**
-		 * @brief Reset graphics command buffers.
-		 * @note Used internally. Do not call.
-		 */
-		void resetGraphicsCommandBuffers();
 
 		/**
 		 * @brief Get graphics queue.
@@ -395,10 +373,10 @@ namespace gust
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
 		};
 
-// #ifndef NDEBUG
+#ifndef NDEBUG
 		/** Vulkan debugging manager. */
 		std::unique_ptr<VulkanDebugging> m_debugging;
-// #endif
+#endif
 
 		/** Vulkan surface. */
 		vk::SurfaceKHR m_surface = {};
@@ -429,9 +407,6 @@ namespace gust
 
 		/** Transfer queue. */
 		vk::Queue m_transferQueue = {};
-
-		/** Graphics command pool. */
-		vk::CommandPool m_graphicsPool = {};
 
 		/** Transfer command pool. */
 		vk::CommandPool m_transferPool = {};

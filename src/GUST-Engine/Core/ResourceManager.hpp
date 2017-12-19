@@ -107,6 +107,7 @@ namespace gust
 		 * @param Size of data sent to fragment shader.
 		 * @param Number of textures used by the shader.
 		 * @param Should the shader perform depth testing?
+		 * @param Should the shader perform lighting calculations?
 		 * @return Shader handle.
 		 */
 		Handle<Shader> createShader
@@ -116,7 +117,8 @@ namespace gust
 			size_t vertexDataSize,
 			size_t fragmentDataSize,
 			size_t textureCount,
-			bool depthTesting
+			bool depthTesting,
+			bool lighting
 		);
 
 		/**

@@ -102,6 +102,19 @@ namespace gust
 	};
 
 	/**
+	 * @struct CommandBuffer
+	 * @brief A Vulkan command buffer and the thread it was created on.
+	 */
+	struct CommandBuffer
+	{
+		/** Command buffer. */
+		vk::CommandBuffer buffer = {};
+
+		/** Thread index. */
+		size_t index = 0;
+	};
+
+	/**
 	 * @typedef SwapChainImages
 	 * @brief Swap chain images type
 	 */

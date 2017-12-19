@@ -14,14 +14,16 @@ namespace gust
 		size_t vertexDataSize,
 		size_t textureCount,
 		size_t fragmentDataSize,
-		bool depthTesting
+		bool depthTesting,
+		bool lighting
 	) : 
 		m_graphics(graphics), 
 		m_descriptorSetLayouts(layouts),
 		m_fragmentDataSize(static_cast<vk::DeviceSize>(fragmentDataSize)),
 		m_vertexDataSize(static_cast<vk::DeviceSize>(vertexDataSize)),
 		m_textureCount(textureCount),
-		m_depthTesting(depthTesting)
+		m_depthTesting(depthTesting),
+		m_lighting(lighting)
 	{
 		if (m_fragmentDataSize == 0)
 			m_fragmentDataSize = 1;
@@ -44,14 +46,16 @@ namespace gust
 		size_t vertexDataSize,
 		size_t fragmentDataSize,
 		size_t textureCount,
-		bool depthTesting
+		bool depthTesting,
+		bool lighting
 	) : 
 		m_graphics(graphics),
 		m_descriptorSetLayouts(layouts),
 		m_fragmentDataSize(static_cast<vk::DeviceSize>(fragmentDataSize)),
 		m_vertexDataSize(static_cast<vk::DeviceSize>(vertexDataSize)),
 		m_textureCount(textureCount),
-		m_depthTesting(depthTesting)
+		m_depthTesting(depthTesting),
+		m_lighting(lighting)
 	{
 		// Read files
 		auto vertexShaderByteCode = readBinary(vertexShaderPath);
@@ -228,13 +232,25 @@ namespace gust
 		multisampling.setAlphaToCoverageEnable(false);
 		multisampling.setAlphaToOneEnable(false);
 		
+		// Lighting stencil
+		vk::StencilOpState stencil = {};
+		stencil.setFailOp(vk::StencilOp::eKeep);
+		stencil.setPassOp(vk::StencilOp::eReplace);
+		stencil.setDepthFailOp(vk::StencilOp::eKeep);
+		stencil.setCompareOp(vk::CompareOp::eAlways);
+		stencil.setWriteMask(1);
+		stencil.setReference(m_lighting ? 1 : 0);
+		stencil.setCompareMask(1);
+
 		// Depth testing
 		vk::PipelineDepthStencilStateCreateInfo depthStencil = {};
 		depthStencil.setDepthTestEnable(m_depthTesting);
 		depthStencil.setDepthWriteEnable(m_depthTesting);
 		depthStencil.setDepthCompareOp(vk::CompareOp::eLess);
 		depthStencil.setDepthBoundsTestEnable(false);
-		depthStencil.setStencilTestEnable(false);
+		depthStencil.setStencilTestEnable(true);
+		depthStencil.setFront(stencil);
+		depthStencil.setBack(stencil);
 		
 		std::array<vk::PipelineColorBlendAttachmentState, 3> colorBlendAttachments = {};
 		

@@ -133,8 +133,8 @@ namespace gust
 		/** Mesh to use when rendering. */
 		Handle<Mesh> m_mesh = Handle<Mesh>::nullHandle();
 
-		/** Command buffers to use when rendering. */
-		std::vector<vk::CommandBuffer> m_commandBuffers = {};
+		/** Command buffer to use when rendering. */
+		CommandBuffer m_commandBuffer = {};
 		
 		/** Fragment uniform buffer. */
 		Buffer m_fragmentUniformBuffer = {};

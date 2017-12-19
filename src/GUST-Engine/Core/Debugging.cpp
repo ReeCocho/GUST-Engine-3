@@ -12,9 +12,9 @@ namespace gust
 
 	void printLine(const std::string& str)
 	{
-//#ifndef NDEBUG
+#ifndef NDEBUG
 		std::cout << str << '\n';
-//#endif
+#endif
 	}
 
 	void throwError(const std::string& msg)
