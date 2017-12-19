@@ -1,9 +1,9 @@
 #include <iostream>
-#include <GUST-Engine\Engine.hpp>
-#include <GUST-Engine\Components\Transform.hpp>
-#include <GUST-Engine\Components\MeshRenderer.hpp>
-#include <GUST-Engine\Components\Camera.hpp>
-#include <GUST-Engine\Components\Lights.hpp>
+#include <Engine.hpp>
+#include <Transform.hpp>
+#include <MeshRenderer.hpp>
+#include <Camera.hpp>
+#include <Lights.hpp>
 
 class TestComponent : public gust::Component<TestComponent>
 {

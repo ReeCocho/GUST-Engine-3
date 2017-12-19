@@ -1,8 +1,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <Debugging.hpp>
 #include "Texture.hpp"
-#include "../Core/Debugging.hpp"
 
 namespace gust
 {

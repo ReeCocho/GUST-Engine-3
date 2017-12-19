@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "Vulkan.hpp"
-#include "../Utilities/Math.hpp"
+#include "Math.hpp"
 #include "VulkanDebugging.hpp"
 
 namespace gust

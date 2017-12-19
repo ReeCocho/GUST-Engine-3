@@ -7,13 +7,13 @@
  */
 
 /** Includes. */
-#include "Graphics\Graphics.hpp"
-#include "Graphics\Renderer.hpp"
-#include "Core\Input.hpp"
-#include "Core\ResourceManager.hpp"
-#include "Core\Threading.hpp"
-#include "ECS\Scene.hpp"
-#include "Utilities\Clock.hpp"
+#include <Renderer.hpp>
+#include <Threading.hpp>
+#include <Scene.hpp>
+#include <Clock.hpp>
+
+#include "Input.hpp"
+#include "ResourceManager.hpp"
 
 namespace gust
 {

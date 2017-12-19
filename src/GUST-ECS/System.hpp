@@ -9,7 +9,8 @@
 /** Includes. */
 #include <functional>
 #include <memory>
-#include "../Utilities/Allocators.hpp"
+#include <Allocators.hpp>
+
 #include "Component.hpp"
 
 namespace gust

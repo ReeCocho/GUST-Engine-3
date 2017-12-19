@@ -8,11 +8,11 @@
 
 /** Includes. */
 #include "vulkan\vulkan.hpp"
-#include "../Utilities/Allocators.hpp"
-#include "../Graphics/Mesh.hpp"
-#include "../Graphics/Material.hpp"
-#include "../Graphics/Shader.hpp"
-#include "../Graphics/Texture.hpp"
+#include "Allocators.hpp"
+#include "Mesh.hpp"
+#include "Material.hpp"
+#include "Shader.hpp"
+#include "Texture.hpp"
 
 namespace gust
 {

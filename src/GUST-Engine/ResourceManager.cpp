@@ -1,5 +1,5 @@
 #include "ResourceManager.hpp"
-#include "../Graphics/Renderer.hpp"
+#include <Renderer.hpp>
 
 namespace gust
 {

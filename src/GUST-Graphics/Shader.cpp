@@ -1,4 +1,4 @@
-#include "../Utilities/FileIO.hpp"
+#include <FileIO.hpp>
 #include "Shader.hpp"
 #include "Mesh.hpp"
 

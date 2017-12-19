@@ -7,10 +7,11 @@
  */
 
 /** Includes. */
-#include "../Utilities/Math.hpp"
-#include "../ECS/Scene.hpp"
-#include "../Graphics/Renderer.hpp"
-#include "../Engine.hpp"
+#include <Math.hpp>
+#include <Scene.hpp>
+#include <Renderer.hpp>
+
+#include "Engine.hpp"
 #include "Transform.hpp"
 
 namespace gust

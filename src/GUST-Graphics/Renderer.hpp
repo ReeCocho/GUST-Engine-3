@@ -52,9 +52,11 @@
 
 /** Includes. */
 #include <queue>
-#include "../Graphics/Graphics.hpp"
-#include "../Core/ResourceManager.hpp"
-#include "../Core/Threading.hpp"
+#include <Allocators.hpp>
+#include <Threading.hpp>
+#include "Mesh.hpp"
+#include "Material.hpp"
+#include "Graphics.hpp"
 
 namespace gust
 {

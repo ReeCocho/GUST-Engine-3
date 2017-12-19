@@ -1,7 +1,7 @@
 #include <array>
 #include <map>
 #include <set>
-#include "../Core/Debugging.hpp"
+#include <Debugging.hpp>
 #include "Graphics.hpp"
 
 namespace gust

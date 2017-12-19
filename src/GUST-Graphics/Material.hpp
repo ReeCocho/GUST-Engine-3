@@ -7,9 +7,10 @@
  */
 
 /** Includes. */
+#include <Allocators.hpp>
+
 #include "Shader.hpp"
 #include "Texture.hpp"
-#include "../Utilities/Allocators.hpp"
 
 namespace gust
 {

@@ -7,7 +7,7 @@
  */
 
 /** Includes. */
-#include "../Core/Debugging.hpp"
+#include "Debugging.hpp"
 #include <vector>
 #include <algorithm>
 #include <assert.h>

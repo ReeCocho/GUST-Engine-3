@@ -1,4 +1,4 @@
-#include "../Core/Debugging.hpp"
+#include <Debugging.hpp>
 #include "VulkanDebugging.hpp"
 
 namespace gust

@@ -17,24 +17,35 @@ add_executable (
 )
 
 # Includes
-include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories(${CMAKE_SOURCE_DIR}/src/GUST-Engine)
+include_directories(${CMAKE_SOURCE_DIR}/src/GUST-ECS)
+include_directories(${CMAKE_SOURCE_DIR}/src/GUST-Core)
+include_directories(${CMAKE_SOURCE_DIR}/src/GUST-Graphics)
 
 # GUST Libraries
 SET(
 	LINK_LIBRARY 
 	optimized 
 	${CMAKE_SOURCE_DIR}/build/src/GUST-Engine/Release/GUST-Engine.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-Graphics/Release/GUST-Graphics.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-Core/Release/GUST-Core.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-ECS/Release/GUST-ECS.lib
 	debug 
 	${CMAKE_SOURCE_DIR}/build/src/GUST-Engine/Debug/GUST-Engine.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-Graphics/Debug/GUST-Graphics.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-Core/Debug/GUST-Core.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-ECS/Debug/GUST-ECS.lib
 )
 
 # Libraries
 target_link_libraries(
 	GUST-Testing 
 	GUST-Engine
+	GUST-Graphics
+	GUST-Core
+	GUST-ECS
 	${SDL2_LIBRARY} 
 	${VULKAN_LIBRARY}
-	# ${LINK_LIBRARY}
 )
 
 # Move shader folder and mesh into build directory

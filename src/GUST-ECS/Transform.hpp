@@ -7,8 +7,8 @@
  */
 
 /** Includes. */
-#include "../Utilities/Math.hpp"
-#include "../ECS/Scene.hpp"
+#include "Math.hpp"
+#include "Scene.hpp"
 
 namespace gust
 {
