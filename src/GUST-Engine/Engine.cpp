@@ -1,3 +1,4 @@
+#include <iostream>
 #include "Engine.hpp"
 
 namespace gust
@@ -21,6 +22,22 @@ namespace gust
 	{
 		while (!input.isClosing())
 		{
+			// Get delta time
+			float deltaTime = m_clock.getDeltaTime();
+
+			// Do framerate stuff
+			m_frameCounter++;
+			m_frameRateTimer += deltaTime;
+
+			if (m_frameRateTimer >= 1.0f)
+			{
+				m_frameRate = static_cast<uint32_t>(m_frameCounter);
+				m_frameCounter = 0;
+				m_frameRateTimer = 0;
+
+				std::cout << m_frameRate << '\n';
+			}
+
 			// Gather input
 			input.pollEvents();
 
@@ -28,7 +45,7 @@ namespace gust
 			m_renderingThread->wait();
 
 			// Run game code
-			scene.tick(0);
+			scene.tick(deltaTime);
 
 			// Start threads for rendering and physics
 			m_renderingThread->start();

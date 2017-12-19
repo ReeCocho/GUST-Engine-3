@@ -51,17 +51,17 @@ namespace gust
 		inline Handle<Material> setMaterial(Handle<Material> material)
 		{
 			m_material = material;
-
+			
 			if (m_material != Handle<Material>::nullHandle())
 			{
 				std::array<vk::WriteDescriptorSet, 2> writeSets = {};
-
+				
 				// Vertex buffer
 				vk::DescriptorBufferInfo gustVertexBufferInfo = {};
 				gustVertexBufferInfo.setBuffer(m_material->getVertexUniformBuffer().buffer);
 				gustVertexBufferInfo.setOffset(0);
 				gustVertexBufferInfo.setRange(m_material->getShader()->getVertexDataSize());
-
+				
 				writeSets[0].setDstSet(m_descriptorSet);
 				writeSets[0].setDstBinding(1);
 				writeSets[0].setDstArrayElement(0);
@@ -70,13 +70,13 @@ namespace gust
 				writeSets[0].setPBufferInfo(&gustVertexBufferInfo);
 				writeSets[0].setPImageInfo(nullptr);
 				writeSets[0].setPTexelBufferView(nullptr);
-
+				
 				// Fragment buffer
 				vk::DescriptorBufferInfo gustFragmentBufferInfo = {};
 				gustFragmentBufferInfo.setBuffer(m_material->getFragmentUniformBuffer().buffer);
 				gustFragmentBufferInfo.setOffset(0);
 				gustFragmentBufferInfo.setRange(m_material->getShader()->getFragmentDataSize());
-
+				
 				writeSets[1].setDstSet(m_descriptorSet);
 				writeSets[1].setDstBinding(3);
 				writeSets[1].setDstArrayElement(0);
@@ -85,11 +85,11 @@ namespace gust
 				writeSets[1].setPBufferInfo(&gustFragmentBufferInfo);
 				writeSets[1].setPImageInfo(nullptr);
 				writeSets[1].setPTexelBufferView(nullptr);
-
+				
 				// Update descriptor sets
 				Engine::get().graphics.getLogicalDevice().updateDescriptorSets(static_cast<uint32_t>(writeSets.size()), writeSets.data(), 0, nullptr);
 			}
-
+			
 			return m_material;
 		}
 
@@ -135,16 +135,16 @@ namespace gust
 
 		/** Command buffers to use when rendering. */
 		std::vector<vk::CommandBuffer> m_commandBuffers = {};
-
+		
 		/** Fragment uniform buffer. */
 		Buffer m_fragmentUniformBuffer = {};
-
+		
 		/** Vertex uniform buffer. */
 		Buffer m_vertexUniformBuffer = {};
-
+		
 		/** Descriptor pool. */
 		vk::DescriptorPool m_descriptorPool = {};
-
+		
 		/** Vertex descriptor set. */
 		vk::DescriptorSet m_descriptorSet = {};
 	};

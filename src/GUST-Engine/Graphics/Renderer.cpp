@@ -104,8 +104,7 @@ namespace gust
 		for (size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); ++i)
 			if (m_cameraAllocator->isAllocated(i))
 			{
-				VirtualCamera* camera = m_cameraAllocator->getResourceByHandle(i);
-				drawToCamera(camera);
+				drawToCamera(Handle<VirtualCamera>(m_cameraAllocator.get(), i));
 				drew = true;
 			}
 
@@ -222,6 +221,9 @@ namespace gust
 		// Present and wait
 		m_graphics->getPresentationQueue().presentKHR(presentInfo);
 		m_graphics->getLogicalDevice().waitIdle();
+
+		// Clear mesh queue
+		m_meshes.clear();
 
 		// // Reset graphics command buffers
 		// m_commandManager.resetGraphicsCommandBuffers();
@@ -1334,11 +1336,58 @@ namespace gust
 		}
 	}
 
-	void Renderer::drawMeshToFramebuffer(const MeshData& mesh, const vk::CommandBufferInheritanceInfo& inheritanceInfo, size_t threadIndex)
+	void Renderer::drawMeshToFramebuffer
+	(
+		const MeshData& mesh,
+		const vk::CommandBufferInheritanceInfo& inheritanceInfo,
+		size_t threadIndex,
+		Handle<VirtualCamera> camera
+	)
 	{
 		vk::CommandBufferBeginInfo beginInfo = {};
 		beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eRenderPassContinue | vk::CommandBufferUsageFlagBits::eSimultaneousUse);
 		beginInfo.setPInheritanceInfo(&inheritanceInfo);
+
+		// Submit vertex data
+		{
+			VertexShaderData vData = {};
+			vData.model = mesh.model;
+			vData.MVP = camera->projection * camera->view * mesh.model;
+
+			void* cpyData;
+
+			m_graphics->getLogicalDevice().mapMemory
+			(
+				mesh.vertexUniformBuffer.memory,
+				0,
+				sizeof(VertexShaderData),
+				(vk::MemoryMapFlagBits)0,
+				&cpyData
+			);
+
+			memcpy(cpyData, &vData, sizeof(VertexShaderData));
+			m_graphics->getLogicalDevice().unmapMemory(mesh.vertexUniformBuffer.memory);
+		}
+
+		// Submit fragment data
+		{
+			FragmentShaderData fData = {};
+			fData.viewPosition = glm::vec4(camera->viewPosition, 1);
+
+			void* cpyData;
+
+			m_graphics->getLogicalDevice().mapMemory
+			(
+				mesh.fragmentUniformBuffer.memory,
+				0,
+				sizeof(FragmentShaderData),
+				(vk::MemoryMapFlagBits)0,
+				&cpyData
+			);
+
+			memcpy(cpyData, &fData, sizeof(FragmentShaderData));
+			m_graphics->getLogicalDevice().unmapMemory(mesh.fragmentUniformBuffer.memory);
+		}
 
 		mesh.commandBuffers[threadIndex].begin(beginInfo);
 
@@ -1382,7 +1431,7 @@ namespace gust
 		mesh.commandBuffers[threadIndex].end();
 	}
 
-	void Renderer::drawToCamera(const VirtualCamera* camera)
+	void Renderer::drawToCamera(Handle<VirtualCamera> camera)
 	{
 		vk::CommandBufferBeginInfo cmdBufInfo = {};
 		cmdBufInfo.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
@@ -1423,9 +1472,9 @@ namespace gust
 		{
 			commandBuffers[i] = m_meshes[i].commandBuffers[threadIndex];
 
-			m_threadPool->workers[threadIndex]->addJob([this, i, inheritanceInfo, threadIndex]()
+			m_threadPool->workers[threadIndex]->addJob([this, i, inheritanceInfo, threadIndex, camera]()
 			{
-				this->drawMeshToFramebuffer(m_meshes[i], inheritanceInfo, threadIndex);
+				this->drawMeshToFramebuffer(m_meshes[i], inheritanceInfo, threadIndex, camera);
 			});
 
 			threadIndex = (threadIndex + 1) % m_threadPool->workers.size();
@@ -1453,7 +1502,7 @@ namespace gust
 		performCameraLighting(camera);
 	}
 
-	void Renderer::performCameraLighting(const VirtualCamera* camera)
+	void Renderer::performCameraLighting(Handle<VirtualCamera> camera)
 	{
 		std::array<vk::WriteDescriptorSet, 3> sets = {};
 

@@ -65,16 +65,25 @@ namespace gust
 	struct MeshData
 	{
 		/** Mesh to render. */
-		Handle<Mesh> mesh;
+		Handle<Mesh> mesh = Handle<Mesh>::nullHandle();
 
 		/** Material to render the mesh with. */
-		Handle<Material> material;
+		Handle<Material> material = Handle<Material>::nullHandle();
 
 		/** Descriptor sets. */
-		std::vector<vk::DescriptorSet> descriptorSets;
+		std::vector<vk::DescriptorSet> descriptorSets = {};
 
 		/** Command buffers to render the mesh with. */
-		std::vector<vk::CommandBuffer> commandBuffers;
+		std::vector<vk::CommandBuffer> commandBuffers = {};
+
+		/** Vertex data uniform buffer. */
+		Buffer vertexUniformBuffer = {};
+
+		/** Fragment data uniform buffer. */
+		Buffer fragmentUniformBuffer = {};
+
+		/** Model matrix to use for the mesh. */
+		glm::mat4 model = {};
 	};
 
 	/**
@@ -178,6 +187,9 @@ namespace gust
 
 		/** View matrix. */
 		glm::mat4 view = {};
+
+		/** Camera position. */
+		glm::vec3 viewPosition = {};
 	};
 
 
@@ -351,7 +363,7 @@ namespace gust
 			set.setPImageInfo(&color);
 
 			// Update lighting descriptor set
-			m_graphics->getLogicalDevice().updateDescriptorSets(1, &set, 0, nullptr);
+			//m_graphics->getLogicalDevice().updateDescriptorSets(1, &set, 0, nullptr);
 
 			return m_mainCamera;
 		}
@@ -440,20 +452,27 @@ namespace gust
 		 * @param Mesh to render.
 		 * @param Command buffer inheritence info.
 		 * @param Thread index.
+		 * @param Camera rendering the mesh.
 		 */
-		void drawMeshToFramebuffer(const MeshData& mesh, const vk::CommandBufferInheritanceInfo& inheritanceInfo, size_t threadIndex);
+		void drawMeshToFramebuffer
+		(
+			const MeshData& mesh, 
+			const vk::CommandBufferInheritanceInfo& inheritanceInfo, 
+			size_t threadIndex,
+			Handle<VirtualCamera> camera
+		);
 
 		/**
 		 * @brief Draw meshes to camera framebuffer.
 		 * @param Camera to draw to.
 		 */
-		void drawToCamera(const VirtualCamera* camera);
+		void drawToCamera(Handle<VirtualCamera> camera);
 
 		/**
 		 * @brief Performs lighting operations on the cameras framebuffer.
 		 * @param Camera to draw to.
 		 */
-		void performCameraLighting(const VirtualCamera* camera);
+		void performCameraLighting(Handle<VirtualCamera> camera);
 
 
 
@@ -648,13 +667,13 @@ namespace gust
 		std::unique_ptr<ResourceAllocator<VirtualCamera>> m_cameraAllocator;
 
 		/** Primary command buffer. */
-		vk::CommandBuffer m_primaryCommandBuffer;
+		vk::CommandBuffer m_primaryCommandBuffer = {};
 
 		/** Thread pool for rendering meshes. */
-		std::unique_ptr<ThreadPool> m_threadPool;
+		std::unique_ptr<ThreadPool> m_threadPool = nullptr;
 
 		/** Screen quad. */
-		std::unique_ptr<Mesh> m_screenQuad;
+		std::unique_ptr<Mesh> m_screenQuad = nullptr;
 
 		/** Main camera. */
 		Handle<VirtualCamera> m_mainCamera = {};

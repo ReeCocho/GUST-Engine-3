@@ -51,18 +51,18 @@ namespace gust
 		// Requested layers
 		std::vector<const char*> requestedLayers =
 		{
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			"VK_LAYER_LUNARG_standard_validation"		
-#endif
+//#endif
 		};
 
 		// Requested extensions
 		std::vector<const char*> requestedExtensions =
 		{
 			// Debugging
-#ifndef NDEBUG
+//#ifndef NDEBUG
 			VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-#endif
+//#endif
 			VK_KHR_SURFACE_EXTENSION_NAME
 		};
 
@@ -101,10 +101,10 @@ namespace gust
 		// Free extension memory
 		SDL_free(static_cast<void*>(extensions));
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		// Create debugging manager
 		m_debugging = std::make_unique<VulkanDebugging>(m_instance);
-#endif
+//#endif
 
 		// Create surface
 		{
@@ -248,10 +248,10 @@ namespace gust
 		// Cleanup window
 		SDL_DestroyWindow(m_window);
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 		// Destroy debugger
 		m_debugging = nullptr;
-#endif
+//#endif
 
 		// Destroy instance
 		m_instance.destroy();

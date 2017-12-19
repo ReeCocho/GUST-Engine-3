@@ -13,6 +13,7 @@
 #include "Core\ResourceManager.hpp"
 #include "Core\Threading.hpp"
 #include "ECS\Scene.hpp"
+#include "Utilities\Clock.hpp"
 
 namespace gust
 {
@@ -64,6 +65,15 @@ namespace gust
 			return engine;
 		}
 
+		/**
+		 * @brief Get the frame rate.
+		 * @return Frame rate.
+		 */
+		inline uint32_t getFrameRate() const
+		{
+			return m_frameRate;
+		}
+
 
 		/** Graphics context. */
 		Graphics graphics = {};
@@ -81,6 +91,18 @@ namespace gust
 		Scene scene = {};
 
 	private:
+
+		/** Game clock. */
+		Clock m_clock = {};
+
+		/** Frame counter. */
+		uint64_t m_frameCounter = 0;
+
+		/** Time elapsed since last measuring the framerate. */
+		float m_frameRateTimer = 0;
+
+		/** Frame rate. */
+		uint32_t m_frameRate = 0;
 
 		/** Rendering thread. */
 		std::unique_ptr<SimulationThread> m_renderingThread;

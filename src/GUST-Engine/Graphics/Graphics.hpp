@@ -395,10 +395,10 @@ namespace gust
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME
 		};
 
-#ifndef NDEBUG
+// #ifndef NDEBUG
 		/** Vulkan debugging manager. */
 		std::unique_ptr<VulkanDebugging> m_debugging;
-#endif
+// #endif
 
 		/** Vulkan surface. */
 		vk::SurfaceKHR m_surface = {};
