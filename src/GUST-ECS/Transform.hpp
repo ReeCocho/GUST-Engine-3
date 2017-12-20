@@ -118,8 +118,8 @@ namespace gust
 		 */
 		inline glm::vec3 getForward() const
 		{
-			glm::mat4 mat = glm::mat4_cast(m_rotation);
-			glm::vec3 front = glm::vec3(mat[2].x, mat[2].y, mat[2].z);
+			auto mat = glm::mat4_cast(m_rotation);
+			auto front = glm::vec3(mat[2].x, mat[2].y, mat[2].z);
 
 			return front;
 		}
@@ -130,8 +130,8 @@ namespace gust
 		 */
 		inline glm::vec3 getUp() const
 		{
-			glm::mat4 mat = glm::mat4_cast(m_rotation);
-			glm::vec3 up = glm::vec3(mat[1].x, mat[1].y, mat[1].z);
+			auto mat = glm::mat4_cast(m_rotation);
+			auto up = glm::vec3(mat[1].x, mat[1].y, mat[1].z);
 
 			return up;
 		}
@@ -142,8 +142,8 @@ namespace gust
 		 */
 		inline glm::vec3 getRight() const
 		{
-			glm::mat4 mat = glm::mat4_cast(m_rotation);
-			glm::vec3 right = glm::vec3(mat[0].x, mat[0].y, mat[0].z);
+			auto mat = glm::mat4_cast(m_rotation);
+			auto right = glm::vec3(mat[0].x, mat[0].y, mat[0].z);
 
 			return right;
 		}

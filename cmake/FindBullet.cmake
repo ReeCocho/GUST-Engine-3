@@ -2,7 +2,7 @@
 #
 #  Bullet_FOUND - system has libBullet
 #  Bullet_INCLUDE_DIRS - the libBullet include directories
-#  Bullet_LIBRARIES - link these to use libBullet
+#  Bullet_LIBRARIES - link these to use libBullet in release mode
 
 FIND_PATH(
   Bullet_BASE
@@ -11,6 +11,8 @@ FIND_PATH(
   /usr/include/bullet
   /usr/local/include/bullet
 )
+
+
 
 FIND_LIBRARY(
   BulletDynamics_LIBRARY
@@ -36,11 +38,47 @@ FIND_LIBRARY(
   /usr/local/lib
 )
 
-IF(Bullet_BASE AND BulletDynamics_LIBRARY AND BulletCollision_LIBRARY AND LinearMath_LIBRARY)
-   SET(Bullet_LIBRARIES ${BulletDynamics_LIBRARY} ${BulletCollision_LIBRARY} ${LinearMath_LIBRARY})
+
+
+FIND_LIBRARY(
+  BulletDynamics_LIBRARY_DEBUG
+  NAMES BulletDynamics_Debug
+  PATHS ${Bullet_BASE}/.libs
+  /usr/lib
+  /usr/local/lib
+)
+
+FIND_LIBRARY(
+  BulletCollision_LIBRARY_DEBUG
+  NAMES BulletCollision_Debug
+  PATHS ${Bullet_BASE}/.libs
+  /usr/lib
+  /usr/local/lib
+)
+
+FIND_LIBRARY(
+  LinearMath_LIBRARY_DEBUG
+  NAMES LinearMath_Debug
+  PATHS ${Bullet_BASE}/.libs
+  /usr/lib
+  /usr/local/lib
+)
+
+IF(Bullet_BASE AND BulletDynamics_LIBRARY AND BulletCollision_LIBRARY AND LinearMath_LIBRARY AND 
+BulletDynamics_LIBRARY_DEBUG AND BulletCollision_LIBRARY_DEBUG AND LinearMath_LIBRARY_DEBUG)
+   SET(
+	Bullet_LIBRARIES 
+	optimized ${BulletDynamics_LIBRARY} 
+	optimized ${BulletCollision_LIBRARY} 
+	optimized ${LinearMath_LIBRARY}
+	debug ${BulletDynamics_LIBRARY_DEBUG} 
+	debug ${BulletCollision_LIBRARY_DEBUG} 
+	debug ${LinearMath_LIBRARY_DEBUG}
+   )
    SET(Bullet_FOUND TRUE)
    SET(Bullet_INCLUDE_DIRS ${Bullet_BASE})
-ENDIF(Bullet_BASE AND BulletDynamics_LIBRARY AND BulletCollision_LIBRARY AND LinearMath_LIBRARY)
+ENDIF(Bullet_BASE AND BulletDynamics_LIBRARY AND BulletCollision_LIBRARY AND LinearMath_LIBRARY AND 
+BulletDynamics_LIBRARY_DEBUG AND BulletCollision_LIBRARY_DEBUG AND LinearMath_LIBRARY_DEBUG)
 
 IF(Bullet_FOUND)
    IF(NOT Bullet_FIND_QUIETLY)

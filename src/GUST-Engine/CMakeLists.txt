@@ -7,6 +7,7 @@ set(
 	Lights.cpp
 	MeshRenderer.cpp
 	ResourceManager.cpp
+	Colliders.cpp
 )
 
 # Headers
@@ -18,6 +19,7 @@ set(
 	Lights.hpp
 	MeshRenderer.hpp
 	ResourceManager.hpp
+	Colliders.hpp
 )
 
 # Project declaration

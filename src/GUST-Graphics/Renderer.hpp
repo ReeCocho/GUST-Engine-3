@@ -346,29 +346,7 @@ namespace gust
 		 * @param New main camera.
 		 * @return New main camera.
 		 */
-		inline Handle<VirtualCamera> setMainCamera(const Handle<VirtualCamera>& camera)
-		{
-			m_mainCamera = camera;
-
-			vk::WriteDescriptorSet set = {};
-
-			vk::DescriptorImageInfo color = {};
-			color.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-			color.setImageView(m_mainCamera->color->getImageView());
-			color.setSampler(m_mainCamera->color->getSampler());
-
-			set.setDstSet(m_descriptors.screenDescriptorSet);
-			set.setDstBinding(0);
-			set.setDstArrayElement(0);
-			set.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
-			set.setDescriptorCount(1);
-			set.setPImageInfo(&color);
-
-			// Update lighting descriptor set
-			m_graphics->getLogicalDevice().updateDescriptorSets(1, &set, 0, nullptr);
-
-			return m_mainCamera;
-		}
+		Handle<VirtualCamera> setMainCamera(const Handle<VirtualCamera>& camera);
 
 		/**
 		 * @brief Get the main camera.
@@ -428,11 +406,6 @@ namespace gust
 		void initSemaphores();
 
 		/**
-		 * @brief Initialize command buffers.
-		 */
-		void initCommandBuffers();
-
-		/**
 		 * @brief Initialize lighting.
 		 */
 		void initLighting();
@@ -456,6 +429,11 @@ namespace gust
 		 * @brief Initialize in engine shaders.
 		 */
 		void initShaders();
+
+		/**
+		 * @brief Initialize command buffers.
+		 */
+		void initCommandBuffers();
 
 		/**
 		 * @brief Create a frame buffer attachment.
@@ -698,8 +676,8 @@ namespace gust
 			/** Pool index to create the next buffer on. */
 			size_t poolIndex = 0;
 
-			/** Primary command buffer. */
-			CommandBuffer primaryCommandBuffer = {};
+			/** Rendering command buffers. */
+			std::vector<CommandBuffer> rendering = {};
 
 		} m_commands;
 

@@ -66,7 +66,7 @@ namespace gust
 		std::condition_variable m_running_condition;
 
 		/** Is the thread stopping? */
-		std::atomic_bool m_stopping;
+		bool m_stopping;
 	};
 
 

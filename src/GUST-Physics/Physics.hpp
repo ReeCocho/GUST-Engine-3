@@ -72,6 +72,42 @@ namespace gust
 		void step(float deltaTime);
 
 		/**
+		 * @brief Register a rigid body.
+		 * @param Rigid body to register.
+		 */
+		inline void registerRigidBody(btRigidBody* body)
+		{
+			m_dynamicsWorld->addRigidBody(body);
+		}
+
+		/**
+		 * @brief Unregister a rigid body.
+		 * @param Rigid body to unregister.
+		 */
+		inline void unregisterRigidBody(btRigidBody* body)
+		{
+			m_dynamicsWorld->removeRigidBody(body);
+		}
+
+		/**
+		 * @brief Register a collision object.
+		 * @param Collision object to register.
+		 */
+		inline void registerCollisionObject(btCollisionObject* obj)
+		{
+			m_dynamicsWorld->addCollisionObject(obj);
+		}
+
+		/**
+		 * @brief Unregister a collision object.
+		 * @param Collision object to unregister.
+		 */
+		inline void unregisterCollisionObject(btCollisionObject* obj)
+		{
+			m_dynamicsWorld->addCollisionObject(obj);
+		}
+
+		/**
 		 * @brief Perform a linecast.
 		 * @brief Origin.
 		 * @brief Destination.

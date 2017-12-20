@@ -4,6 +4,7 @@
 #include <MeshRenderer.hpp>
 #include <Camera.hpp>
 #include <Lights.hpp>
+#include <Colliders.hpp>
 
 class CameraController : public gust::Component<CameraController>
 {
@@ -51,7 +52,7 @@ public:
 			controller->m_transform->modPosition(controller->m_transform->getForward() * y * deltaTime);
 			controller->m_transform->modPosition(controller->m_transform->getRight() * x * deltaTime);
 
-			controller->m_transform->modEulerAngles(glm::vec3(-mouseDel.y, -mouseDel.x, 0) * 0.25f);
+			controller->m_transform->modEulerAngles(glm::vec3(mouseDel.y, mouseDel.x, 0) * 0.25f);
 		}
 	}
 };
@@ -62,11 +63,12 @@ int main()
 	gust::startup("Test Game", 1280, 720);
 	
 	// Input stuff
-	gust::input.registerAxis("Horizontal", { { gust::KeyCode::A, 1.0f }, { gust::KeyCode::D, -1.0f } });
+	gust::input.registerAxis("Horizontal", { { gust::KeyCode::A, -1.0f }, { gust::KeyCode::D, 1.0f } });
 	gust::input.registerAxis("Vertical", { { gust::KeyCode::S, -1.0f }, { gust::KeyCode::W, 1.0f } });
 	
 	// Add systems
 	gust::scene.addSystem<gust::TransformSystem>();
+	gust::scene.addSystem<gust::BoxColliderSystem>();
 	gust::scene.addSystem<CameraControllerSystem>();
 	gust::scene.addSystem<gust::PointLightSystem>();
 	gust::scene.addSystem<gust::DirectionalLightSystem>();
@@ -88,18 +90,37 @@ int main()
 	
 	auto mesh = gust::resourceManager.createMesh("./Meshes/Cube.obj");
 
-	// Create cube
+	// Create floor
 	{
 		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setPosition({ 1, 0, 3 });
-	
+		transform->setLocalScale({ 16, 1, 16 });
+
 		auto meshRenderer = entity.addComponent<gust::MeshRenderer>();
 		meshRenderer->setMaterial(material);
 		meshRenderer->setMesh(mesh);
+
+		auto collider = entity.addComponent<gust::BoxCollider>();
+		// collider->setMass(0);
+		collider->setStatic(true);
+		collider->setScale({ 16, 1, 16 });
 	}
 	
+	// Create cube
+	{
+		auto entity = gust::Entity(&gust::scene);
+
+		auto transform = entity.getComponent<gust::Transform>();
+		transform->setPosition({ 0, 3, 4 });
+
+		auto meshRenderer = entity.addComponent<gust::MeshRenderer>();
+		meshRenderer->setMaterial(material);
+		meshRenderer->setMesh(mesh);
+
+		auto collider = entity.addComponent<gust::BoxCollider>();
+	}
+
 	// Create camera
 	{
 		auto entity = gust::Entity(&gust::scene);
@@ -107,7 +128,7 @@ int main()
 		entity.addComponent<CameraController>();
 
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setPosition({ 1, 0, -2 });
+		transform->setPosition({ 0, 3, 0 });
 	
 		auto camera = entity.addComponent<gust::Camera>();
 		gust::Camera::setMainCamera(camera);
@@ -118,9 +139,10 @@ int main()
 		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setEulerAngles({ -45, 60, 0 });
+		// transform->setPosition({ 0, 3, 0 });
+		transform->setEulerAngles({ 45, 60, 0 });
 	
-		auto directionalLight = entity.addComponent<gust::DirectionalLight>();
+		auto light = entity.addComponent<gust::DirectionalLight>();
 	}
 	
 	gust::simulate();

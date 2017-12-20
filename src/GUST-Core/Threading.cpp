@@ -11,12 +11,15 @@ namespace gust
 			[this]()
 			{
 				// While we aren't stopping...
-				while (!m_stopping)
+				while (true)
 				{
 					// Wait until we need to run the function
 					{
 						std::unique_lock<std::mutex> lock(m_running_mutex);
-						m_running_condition.wait(lock, [this] { return m_running; });
+						m_running_condition.wait(lock, [this] { return m_running || m_stopping; });
+
+						if (m_stopping)
+							break;
 					}
 
 					// Run it.
@@ -39,7 +42,12 @@ namespace gust
 
 	SimulationThread::~SimulationThread()
 	{
-		m_stopping = true;
+		{
+			std::unique_lock<std::mutex> lock(m_running_mutex);
+			m_stopping = true;
+			m_running_condition.notify_one();
+		}
+
 		m_thread.join();
 	}
 

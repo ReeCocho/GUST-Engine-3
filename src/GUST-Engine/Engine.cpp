@@ -73,7 +73,7 @@ namespace gust
 			m_physicsTimer += deltaTime;
 
 			// Do framerate stuff
-			m_frameCounter++;
+			++m_frameCounter;
 			m_frameRateTimer += deltaTime;
 
 			if (m_frameRateTimer >= 1.0f)
@@ -109,8 +109,8 @@ namespace gust
 	void shutdown()
 	{
 		// Stop threads
-		m_renderingThread = nullptr;
 		m_physicsThread = nullptr;
+		m_renderingThread = nullptr;
 
 		// Shutdown modules
 		scene.shutdown();

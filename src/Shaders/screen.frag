@@ -13,5 +13,5 @@ layout(location = 0) in VS_OUT
 
 void main() 
 {
-	outColor = vec4(texture(inAlbedo, vsOut.uv).rgb, 1.0);
+	outColor = vec4(texture(inAlbedo, vec2(1, 1) - vsOut.uv).rgb, 1.0);
 }

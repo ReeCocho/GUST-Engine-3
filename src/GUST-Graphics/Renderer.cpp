@@ -15,12 +15,12 @@ namespace gust
 		initDepthResources();
 		initSwapchainBuffers();
 		initSemaphores();
-		initCommandBuffers();
 		initLighting();
 		initDescriptorSetLayouts();
 		initDescriptorPool();
 		initDescriptorSets();
 		initShaders();
+		initCommandBuffers();
 	}
 
 	void Renderer::shutdown()
@@ -68,7 +68,8 @@ namespace gust
 		logicalDevice.destroyDescriptorSetLayout(m_descriptors.screenDescriptorSetLayout);
 		logicalDevice.destroyDescriptorSetLayout(m_descriptors.lightingDescriptorSetLayout);
 
-		destroyCommandBuffer(m_commands.primaryCommandBuffer);
+		for(auto commandBuffer : m_commands.rendering)
+			destroyCommandBuffer(commandBuffer);
 
 		logicalDevice.destroyRenderPass(m_renderPasses.onscreen);
 		logicalDevice.destroyRenderPass(m_renderPasses.offscreen);
@@ -100,137 +101,73 @@ namespace gust
 
 	void Renderer::render()
 	{
-		// Submit lighting data
-		submitLightingData();
-
-		// Draw everything to every camera
-		bool drew = false;
-
-		for (size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); ++i)
-			if (m_cameraAllocator->isAllocated(i))
-			{
-				drawToCamera(Handle<VirtualCamera>(m_cameraAllocator.get(), i));
-				drew = true;
-			}
-
-		// Return early if we didn't draw anything (No need to present again)
-		if (!drew)
-			return;
-
-		// Get image to present
-		uint32_t imageIndex = m_graphics->getLogicalDevice().acquireNextImageKHR
-		(
-			m_swapchain.swapchain,
-			std::numeric_limits<uint64_t>::max(),
-			m_semaphores.imageAvailable,
-			{ nullptr }
-		).value;
-
-		// Render
+		if (m_mainCamera.getResourceAllocator() && m_mainCamera.get())
 		{
-			auto commandBuffer = m_commands.primaryCommandBuffer.buffer;
+			// Submit lighting data
+			submitLightingData();
 
-			vk::CommandBufferBeginInfo beginInfo = {};
-			beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
-			beginInfo.setPInheritanceInfo(nullptr);
+			// Draw everything to every camera
+			bool drew = false;
 
-			std::array<vk::ClearValue, 2> clearValues = {};
-			clearValues[0].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
-			clearValues[1].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
+			for (size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); ++i)
+				if (m_cameraAllocator->isAllocated(i))
+				{
+					drawToCamera(Handle<VirtualCamera>(m_cameraAllocator.get(), i));
+					drew = true;
+				}
 
-			vk::RenderPassBeginInfo renderPassInfo = {};
-			renderPassInfo.setRenderPass(m_renderPasses.onscreen);
-			renderPassInfo.setFramebuffer(m_swapchain.buffers[imageIndex].frameBuffer);
-			renderPassInfo.renderArea.setOffset({ 0, 0 });
-			renderPassInfo.renderArea.setExtent(vk::Extent2D(m_graphics->getWidth(), m_graphics->getHeight()));
-			renderPassInfo.setClearValueCount(static_cast<uint32_t>(clearValues.size()));
-			renderPassInfo.setPClearValues(clearValues.data());
+			// Return early if we didn't draw anything (No need to present again)
+			if (!drew)
+				return;
 
-			commandBuffer.begin(beginInfo);
-			commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+			// Get image to present
+			uint32_t imageIndex = m_graphics->getLogicalDevice().acquireNextImageKHR
+			(
+				m_swapchain.swapchain,
+				std::numeric_limits<uint64_t>::max(),
+				m_semaphores.imageAvailable,
+				{ nullptr }
+			).value;
 
-			// Set viewport
-			vk::Viewport viewport = {};
-			viewport.setHeight(static_cast<float>(m_graphics->getHeight()));
-			viewport.setWidth(static_cast<float>(m_graphics->getWidth()));
-			commandBuffer.setViewport(0, 1, &viewport);
-
-			// Set scissor
-			vk::Rect2D scissor = {};
-			scissor.setExtent({ m_graphics->getWidth(), m_graphics->getHeight() });
-			scissor.setOffset({ 0, 0 });
-			commandBuffer.setScissor(0, 1, &scissor);
-
-			// If the main camera is valid draw it's framebuffer
-			if (m_mainCamera.getResourceAllocator() && m_mainCamera.get())
+			std::array<vk::Semaphore, 2> semaphores =
 			{
-				// Bind descriptor sets
-				commandBuffer.bindDescriptorSets
-				(
-					vk::PipelineBindPoint::eGraphics,
-					m_screenShader.graphicsPipelineLayout,
-					0,
-					1,
-					&m_descriptors.screenDescriptorSet,
-					0,
-					nullptr
-				);
+				m_semaphores.imageAvailable,
+				m_semaphores.offscreen
+			};
 
-				// Bind graphics pipeline
-				commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_screenShader.graphicsPipeline);
+			std::array<vk::PipelineStageFlags, 2> waitStages =
+			{
+				vk::PipelineStageFlagBits::eColorAttachmentOutput,
+				vk::PipelineStageFlagBits::eColorAttachmentOutput
+			};
 
-				// Bind vertex and index buffer
-				vk::Buffer vertexBuffer = m_screenQuad->getVertexUniformBuffer().buffer;
-				vk::DeviceSize offset = 0;
-				commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
-				commandBuffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+			vk::SubmitInfo submitInfo = {};
+			submitInfo.setWaitSemaphoreCount(static_cast<uint32_t>(semaphores.size()));
+			submitInfo.setPWaitSemaphores(semaphores.data());
+			submitInfo.setPWaitDstStageMask(waitStages.data());
+			submitInfo.setCommandBufferCount(1);
+			submitInfo.setPCommandBuffers(&m_commands.rendering[imageIndex].buffer);
+			submitInfo.setSignalSemaphoreCount(1);
+			submitInfo.setPSignalSemaphores(&m_semaphores.renderFinished);
 
-				// Draw
-				commandBuffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
-			}
+			// Submit draw command
+			m_graphics->getGraphicsQueue().submit(1, &submitInfo, { nullptr });
 
-			commandBuffer.endRenderPass();
-			commandBuffer.end();
+			vk::PresentInfoKHR presentInfo = {};
+			presentInfo.setWaitSemaphoreCount(1);
+			presentInfo.setPWaitSemaphores(&m_semaphores.renderFinished);
+			presentInfo.setSwapchainCount(1);
+			presentInfo.setPSwapchains(&m_swapchain.swapchain);
+			presentInfo.setPImageIndices(&imageIndex);
+			presentInfo.setPResults(nullptr);
+
+			// Present and wait
+			m_graphics->getPresentationQueue().presentKHR(presentInfo);
+			m_graphics->getPresentationQueue().waitIdle();
+
+			// Clear mesh queue
+			m_meshes.clear();
 		}
-
-		std::array<vk::Semaphore, 2> semaphores =
-		{
-			m_semaphores.imageAvailable,
-			m_semaphores.offscreen
-		};
-
-		std::array<vk::PipelineStageFlags, 2> waitStages =
-		{
-			vk::PipelineStageFlagBits::eColorAttachmentOutput,
-			vk::PipelineStageFlagBits::eColorAttachmentOutput
-		};
-
-		vk::SubmitInfo submitInfo = {};
-		submitInfo.setWaitSemaphoreCount(static_cast<uint32_t>(semaphores.size()));
-		submitInfo.setPWaitSemaphores(semaphores.data());
-		submitInfo.setPWaitDstStageMask(waitStages.data());
-		submitInfo.setCommandBufferCount(1);
-		submitInfo.setPCommandBuffers(&m_commands.primaryCommandBuffer.buffer);
-		submitInfo.setSignalSemaphoreCount(1);
-		submitInfo.setPSignalSemaphores(&m_semaphores.renderFinished);
-
-		// Submit draw command
-		m_graphics->getGraphicsQueue().submit(1, &submitInfo, { nullptr });
-
-		vk::PresentInfoKHR presentInfo = {};
-		presentInfo.setWaitSemaphoreCount(1);
-		presentInfo.setPWaitSemaphores(&m_semaphores.renderFinished);
-		presentInfo.setSwapchainCount(1);
-		presentInfo.setPSwapchains(&m_swapchain.swapchain);
-		presentInfo.setPImageIndices(&imageIndex);
-		presentInfo.setPResults(nullptr);
-
-		// Present and wait
-		m_graphics->getPresentationQueue().presentKHR(presentInfo);
-		m_graphics->getPresentationQueue().waitIdle();
-
-		// Clear mesh queue
-		m_meshes.clear();
 	}
 
 	Handle<VirtualCamera> Renderer::createCamera()
@@ -692,11 +629,6 @@ namespace gust
 		m_semaphores.imageAvailable = m_graphics->getLogicalDevice().createSemaphore(semaphoreInfo);
 		m_semaphores.renderFinished = m_graphics->getLogicalDevice().createSemaphore(semaphoreInfo);
 		m_semaphores.offscreen = m_graphics->getLogicalDevice().createSemaphore(semaphoreInfo);
-	}
-
-	void Renderer::initCommandBuffers()
-	{
-		m_commands.primaryCommandBuffer = createCommandBuffer(vk::CommandBufferLevel::ePrimary);
 	}
 
 	void Renderer::initLighting()
@@ -1254,6 +1186,79 @@ namespace gust
 		}
 	}
 
+	void Renderer::initCommandBuffers()
+	{
+		if (m_mainCamera != Handle<VirtualCamera>::nullHandle())
+		{
+			m_commands.rendering.resize(m_swapchain.images.size());
+
+			for (size_t i = 0; i < m_commands.rendering.size(); ++i)
+			{
+				m_commands.rendering[i] = createCommandBuffer(vk::CommandBufferLevel::ePrimary);
+
+				auto commandBuffer = m_commands.rendering[i].buffer;
+
+				vk::CommandBufferBeginInfo beginInfo = {};
+				beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eSimultaneousUse);
+				beginInfo.setPInheritanceInfo(nullptr);
+
+				std::array<vk::ClearValue, 2> clearValues = {};
+				clearValues[0].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
+				clearValues[1].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
+
+				vk::RenderPassBeginInfo renderPassInfo = {};
+				renderPassInfo.setRenderPass(m_renderPasses.onscreen);
+				renderPassInfo.setFramebuffer(m_swapchain.buffers[i].frameBuffer);
+				renderPassInfo.renderArea.setOffset({ 0, 0 });
+				renderPassInfo.renderArea.setExtent(vk::Extent2D(m_graphics->getWidth(), m_graphics->getHeight()));
+				renderPassInfo.setClearValueCount(static_cast<uint32_t>(clearValues.size()));
+				renderPassInfo.setPClearValues(clearValues.data());
+
+				commandBuffer.begin(beginInfo);
+				commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+
+				// Set viewport
+				vk::Viewport viewport = {};
+				viewport.setHeight(static_cast<float>(m_graphics->getHeight()));
+				viewport.setWidth(static_cast<float>(m_graphics->getWidth()));
+				commandBuffer.setViewport(0, 1, &viewport);
+
+				// Set scissor
+				vk::Rect2D scissor = {};
+				scissor.setExtent({ m_graphics->getWidth(), m_graphics->getHeight() });
+				scissor.setOffset({ 0, 0 });
+				commandBuffer.setScissor(0, 1, &scissor);
+
+				// Bind descriptor sets
+				commandBuffer.bindDescriptorSets
+				(
+					vk::PipelineBindPoint::eGraphics,
+					m_screenShader.graphicsPipelineLayout,
+					0,
+					1,
+					&m_descriptors.screenDescriptorSet,
+					0,
+					nullptr
+				);
+
+				// Bind graphics pipeline
+				commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_screenShader.graphicsPipeline);
+
+				// Bind vertex and index buffer
+				vk::Buffer vertexBuffer = m_screenQuad->getVertexUniformBuffer().buffer;
+				vk::DeviceSize offset = 0;
+				commandBuffer.bindVertexBuffers(0, 1, &vertexBuffer, &offset);
+				commandBuffer.bindIndexBuffer(m_screenQuad->getIndexUniformBuffer().buffer, 0, vk::IndexType::eUint32);
+
+				// Draw
+				commandBuffer.drawIndexed(static_cast<uint32_t>(m_screenQuad->getIndexCount()), 1, 0, 0, 0);
+
+				commandBuffer.endRenderPass();
+				commandBuffer.end();
+			}
+		}
+	}
+
 	FrameBufferAttachment Renderer::createAttachment(vk::Format format, vk::ImageUsageFlags usage)
 	{
 		FrameBufferAttachment newAttachment = {};
@@ -1637,5 +1642,34 @@ namespace gust
 		m_commands.poolIndex = (m_commands.poolIndex + 1) % m_commands.pools.size();
 
 		return { commandBuffer[0], poolIndex };
+	}
+
+	Handle<VirtualCamera> Renderer::setMainCamera(const Handle<VirtualCamera>& camera)
+	{
+		m_mainCamera = camera;
+
+		vk::WriteDescriptorSet set = {};
+
+		vk::DescriptorImageInfo color = {};
+		color.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		color.setImageView(m_mainCamera->color->getImageView());
+		color.setSampler(m_mainCamera->color->getSampler());
+
+		set.setDstSet(m_descriptors.screenDescriptorSet);
+		set.setDstBinding(0);
+		set.setDstArrayElement(0);
+		set.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+		set.setDescriptorCount(1);
+		set.setPImageInfo(&color);
+
+		// Update lighting descriptor set
+		m_graphics->getLogicalDevice().updateDescriptorSets(1, &set, 0, nullptr);
+
+		// Destroy old rendering command buffers and create new ones
+		for (auto commandBuffer : m_commands.rendering)
+			destroyCommandBuffer(commandBuffer);
+		initCommandBuffers();
+
+		return m_mainCamera;
 	}
 }

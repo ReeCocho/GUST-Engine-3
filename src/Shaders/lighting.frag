@@ -220,6 +220,14 @@ void main()
 	for(uint i = 0; i < lightingData.directionalLightCount; i++)
 		total += calculateDirectionalLight(lightingData.directionalLights[i], viewDir, normal, color, 0.0f, 0.1f);
 	
+	// Point lights
+	for(uint i = 0; i < lightingData.pointLightCount; i++)
+		total += calculatePointLight(lightingData.pointLights[i], viewDir, position, normal, color, 0.0f, 0.1f);
+		
+	// Spot lights
+	for(uint i = 0; i < lightingData.spotLightCount; i++)
+		total += calculateSpotLight(lightingData.spotLights[i], viewDir, position, normal, color, 0.0f, 0.1f);
+	
 	outAlbedo = vec4(total, 1.0);
 	outNormal = vec4(normal, 1.0);
 	outPosition = vec4(position, 1.0);
