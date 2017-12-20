@@ -8,6 +8,7 @@
 
 /** Includes. */
 #include <Renderer.hpp>
+#include <Physics.hpp>
 #include <Threading.hpp>
 #include <Scene.hpp>
 #include <Clock.hpp>
@@ -56,6 +57,9 @@ namespace gust
 
 	/** Rendering engine. */
 	extern Renderer renderer;
+
+	/** Physics engine. */
+	extern Physics physics;
 
 	/** Primary scene. */
 	extern Scene scene;

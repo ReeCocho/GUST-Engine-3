@@ -5,48 +5,69 @@
 #include <Camera.hpp>
 #include <Lights.hpp>
 
-class TestComponent : public gust::Component<TestComponent>
+class CameraController : public gust::Component<CameraController>
 {
 public:
 
-	TestComponent(gust::Entity entity, gust::Handle<TestComponent> handle) : gust::Component<TestComponent>(entity, handle)
+	CameraController(gust::Entity entity, gust::Handle<CameraController> handle) : gust::Component<CameraController>(entity, handle)
 	{
 
 	}
 
 	gust::Handle<gust::Transform> m_transform;
+
+	bool m_enabled = true;
 };
 
-class TestComponentSystem : public gust::System
+class CameraControllerSystem : public gust::System
 {
 public:
 
-	TestComponentSystem(gust::Scene* scene) : gust::System(scene)
+	CameraControllerSystem(gust::Scene* scene) : gust::System(scene)
 	{
-		initialize<TestComponent>();
+		initialize<CameraController>();
 	}
 
 	void onBegin() override
 	{
-		auto component = getComponent<TestComponent>();
-		component->m_transform = component->getEntity().getComponent<gust::Transform>();
+		auto controller = getComponent<CameraController>();
+		controller->m_transform = controller->getEntity().getComponent<gust::Transform>();
 	}
 
 	void onTick(float deltaTime) override
 	{
-		auto component = getComponent<TestComponent>();
-		component->m_transform->modEulerAngles({ 0, deltaTime * 60.0f, 0 });
+		auto controller = getComponent<CameraController>();
+
+		if (gust::input.getKeyDown(gust::KeyCode::M))
+			controller->m_enabled = !controller->m_enabled;
+
+		if (controller->m_enabled)
+		{
+			auto mouseDel = gust::input.getMouseDelta();
+
+			float x = gust::input.getAxis("Horizontal");
+			float y = gust::input.getAxis("Vertical");
+
+			controller->m_transform->modPosition(controller->m_transform->getForward() * y * deltaTime);
+			controller->m_transform->modPosition(controller->m_transform->getRight() * x * deltaTime);
+
+			controller->m_transform->modEulerAngles(glm::vec3(-mouseDel.y, -mouseDel.x, 0) * 0.25f);
+		}
 	}
 };
 
 int main()
 {
+	// Initialize engine
 	gust::startup("Test Game", 1280, 720);
 	
-	std::cout << (gust::TypeID<gust::Transform>::id() == gust::TypeID<gust::MeshRenderer>::id()) << '\n';
-
+	// Input stuff
+	gust::input.registerAxis("Horizontal", { { gust::KeyCode::A, 1.0f }, { gust::KeyCode::D, -1.0f } });
+	gust::input.registerAxis("Vertical", { { gust::KeyCode::S, -1.0f }, { gust::KeyCode::W, 1.0f } });
+	
+	// Add systems
 	gust::scene.addSystem<gust::TransformSystem>();
-	gust::scene.addSystem<TestComponentSystem>();
+	gust::scene.addSystem<CameraControllerSystem>();
 	gust::scene.addSystem<gust::PointLightSystem>();
 	gust::scene.addSystem<gust::DirectionalLightSystem>();
 	gust::scene.addSystem<gust::MeshRendererSystem>();
@@ -83,6 +104,8 @@ int main()
 	{
 		auto entity = gust::Entity(&gust::scene);
 	
+		entity.addComponent<CameraController>();
+
 		auto transform = entity.getComponent<gust::Transform>();
 		transform->setPosition({ 1, 0, -2 });
 	
@@ -95,7 +118,7 @@ int main()
 		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setEulerAngles({ 45, 45, 0 });
+		transform->setEulerAngles({ -45, 60, 0 });
 	
 		auto directionalLight = entity.addComponent<gust::DirectionalLight>();
 	}

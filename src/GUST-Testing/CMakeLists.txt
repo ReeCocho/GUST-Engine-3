@@ -21,6 +21,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src/GUST-Engine)
 include_directories(${CMAKE_SOURCE_DIR}/src/GUST-ECS)
 include_directories(${CMAKE_SOURCE_DIR}/src/GUST-Core)
 include_directories(${CMAKE_SOURCE_DIR}/src/GUST-Graphics)
+include_directories(${CMAKE_SOURCE_DIR}/src/GUST-Physics)
 
 # GUST Libraries
 SET(
@@ -30,11 +31,13 @@ SET(
 	${CMAKE_SOURCE_DIR}/build/src/GUST-Graphics/Release/GUST-Graphics.lib
 	${CMAKE_SOURCE_DIR}/build/src/GUST-Core/Release/GUST-Core.lib
 	${CMAKE_SOURCE_DIR}/build/src/GUST-ECS/Release/GUST-ECS.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-Physics/Release/GUST-Physics.lib
 	debug 
 	${CMAKE_SOURCE_DIR}/build/src/GUST-Engine/Debug/GUST-Engine.lib
 	${CMAKE_SOURCE_DIR}/build/src/GUST-Graphics/Debug/GUST-Graphics.lib
 	${CMAKE_SOURCE_DIR}/build/src/GUST-Core/Debug/GUST-Core.lib
 	${CMAKE_SOURCE_DIR}/build/src/GUST-ECS/Debug/GUST-ECS.lib
+	${CMAKE_SOURCE_DIR}/build/src/GUST-Physics/Debug/GUST-Physics.lib
 )
 
 # Libraries
@@ -44,8 +47,10 @@ target_link_libraries(
 	GUST-Graphics
 	GUST-Core
 	GUST-ECS
+	GUST-Physics
 	${SDL2_LIBRARY} 
 	${VULKAN_LIBRARY}
+	${Bullet_LIBRARIES}
 )
 
 # Move shader folder and mesh into build directory

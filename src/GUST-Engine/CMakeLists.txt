@@ -31,6 +31,7 @@ ADD_LIBRARY(
 include_directories(../GUST-Graphics)
 include_directories(../GUST-ECS)
 include_directories(../GUST-Core)
+include_directories(../GUST-Physics)
 
 # Dependencies
 add_dependencies(
@@ -38,4 +39,5 @@ add_dependencies(
 	GUST-Graphics
 	GUST-ECS
 	GUST-Core
+	GUST-Physics
 )

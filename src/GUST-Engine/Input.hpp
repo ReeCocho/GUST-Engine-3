@@ -216,9 +216,9 @@ namespace gust
 		 * @param Key code.
 		 * @return Was the key just pressed?
 		 */
-		inline bool getKeyDown(KeyCode key) const
+		inline bool getKeyDown(KeyCode key)
 		{
-			return !m_lastKeys.at(key) && m_currentKeys.at(key);
+			return !m_lastKeys[key] && m_currentKeys[key];
 		}
 
 		/**
@@ -226,9 +226,9 @@ namespace gust
 		 * @param Key code.
 		 * @return Was the key just released?
 		 */
-		inline bool getKeyUp(KeyCode key) const
+		inline bool getKeyUp(KeyCode key)
 		{
-			return m_lastKeys.at(key) && !m_currentKeys.at(key);
+			return m_lastKeys[key] && !m_currentKeys[key];
 		}
 
 		/**
@@ -236,9 +236,9 @@ namespace gust
 		 * @param Key code.
 		 * @return Is the key being held?
 		 */
-		inline bool getKeyHeld(KeyCode key) const
+		inline bool getKeyHeld(KeyCode key)
 		{
-			return m_currentKeys.at(key);
+			return m_currentKeys[key];
 		}
 
 		/**
@@ -246,9 +246,9 @@ namespace gust
 		 * @param Button name.
 		 * @return Was the button just pressed?
 		 */
-		inline bool getButtonDown(const std::string& button) const
+		inline bool getButtonDown(const std::string& button)
 		{
-			return getKeyDown(m_buttons.at(button));
+			return getKeyDown(m_buttons[button]);
 		}
 
 		/**
@@ -256,9 +256,9 @@ namespace gust
 		 * @param Button name.
 		 * @return Was the button just released?
 		 */
-		inline bool getButtonUp(const std::string& button) const
+		inline bool getButtonUp(const std::string& button)
 		{
-			return getKeyUp(m_buttons.at(button));
+			return getKeyUp(m_buttons[button]);
 		}
 
 		/**
@@ -266,9 +266,9 @@ namespace gust
 		 * @param Button name.
 		 * @return Is the button being held?
 		 */
-		inline bool getButtonHeld(const std::string& button) const
+		inline bool getButtonHeld(const std::string& button)
 		{
-			return getKeyHeld(m_buttons.at(button));
+			return getKeyHeld(m_buttons[button]);
 		}
 
 		/**
@@ -276,10 +276,10 @@ namespace gust
 		 * @param Axis name.
 		 * @return Was the axis just pressed?
 		 */
-		inline bool getAxisDown(const std::string& axis) const
+		inline bool getAxisDown(const std::string& axis)
 		{
-			for (size_t i = 0; i < m_axis.at(axis).size(); ++i)
-				if (getKeyDown(std::get<0>(m_axis.at(axis)[i])))
+			for (size_t i = 0; i < m_axis[axis].size(); ++i)
+				if (getKeyDown(std::get<0>(m_axis[axis][i])))
 					return true;
 
 			return false;
@@ -290,10 +290,10 @@ namespace gust
 		 * @param Axis name.
 		 * @return Was the axis just released?
 		 */
-		inline bool getAxisUp(const std::string& axis) const
+		inline bool getAxisUp(const std::string& axis)
 		{
-			for (size_t i = 0; i < m_axis.at(axis).size(); ++i)
-				if (getKeyUp(std::get<0>(m_axis.at(axis)[i])))
+			for (size_t i = 0; i < m_axis[axis].size(); ++i)
+				if (getKeyUp(std::get<0>(m_axis[axis][i])))
 					return true;
 
 			return false;
@@ -304,10 +304,10 @@ namespace gust
 		 * @param Axis name.
 		 * @return Is the axis being used.
 		 */
-		inline bool getAxisHeld(const std::string& axis) const
+		inline bool getAxisHeld(const std::string& axis)
 		{
-			for (size_t i = 0; i < m_axis.at(axis).size(); ++i)
-				if (getKeyHeld(std::get<0>(m_axis.at(axis)[i])))
+			for (size_t i = 0; i < m_axis[axis].size(); ++i)
+				if (getKeyHeld(std::get<0>(m_axis[axis][i])))
 					return true;
 
 			return false;
@@ -318,13 +318,13 @@ namespace gust
 		 * @param Axis name.
 		 * @return Axis' value.
 		 */
-		inline float getAxis(const std::string& axis) const
+		inline float getAxis(const std::string& axis)
 		{
 			float total = 0;
 
-			for (size_t i = 0; i < m_axis.at(axis).size(); ++i)
-				if (getKeyHeld(std::get<0>(m_axis.at(axis)[i])))
-					total += std::get<1>(m_axis.at(axis)[i]);
+			for (size_t i = 0; i < m_axis[axis].size(); ++i)
+				if (getKeyHeld(std::get<0>(m_axis[axis][i])))
+					total += std::get<1>(m_axis[axis][i]);
 
 			return total;
 		}
