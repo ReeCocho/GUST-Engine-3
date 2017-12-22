@@ -120,7 +120,8 @@ namespace gust
 		ColliderSystem::onBegin();
 
 		// Create box shape
-		collider->m_shape = std::make_unique<btBoxShape>(btVector3(.5f, .5f, .5f));
+		auto scale = collider->m_transform->getLocalScale() / 2.0f;
+		collider->m_shape = std::make_unique<btBoxShape>(btVector3(scale.x, scale.y, scale.z));
 		initRigidBody();
 	}
 
@@ -136,6 +137,62 @@ namespace gust
 	void BoxColliderSystem::onEnd()
 	{
 		auto collider = getComponent<BoxCollider>();
+		m_collider = static_cast<Collider*>(collider.get());
+		m_component = static_cast<ComponentBase*>(collider.get());
+
+		ColliderSystem::onEnd();
+	}
+}
+
+/** SphereCollider */
+namespace gust
+{
+	SphereCollider::SphereCollider(Entity entity, Handle<SphereCollider> handle) : Component<SphereCollider>(entity, handle)
+	{
+
+	}
+
+	SphereCollider::~SphereCollider()
+	{
+
+	}
+
+	SphereColliderSystem::SphereColliderSystem(Scene* scene) : ColliderSystem(scene)
+	{
+		initialize<SphereCollider>();
+	}
+
+	SphereColliderSystem::~SphereColliderSystem()
+	{
+
+	}
+
+	void SphereColliderSystem::onBegin()
+	{
+		auto collider = getComponent<SphereCollider>();
+		m_collider = static_cast<Collider*>(collider.get());
+		m_component = static_cast<ComponentBase*>(collider.get());
+
+		ColliderSystem::onBegin();
+
+		// Create sphere shape
+		auto scale = collider->m_transform->getLocalScale();
+		collider->m_shape = std::make_unique<btSphereShape>((glm::abs(scale.x) + glm::abs(scale.y) + glm::abs(scale.z)) / 6.0f);
+		initRigidBody();
+	}
+
+	void SphereColliderSystem::onLateTick(float deltaTime)
+	{
+		auto collider = getComponent<SphereCollider>();
+		m_collider = static_cast<Collider*>(collider.get());
+		m_component = static_cast<ComponentBase*>(collider.get());
+
+		ColliderSystem::onLateTick(deltaTime);
+	}
+
+	void SphereColliderSystem::onEnd()
+	{
+		auto collider = getComponent<SphereCollider>();
 		m_collider = static_cast<Collider*>(collider.get());
 		m_component = static_cast<ComponentBase*>(collider.get());
 

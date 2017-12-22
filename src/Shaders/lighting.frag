@@ -69,6 +69,10 @@ layout(std140, set = 0, binding = 0) uniform LightingData
 	layout(offset = (GUST_POINT_LIGHT_COUNT * 40) + (GUST_DIRECTIONAL_LIGHT_COUNT * 36) + (GUST_SPOT_LIGHT_COUNT * 60) + 48)
 	vec4 cameraPosition;
 	
+	// Ambient color
+	layout(offset = (GUST_POINT_LIGHT_COUNT * 40) + (GUST_DIRECTIONAL_LIGHT_COUNT * 36) + (GUST_SPOT_LIGHT_COUNT * 60) + 64)
+	vec4 ambient;
+	
 } lightingData;
 
 layout(location = 0) in VS_OUT
@@ -85,12 +89,13 @@ layout(location = 0) in VS_OUT
  * @param Vector normal to the fragment.
  * @param Original color of the fragment.
  * @param Specularity of the fragment.
- * @param Ambient intensity of the fragment.
  */
-vec3 calculateDirectionalLight(DirectionalLightData directionalLight, vec3 viewDirection, vec3 normal, vec3 color, float specularity, float ambientStrength)
+vec3 calculateDirectionalLight(DirectionalLightData directionalLight, vec3 viewDirection, vec3 normal, vec3 color, float specularity)
 {
-	// Ambient
-	vec3 ambient = ambientStrength * directionalLight.color.xyz * color;
+	// // Ambient
+	// vec3 ambient = ambientStrength * directionalLight.color.xyz * color;
+	vec3 ambient = lightingData.ambient.xyz * lightingData.ambient.w;
+	ambient *= directionalLight.color.xyz * color;
 	
 	// Diffuse
 	vec3 lightDir = normalize(-directionalLight.direction.xyz);  
@@ -114,9 +119,8 @@ vec3 calculateDirectionalLight(DirectionalLightData directionalLight, vec3 viewD
  * @param Vector normal to the fragment.
  * @param Original color of the fragment.
  * @param Specularity of the fragment.
- * @param Ambient intensity of the fragment.
  */
-vec3 calculatePointLight(PointLightData pointLight, vec3 viewDirection, vec3 position, vec3 normal, vec3 color, float specularity, float ambientStrength)
+vec3 calculatePointLight(PointLightData pointLight, vec3 viewDirection, vec3 position, vec3 normal, vec3 color, float specularity)
 {
 	// Distance from light source to fragment
 	float dist = length(pointLight.position.xyz - position);
@@ -124,8 +128,10 @@ vec3 calculatePointLight(PointLightData pointLight, vec3 viewDirection, vec3 pos
 	if(dist > pointLight.range)
 		return vec3(0, 0, 0);
 
-	// Ambient
-	vec3 ambient = ambientStrength * pointLight.color.xyz * color;
+	// // Ambient
+	// vec3 ambient = ambientStrength * pointLight.color.xyz * color;
+	vec3 ambient = lightingData.ambient.xyz * lightingData.ambient.w;
+	ambient *= pointLight.color.xyz * color;
 	
 	// Diffuse
 	vec3 lightDir = normalize(pointLight.position.xyz - position);  
@@ -154,9 +160,8 @@ vec3 calculatePointLight(PointLightData pointLight, vec3 viewDirection, vec3 pos
  * @param Vector normal to the fragment.
  * @param Original color of the fragment.
  * @param Specularity of the fragment.
- * @param Ambient intensity of the fragment.
  */
-vec3 calculateSpotLight(SpotLightData spotLight, vec3 viewDirection, vec3 position, vec3 normal, vec3 color, float specularity, float ambientStrength)
+vec3 calculateSpotLight(SpotLightData spotLight, vec3 viewDirection, vec3 position, vec3 normal, vec3 color, float specularity)
 {
 	// Distance from light source to fragment
 	float dist = length((spotLight.position.xyz) - position);
@@ -169,7 +174,7 @@ vec3 calculateSpotLight(SpotLightData spotLight, vec3 viewDirection, vec3 positi
 	float theta = dot(lightDir, normalize(-spotLight.direction.xyz));
 	
 	// Calculate intensity
-	float outerCutoff = spotLight.cutOff*1.05f;
+	float outerCutoff = spotLight.cutOff * 1.05f;
 	float epsilon   = spotLight.cutOff - outerCutoff;
 	float intensity = (1.0f - clamp((theta - outerCutoff) / epsilon, 0.0, 1.0)) * spotLight.intensity;    
 
@@ -180,8 +185,10 @@ vec3 calculateSpotLight(SpotLightData spotLight, vec3 viewDirection, vec3 positi
 
 	if(theta > spotLight.cutOff) 
 	{       
-		// Ambient
-		vec3 ambient = ambientStrength * spotLight.color.xyz * color;
+		// // Ambient
+		// vec3 ambient = ambientStrength * spotLight.color.xyz * color;
+		vec3 ambient = lightingData.ambient.xyz * lightingData.ambient.w;
+		ambient *= spotLight.color.xyz * color;
 		
 		// Diffuse
 		float diff = max(dot(normal, lightDir), 0.0);
@@ -218,15 +225,15 @@ void main()
 	
 	// Directional lights
 	for(uint i = 0; i < lightingData.directionalLightCount; i++)
-		total += calculateDirectionalLight(lightingData.directionalLights[i], viewDir, normal, color, 0.0f, 0.1f);
+		total += calculateDirectionalLight(lightingData.directionalLights[i], viewDir, normal, color, 0.0f);
 	
 	// Point lights
 	for(uint i = 0; i < lightingData.pointLightCount; i++)
-		total += calculatePointLight(lightingData.pointLights[i], viewDir, position, normal, color, 0.0f, 0.1f);
+		total += calculatePointLight(lightingData.pointLights[i], viewDir, position, normal, color, 0.0f);
 		
 	// Spot lights
 	for(uint i = 0; i < lightingData.spotLightCount; i++)
-		total += calculateSpotLight(lightingData.spotLights[i], viewDir, position, normal, color, 0.0f, 0.1f);
+		total += calculateSpotLight(lightingData.spotLights[i], viewDir, position, normal, color, 0.0f);
 	
 	outAlbedo = vec4(total, 1.0);
 	outNormal = vec4(normal, 1.0);

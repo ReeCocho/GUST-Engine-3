@@ -396,3 +396,102 @@ namespace gust
 		void onEnd() override;
 	};
 }
+
+/** SphereCollider */
+namespace gust
+{
+	/**
+	 * @class SphereCollider
+	 * @brief Allows an entity to have a sphere collider.
+	 */
+	class SphereCollider : public Component<SphereCollider>, public Collider
+	{
+		friend class SphereColliderSystem;
+
+	public:
+
+		/**
+		 * @brief Default constructor.
+		 */
+		SphereCollider() = default;
+
+		/**
+		 * @brief Constructor.
+		 * @param Entity the component is attached to
+		 * @param Component handle
+		 */
+		SphereCollider(Entity entity, Handle<SphereCollider> handle);
+
+		/**
+		 * @brief Destructor.
+		 * @see Component::~Component
+		 */
+		~SphereCollider();
+
+		/**
+		 * @brief Set sphere radius.
+		 * @param New sphere radius.
+		  *@return New sphere radius.
+		 */
+		inline float setRadius(float radius)
+		{
+			m_radius = radius;
+
+			btSphereShape* shape = static_cast<btSphereShape*>(m_shape.get());
+			shape->setLocalScaling({ m_radius * 2.0f, m_radius * 2.0f, m_radius * 2.0f });
+
+			return m_radius;
+		}
+
+		/**
+		 * @brief Get sphere radius.
+		 * @return Sphere radius.
+		 */
+		inline float getRadius() const
+		{
+			return m_radius;
+		}
+
+	private:
+
+		/** Sphere radius */
+		float m_radius = 0.5f;
+	};
+
+	/**
+	 * @class SphereColliderSystem
+	 * @brief Implementation of a sphere collider.
+	 */
+	class SphereColliderSystem : public ColliderSystem
+	{
+	public:
+
+		/**
+		 * @brief Constructor.
+		 * @param Scene the system is in.
+		 */
+		SphereColliderSystem(Scene* scene);
+
+		/**
+		 * @brief Destructor.
+		 */
+		~SphereColliderSystem();
+
+		/**
+		 * @brief Called when a component is added to the system.
+		 * @param Component to act upon.
+		 */
+		void onBegin() override;
+
+		/**
+		 * @brief Called once per tick after onTick().
+		 * @param Delta time.
+		 */
+		void onLateTick(float deltaTime) override;
+
+		/**
+		 * @brief Called when a component is removed from the system.
+		 */
+		void onEnd() override;
+	};
+}

@@ -373,6 +373,46 @@ namespace gust
 			m_graphics->getLogicalDevice().freeCommandBuffers(m_commands.pools[commandBuffer.index], commandBuffer.buffer);
 		}
 
+		/**
+		 * @brief Set ambient light color.
+		 * @param New ambient light color.
+		 * @return New ambient light color.
+		 */
+		inline glm::vec3 setAmbientColor(glm::vec3 color)
+		{
+			m_lightingData.ambient = glm::vec4(color, m_lightingData.ambient.w);
+			return color;
+		}
+
+		/**
+		 * @brief Set ambient light intensity.
+		 * @param New ambient light intensity.
+		 * @return New ambient light intensity.
+		 */
+		inline float setAmbientIntensity(float intensity)
+		{
+			m_lightingData.ambient.w = intensity;
+			return m_lightingData.ambient.w;
+		}
+
+		/**
+		 * @brief Get ambient light color.
+		 * @return Ambient light color.
+		 */
+		inline glm::vec3 getAmbientColor() const
+		{
+			return { m_lightingData.ambient.x, m_lightingData.ambient.y, m_lightingData.ambient.z };
+		}
+
+		/**
+		 * @brief Get ambient light intensity.
+		 * @return Ambient light intensity.
+		 */
+		inline float getAmbientIntensity() const
+		{
+			return m_lightingData.ambient.w;
+		}
+
 	private:
 
 		/**
@@ -660,7 +700,10 @@ namespace gust
 			char padding3[12];
 
 			/** Camera view position */
-			glm::vec4 viewPosition = glm::vec4();
+			glm::vec4 viewPosition = {};
+
+			/** Ambient color. */
+			glm::vec4 ambient = { 1, 1, 1, 0.1f };
 
 		} m_lightingData;
 
