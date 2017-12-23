@@ -23,6 +23,8 @@ namespace gust
 	class Collider
 	{
 		friend class ColliderSystem;
+		friend class BoxColliderSystem;
+		friend class SphereColliderSystem;
 
 	public:
 
@@ -223,7 +225,33 @@ namespace gust
 			return s;
 		}
 
+		/**
+		 * @brief Get collision shape.
+		 * @return Collision shape.
+		 */
+		inline btCollisionShape* getCollisionShape()
+		{
+			return m_shape.get();
+		}
+
+		/**
+		 * @brief Get collider by btCollisionShape*.
+		 * @param Bullet collision shape.
+		 * @return Handle to collider.
+		 */
+		inline static Handle<Collider> getColliderByShape(btCollisionShape* shape)
+		{
+			for (auto& handle : colliders)
+				if (handle->getCollisionShape() == shape)
+					return handle;
+
+			return Handle<Collider>::nullHandle();
+		}
+
 	private:
+
+		/** Colliders created. */
+		static std::vector<Handle<Collider>> colliders;
 
 		/** Motion state. */
 		std::unique_ptr<btMotionState> m_motionState = nullptr;
@@ -493,5 +521,24 @@ namespace gust
 		 * @brief Called when a component is removed from the system.
 		 */
 		void onEnd() override;
+	};
+
+	/**
+	 * @struct CollisionData
+	 * @brief Information about a collision.
+	 */
+	struct CollisionData
+	{
+		/** Collider tocuhed. */
+		Handle<Collider> touched = {};
+
+		/** Collider touching. */
+		Handle<Collider> touching = {};
+
+		/** Contact point in world space. */
+		glm::vec3 point = {};
+
+		/** Normal on touched object. */
+		glm::vec3 normal = {};
 	};
 }

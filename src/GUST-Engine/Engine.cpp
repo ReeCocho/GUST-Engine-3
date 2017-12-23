@@ -1,28 +1,33 @@
 #include <iostream>
+#include <tuple>
 #include "Engine.hpp"
+#include "Colliders.hpp"
 
 namespace
 {
 	/** Game clock. */
-	gust::Clock m_clock = {};
+	gust::Clock gameClock = {};
 
 	/** Frame counter. */
-	uint64_t m_frameCounter = 0;
+	uint64_t frameCounter = 0;
 
 	/** Time elapsed since last measuring the framerate. */
-	float m_frameRateTimer = 0;
+	float frameRateTimer = 0;
 
 	/** Time elapsed since last performing a physics step. */
-	float m_physicsTimer = 0;
+	float physicsTimer = 0;
 
 	/** Frame rate. */
-	uint32_t m_frameRate = 0;
+	uint32_t frameRate = 0;
 
 	/** Rendering thread. */
-	std::unique_ptr<gust::SimulationThread> m_renderingThread;
+	std::unique_ptr<gust::SimulationThread> renderingThread;
 
 	/** Physics thread. */
-	std::unique_ptr<gust::SimulationThread> m_physicsThread;
+	std::unique_ptr<gust::SimulationThread> physicsThread;
+
+	/** Collision callbacks. */
+	std::vector<std::tuple<gust::Handle<gust::Collider>, std::function<void(gust::CollisionData)>>> collisionCallbacks = {};
 }
 
 namespace gust
@@ -58,8 +63,11 @@ namespace gust
 		physics.startup({ 0, -9.82f, 0 });
 
 		// Start threads
-		m_renderingThread = std::make_unique<SimulationThread>([]() { renderer.render(); });
-		m_physicsThread = std::make_unique<SimulationThread>([]() { physics.step(GUST_PHYSICS_STEP_RATE); });
+		renderingThread = std::make_unique<SimulationThread>([]() { renderer.render(); });
+		physicsThread = std::make_unique<SimulationThread>([]() 
+		{ 
+			physics.step(GUST_PHYSICS_STEP_RATE);
+		});
 	}
 
 	void simulate()
@@ -67,41 +75,70 @@ namespace gust
 		while (!input.isClosing())
 		{
 			// Get delta time
-			float deltaTime = m_clock.getDeltaTime();
+			float deltaTime = gameClock.getDeltaTime();
 
 			// Increment physics timer
-			m_physicsTimer += deltaTime;
+			physicsTimer += deltaTime;
 
 			// Do framerate stuff
-			++m_frameCounter;
-			m_frameRateTimer += deltaTime;
+			++frameCounter;
+			frameRateTimer += deltaTime;
 
-			if (m_frameRateTimer >= 1.0f)
+			if (frameRateTimer >= 1.0f)
 			{
-				m_frameRate = static_cast<uint32_t>(m_frameCounter);
-				m_frameCounter = 0;
-				m_frameRateTimer = 0;
+				frameRate = static_cast<uint32_t>(frameCounter);
+				frameCounter = 0;
+				frameRateTimer = 0;
 
-				std::cout << m_frameRate << '\n';
+				std::cout << frameRate << '\n';
 			}
 
 			// Gather input
 			input.pollEvents();
 
 			// Wait for threads to finish processing
-			m_renderingThread->wait();
-			m_physicsThread->wait();
+			renderingThread->wait();
+			physicsThread->wait();
 
 			// Run game code
-			scene.tick(deltaTime);
+			{
+				// Collision callbacks
+				PhysicsCollisionData data = {};
+				while (physics.pollPhysicsCollisionData(data))
+				{
+					// Loop over every collision callback
+					for (size_t i = 0; i < collisionCallbacks.size(); ++i)
+					{
+						auto collider = std::get<0>(collisionCallbacks[i]);
+						auto c = collider.get();
+
+						std::cout << collider->getCollisionShape() << ' ' << data.touched->getCollisionShape() << '\n';
+
+						// If the collision involes the collider in the callback...
+						if (collider->getCollisionShape() == data.touched->getCollisionShape())
+						{
+							CollisionData callbackData = {};
+							callbackData.normal = data.normal;
+							callbackData.point = data.point;
+							callbackData.touched = collider;
+							callbackData.touching = Collider::getColliderByShape(data.touching->getCollisionShape());
+
+							std::get<1>(collisionCallbacks[i])(callbackData);
+						}
+					}
+				}
+
+				// Scene tick
+				scene.tick(deltaTime);
+			}
 
 			// Start threads for rendering and physics
-			m_renderingThread->start();
+			renderingThread->start();
 
-			if (m_physicsTimer >= GUST_PHYSICS_STEP_RATE)
+			if (physicsTimer >= GUST_PHYSICS_STEP_RATE)
 			{
-				m_physicsThread->start();
-				m_physicsTimer = 0;
+				physicsThread->start();
+				physicsTimer = 0;
 			}
 		}
 	}
@@ -109,8 +146,8 @@ namespace gust
 	void shutdown()
 	{
 		// Stop threads
-		m_physicsThread = nullptr;
-		m_renderingThread = nullptr;
+		physicsThread = nullptr;
+		renderingThread = nullptr;
 
 		// Shutdown modules
 		scene.shutdown();
@@ -123,6 +160,11 @@ namespace gust
 
 	uint32_t getFrameRate()
 	{
-		return m_frameRate;
+		return frameRate;
+	}
+
+	void registerCollisionCallback(Handle<Collider> collider, std::function<void(CollisionData)> callback)
+	{
+		collisionCallbacks.push_back(std::make_tuple(collider, callback));
 	}
 }

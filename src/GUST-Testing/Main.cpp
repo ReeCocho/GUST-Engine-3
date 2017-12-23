@@ -31,12 +31,26 @@ public:
 	{
 		auto component = getComponent<SpinningObject>();
 		component->m_transform = component->getEntity().getComponent<gust::Transform>();
+
+		gust::registerCollisionCallback
+		(
+			component->getEntity().getComponent<gust::SphereCollider>(), 
+			[this](gust::CollisionData data) 
+			{
+				onCollision(data); 
+			}
+		);
 	}
 
 	void onTick(float deltaTime) override
 	{
 		auto component = getComponent<SpinningObject>();
-		component->m_transform->modEulerAngles({ 0, deltaTime * 60.0f, 0 });
+		// component->m_transform->modEulerAngles({ 0, deltaTime * 60.0f, 0 });
+	}
+
+	void onCollision(gust::CollisionData data)
+	{
+		std::cout << "T";
 	}
 };
 
@@ -88,7 +102,16 @@ public:
 			controller->m_transform->modPosition(controller->m_transform->getForward() * y * deltaTime);
 			controller->m_transform->modPosition(controller->m_transform->getRight() * x * deltaTime);
 
-			controller->m_transform->modEulerAngles(glm::vec3(mouseDel.y, mouseDel.x, 0) * 0.25f);
+			glm::vec3 rot = controller->m_transform->getEulerAngles();
+			rot += glm::vec3(mouseDel.y, mouseDel.x, 0) * 0.25f;
+
+			if (rot.x < -89.0f)
+				rot.x = -89.0f;
+
+			if (rot.x > 89.0f)
+				rot.x = 89.0f;
+
+			controller->m_transform->setEulerAngles(rot);
 		}
 	}
 };
@@ -103,19 +126,23 @@ int main()
 	gust::input.registerAxis("Vertical", { { gust::KeyCode::S, -1.0f }, { gust::KeyCode::W, 1.0f } });
 	
 	// Graphics setup
+	gust::renderer.setAmbientColor({ 0.9f, 0.9f, 1 });
 	gust::renderer.setAmbientIntensity(0.5f);
 
 	// Add systems
-	gust::scene.addSystem<gust::TransformSystem>();
-	gust::scene.addSystem<SpinningObjectSystem>();
-	gust::scene.addSystem<gust::BoxColliderSystem>();
-	gust::scene.addSystem<gust::SphereColliderSystem>();
-	gust::scene.addSystem<CameraControllerSystem>();
-	gust::scene.addSystem<gust::PointLightSystem>();
-	gust::scene.addSystem<gust::DirectionalLightSystem>();
-	gust::scene.addSystem<gust::MeshRendererSystem>();
-	gust::scene.addSystem<gust::CameraSystem>();
-	
+	{
+		gust::scene.addSystem<gust::TransformSystem>();
+		gust::scene.addSystem<SpinningObjectSystem>();
+		gust::scene.addSystem<gust::BoxColliderSystem>();
+		gust::scene.addSystem<gust::SphereColliderSystem>();
+		gust::scene.addSystem<CameraControllerSystem>();
+		gust::scene.addSystem<gust::PointLightSystem>();
+		gust::scene.addSystem<gust::DirectionalLightSystem>();
+		gust::scene.addSystem<gust::SpotLightSystem>();
+		gust::scene.addSystem<gust::MeshRendererSystem>();
+		gust::scene.addSystem<gust::CameraSystem>();
+	}
+
 	// Create shaders
 	auto shader = gust::resourceManager.createShader
 	(
@@ -157,7 +184,6 @@ int main()
 
 		auto collider = entity.addComponent<gust::BoxCollider>();
 		collider->setStatic(true);
-		// collider->setScale({ 16, 1, 16 });
 	}
 	
 	// Create cube
@@ -186,10 +212,9 @@ int main()
 		meshRenderer->setMaterial(pom_mat);
 		meshRenderer->setMesh(sphere_mesh);
 
+		auto collider = entity.addComponent<gust::SphereCollider>();
+		
 		entity.addComponent<SpinningObject>();
-
-		//auto collider = entity.addComponent<gust::SphereCollider>();
-		// collider->setRadius(1);
 	}
 
 	// Create camera

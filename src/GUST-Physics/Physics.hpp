@@ -14,6 +14,7 @@
 #include <vector>
 #include <memory>
 #include <algorithm>
+#include <queue>
 #include <btBulletDynamicsCommon.h>
 
 namespace gust
@@ -31,6 +32,25 @@ namespace gust
 		glm::vec3 point = {};
 
 		/** Normal to the hit surface. */
+		glm::vec3 normal = {};
+	};
+
+	/**
+	 * @struct PhysicsCollisionData
+	 * @brief Data retrieved during a collision.
+	 */
+	struct PhysicsCollisionData
+	{
+		/** Collider tocuhed. */
+		btCollisionObject* touched = nullptr;
+
+		/** Collider touching. */
+		btCollisionObject* touching = nullptr;
+
+		/** Contact point in world space. */
+		glm::vec3 point = {};
+
+		/** Normal on touched object. */
 		glm::vec3 normal = {};
 	};
 
@@ -78,6 +98,7 @@ namespace gust
 		inline void registerRigidBody(btRigidBody* body)
 		{
 			m_dynamicsWorld->addRigidBody(body);
+			m_rigidBodies.push_back(body);
 		}
 
 		/**
@@ -87,6 +108,7 @@ namespace gust
 		inline void unregisterRigidBody(btRigidBody* body)
 		{
 			m_dynamicsWorld->removeRigidBody(body);
+			m_rigidBodies.erase(std::remove(m_rigidBodies.begin(), m_rigidBodies.end(), body), m_rigidBodies.end());
 		}
 
 		/**
@@ -127,6 +149,13 @@ namespace gust
 			return linecast(origin, origin + (direction * magnitude));
 		}
 
+		/**
+		 * @brief Poll collision data.
+		 * @param Collision data object to store the data inside of.
+		 * @return If we polled any data.
+		 */
+		bool pollPhysicsCollisionData(PhysicsCollisionData& data);
+
 	private:
 
 		/** Collision configuration. */
@@ -146,5 +175,8 @@ namespace gust
 
 		/** Rigid bodies registered with the engine. */
 		std::vector<btRigidBody*> m_rigidBodies = {};
+
+		/** Collision data from the last step. */
+		std::queue<PhysicsCollisionData> m_collisionData = {};
 	};
 }

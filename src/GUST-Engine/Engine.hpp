@@ -18,6 +18,10 @@
 
 namespace gust
 {
+	class Collider;
+
+	struct CollisionData;
+
 	/**
 	 * @brief Startup the engine.
 	 * @param Window name.
@@ -44,6 +48,13 @@ namespace gust
 	 * @return Frame rate.
 	 */
 	extern uint32_t getFrameRate();
+
+	/**
+	 * @brief Register a collision callback.
+	 * @param Collider to check collisions for.
+	 * @param Function to call.
+	 */
+	extern void registerCollisionCallback(Handle<Collider> collider, std::function<void(CollisionData)> callback);
 
 
 	/** Graphics context. */

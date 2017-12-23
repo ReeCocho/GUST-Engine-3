@@ -271,6 +271,29 @@ namespace gust
 			return counter;
 		}
 
+		/**
+		 * @brief Get size of resources.
+		 * @return Size of resources.
+		 */
+		inline size_t getResourceSize() const
+		{
+			return m_clampedDataSize;
+		}
+
+		/**
+		 * @brief Get a void* to a resource.
+		 * @param Resource handle.
+		 * @return Void* to the resource.
+		 */
+		inline void* getRawResourceByHandle(size_t handle)
+		{
+			// Make sure the handle is in use
+			if (!isAllocated(handle))
+				return nullptr;
+
+			return reinterpret_cast<void*>((m_data + m_offset + m_maxResourceCount) + (handle * m_clampedDataSize));
+		}
+
 	protected:
 
 		/** Pointer to base of the stack. */
@@ -347,15 +370,6 @@ namespace gust
 
 				delete[] m_data;
 			}
-		}
-
-		/**
-		 * @brief Get size of resources.
-		 * @return Size of resources.
-		 */
-		inline constexpr size_t getResourceSize() const
-		{
-			return sizeof(T);
 		}
 
 		/**
@@ -484,10 +498,22 @@ namespace gust
 
 		/**
 		 * @brief Constructor.
+		 * @tparam Type of other handle.
+		 */
+		template<class U>
+		Handle(const Handle<U>& other) : 
+			m_resourceAllocator(other.getResourceAllocator()),
+			m_handle(other.getHandle())
+		{
+			static_assert(std::is_base_of<T, U>::value, "U must derive from T");
+		}
+
+		/**
+		 * @brief Constructor.
 		 * @param Resource allocator.
 		 * @param Handle.
 		 */
-		Handle(ResourceAllocator<T>* allocator, size_t handle) : 
+		Handle(ResourceAllocatorBase* allocator, size_t handle) : 
 			m_resourceAllocator(allocator),
 			m_handle(handle)
 		{
@@ -521,7 +547,7 @@ namespace gust
 		 * @brief Get resource allocator.
 		 * @return Resource allocator.
 		 */
-		inline ResourceAllocator<T>* getResourceAllocator() const
+		inline ResourceAllocatorBase* getResourceAllocator() const
 		{
 			return m_resourceAllocator;
 		}
@@ -532,7 +558,7 @@ namespace gust
 		 */
 		T* operator->() const 
 		{
-			return m_resourceAllocator == nullptr ? nullptr : m_resourceAllocator->getResourceByHandle(m_handle);
+			return m_resourceAllocator == nullptr ? nullptr : reinterpret_cast<T*>(m_resourceAllocator->getRawResourceByHandle(m_handle));
 		}
 
 		/**
@@ -541,7 +567,7 @@ namespace gust
 		 */
 		T* get() const
 		{
-			return m_resourceAllocator->getResourceByHandle(m_handle);
+			return reinterpret_cast<T*>(m_resourceAllocator->getRawResourceByHandle(m_handle));
 		}
 		
 		/**
@@ -564,10 +590,40 @@ namespace gust
 			return (lh.m_resourceAllocator != rh.m_resourceAllocator) || (lh.m_handle != rh.m_handle);
 		}
 
+		/**
+		 * @brief Assignment operator.
+		 * @tparam Type of other handle.
+		 * @param Handle to set this handle equal to.
+		 * @return Reference to this handle.
+		 * @note U should derive from T.
+		 */
+		template<class U>
+		inline Handle<T>& operator=(const Handle<U>& other)
+		{
+			static_assert(std::is_base_of<T, U>::value, "U must derive from T");
+			m_resourceAllocator = other.getResourceAllocator();
+			m_handle = other.getHandle();
+			return *this;
+		}
+
+		/**
+		 * @brief Assignment operator.
+		 * @tparam Type of other handle.
+		 * @param Handle to set this handle equal to.
+		 * @return Reference to this handle.
+		 */
+		template<>
+		inline Handle<T>& operator=<T>(const Handle<T>& other)
+		{
+			m_resourceAllocator = other.getResourceAllocator();
+			m_handle = other.getHandle();
+			return *this;
+		}
+
 	private:
 
 		/** Resource allocator. */
-		ResourceAllocator<T>* m_resourceAllocator;
+		ResourceAllocatorBase* m_resourceAllocator;
 
 		/** Resources handle. */
 		size_t m_handle;

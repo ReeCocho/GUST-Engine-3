@@ -9,7 +9,7 @@ namespace gust
 
 	System::~System()
 	{
-		// m_destroyAllComponents();
+		
 	}
 
 	void System::onBegin()

@@ -4,6 +4,8 @@ namespace gust
 {
 	void Physics::startup(glm::vec3 gravity)
 	{
+		
+
 		// Create collision configuration
 		m_collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
 
@@ -48,6 +50,71 @@ namespace gust
 	{
 		// Do a step
 		m_dynamicsWorld->stepSimulation(deltaTime, 50, 1 / 144.0f);
+
+		// Clear collision data
+		std::queue<PhysicsCollisionData> emptyQueue = {};
+		std::swap(m_collisionData, emptyQueue);
+
+		// Get number of manifolds and loop over them
+		int numManifolds = m_dynamicsWorld->getDispatcher()->getNumManifolds();
+		for (int i = 0; i < numManifolds; ++i)
+		{
+			// Get objects colliding
+			btPersistentManifold* contactManifold = m_dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
+			const btCollisionObject* obA = contactManifold->getBody0();
+			const btCollisionObject* obB = contactManifold->getBody1();
+
+			// Get number of contacts and loop over them
+			int numContacts = contactManifold->getNumContacts();
+			for (int j = 0; j < numContacts; ++j)
+			{
+				btManifoldPoint& pt = contactManifold->getContactPoint(j);
+				if (pt.getDistance() <= 0.0f)
+				{
+					const btVector3& ptA = pt.getPositionWorldOnA();
+					const btVector3& ptB = pt.getPositionWorldOnB();
+					const btVector3& normalOnB = pt.m_normalWorldOnB;
+					
+					btRigidBody* rbA = nullptr;
+					btRigidBody* rbB = nullptr;
+
+					// Find bodies
+					for (auto rigidBody : m_rigidBodies)
+					{
+						if (rbA && rbB)
+							break;
+
+						if (obA == rigidBody)
+							rbA = rigidBody;
+
+						if (obB == rigidBody)
+							rbB = rigidBody;
+					}
+
+					PhysicsCollisionData data = {};
+					data.point = { ptA.x(), ptA.y(), ptA.z() };
+					data.normal = { normalOnB.x(), normalOnB.y(), normalOnB.z() };
+					data.touched = rbB;
+					data.touching = rbA;
+
+					// Add collision data
+					m_collisionData.emplace(data);
+				}
+			}
+		}
+	}
+
+	bool Physics::pollPhysicsCollisionData(PhysicsCollisionData& data)
+	{
+		if (m_collisionData.size() > 0)
+		{
+			// Get data
+			data = m_collisionData.front();
+			m_collisionData.pop();
+			return true;
+		}
+
+		return false;
 	}
 
 	RaycastHitData Physics::linecast(glm::vec3 origin, glm::vec3 destination)

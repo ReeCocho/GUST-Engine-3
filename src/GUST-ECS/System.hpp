@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <Allocators.hpp>
+#include <Math.hpp>
 
 #include "Component.hpp"
 
