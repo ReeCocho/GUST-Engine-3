@@ -31,15 +31,6 @@ public:
 	{
 		auto component = getComponent<SpinningObject>();
 		component->m_transform = component->getEntity().getComponent<gust::Transform>();
-
-		gust::registerCollisionCallback
-		(
-			component->getEntity().getComponent<gust::SphereCollider>(), 
-			[this](gust::CollisionData data) 
-			{
-				onCollision(data); 
-			}
-		);
 	}
 
 	void onTick(float deltaTime) override

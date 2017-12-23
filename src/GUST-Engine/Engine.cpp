@@ -25,9 +25,6 @@ namespace
 
 	/** Physics thread. */
 	std::unique_ptr<gust::SimulationThread> physicsThread;
-
-	/** Collision callbacks. */
-	std::vector<std::tuple<gust::Handle<gust::Collider>, std::function<void(gust::CollisionData)>>> collisionCallbacks = {};
 }
 
 namespace gust
@@ -104,29 +101,7 @@ namespace gust
 			{
 				// Collision callbacks
 				PhysicsCollisionData data = {};
-				while (physics.pollPhysicsCollisionData(data))
-				{
-					// Loop over every collision callback
-					for (size_t i = 0; i < collisionCallbacks.size(); ++i)
-					{
-						auto collider = std::get<0>(collisionCallbacks[i]);
-						auto c = collider.get();
-
-						std::cout << collider->getCollisionShape() << ' ' << data.touched->getCollisionShape() << '\n';
-
-						// If the collision involes the collider in the callback...
-						if (collider->getCollisionShape() == data.touched->getCollisionShape())
-						{
-							CollisionData callbackData = {};
-							callbackData.normal = data.normal;
-							callbackData.point = data.point;
-							callbackData.touched = collider;
-							callbackData.touching = Collider::getColliderByShape(data.touching->getCollisionShape());
-
-							std::get<1>(collisionCallbacks[i])(callbackData);
-						}
-					}
-				}
+				while (physics.pollPhysicsCollisionData(data));
 
 				// Scene tick
 				scene.tick(deltaTime);
@@ -161,10 +136,5 @@ namespace gust
 	uint32_t getFrameRate()
 	{
 		return frameRate;
-	}
-
-	void registerCollisionCallback(Handle<Collider> collider, std::function<void(CollisionData)> callback)
-	{
-		collisionCallbacks.push_back(std::make_tuple(collider, callback));
 	}
 }

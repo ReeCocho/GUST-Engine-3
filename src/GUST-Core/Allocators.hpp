@@ -505,7 +505,7 @@ namespace gust
 			m_resourceAllocator(other.getResourceAllocator()),
 			m_handle(other.getHandle())
 		{
-			static_assert(std::is_base_of<T, U>::value, "U must derive from T");
+			// static_assert(std::is_base_of<T, U>::value, "U must derive from T");
 		}
 
 		/**
@@ -556,18 +556,18 @@ namespace gust
 		 * @brief Access operator.
 		 * @return Resource.
 		 */
-		T* operator->() const 
+		inline T* operator->() const 
 		{
-			return m_resourceAllocator == nullptr ? nullptr : reinterpret_cast<T*>(m_resourceAllocator->getRawResourceByHandle(m_handle));
+			return m_resourceAllocator == nullptr ? nullptr : static_cast<T*>(m_resourceAllocator->getRawResourceByHandle(m_handle));
 		}
 
 		/**
 		 * @brief Get pointer to resource.
 		 * @return Pointer to resource.
 		 */
-		T* get() const
+		inline T* get() const
 		{
-			return reinterpret_cast<T*>(m_resourceAllocator->getRawResourceByHandle(m_handle));
+			return static_cast<T*>(m_resourceAllocator->getRawResourceByHandle(m_handle));
 		}
 		
 		/**
