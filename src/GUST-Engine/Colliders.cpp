@@ -127,8 +127,8 @@ namespace gust
 		ColliderSystem::onBegin();
 
 		// Create box shape
-		auto scale = collider->m_transform->getLocalScale() / 2.0f;
-		collider->m_shape = std::make_unique<btBoxShape>(btVector3(scale.x, scale.y, scale.z));
+		collider->m_shape = std::make_unique<btBoxShape>(btVector3(.5f, .5f, .5f));
+		collider->setScale(collider->m_transform->getLocalScale());
 		initRigidBody();
 	}
 
@@ -189,7 +189,8 @@ namespace gust
 
 		// Create sphere shape
 		auto scale = collider->m_transform->getLocalScale();
-		collider->m_shape = std::make_unique<btSphereShape>((glm::abs(scale.x) + glm::abs(scale.y) + glm::abs(scale.z)) / 6.0f);
+		collider->m_shape = std::make_unique<btSphereShape>(0.5f);
+		collider->setRadius((glm::abs(scale.x) + glm::abs(scale.y) + glm::abs(scale.z)) / 6.0f);
 		initRigidBody();
 	}
 
@@ -207,6 +208,69 @@ namespace gust
 	void SphereColliderSystem::onEnd()
 	{
 		auto collider = getComponent<SphereCollider>();
+		m_collider = static_cast<Collider*>(collider.get());
+		m_component = static_cast<ComponentBase*>(collider.get());
+
+		Collider::colliders.erase(std::remove(Collider::colliders.begin(), Collider::colliders.end(), Handle<Collider>(collider)), Collider::colliders.end());
+		ColliderSystem::onEnd();
+	}
+}
+
+/** CapsuleCollider */
+namespace gust
+{
+	CapsuleCollider::CapsuleCollider(Entity entity, Handle<CapsuleCollider> handle) : Component<CapsuleCollider>(entity, handle)
+	{
+
+	}
+
+	CapsuleCollider::~CapsuleCollider()
+	{
+
+	}
+
+	CapsuleColliderSystem::CapsuleColliderSystem(Scene* scene) : ColliderSystem(scene)
+	{
+		initialize<CapsuleCollider>();
+	}
+
+	CapsuleColliderSystem::~CapsuleColliderSystem()
+	{
+
+	}
+
+	void CapsuleColliderSystem::onBegin()
+	{
+		auto collider = getComponent<CapsuleCollider>();
+		m_collider = static_cast<Collider*>(collider.get());
+		m_component = static_cast<ComponentBase*>(collider.get());
+
+		Collider::colliders.push_back(collider);
+
+		ColliderSystem::onBegin();
+
+		// Create sphere shape
+		auto scale = collider->m_transform->getLocalScale();
+		collider->m_radius = (scale.x + scale.z) / 2.0f;
+		collider->m_height = scale.y;
+		collider->m_shape = std::make_unique<btCapsuleShape>(collider->m_radius / 2.0f, collider->m_height - (2.0f * collider->m_radius));
+		initRigidBody();
+	}
+
+	void CapsuleColliderSystem::onLateTick(float deltaTime)
+	{
+		for (Handle<CapsuleCollider> collider : *this)
+		{
+			m_collider = static_cast<Collider*>(collider.get());
+			m_component = static_cast<ComponentBase*>(collider.get());
+
+			ColliderSystem::onLateTick(deltaTime);
+		}
+	}
+
+	void CapsuleColliderSystem::onEnd()
+	{
+		auto collider = getComponent<CapsuleCollider>();
 		m_collider = static_cast<Collider*>(collider.get());
 		m_component = static_cast<ComponentBase*>(collider.get());
 

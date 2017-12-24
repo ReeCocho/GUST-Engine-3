@@ -25,6 +25,7 @@ namespace gust
 		friend class ColliderSystem;
 		friend class BoxColliderSystem;
 		friend class SphereColliderSystem;
+		friend class CapsuleColliderSystem;
 
 	public:
 
@@ -324,6 +325,25 @@ namespace gust
 		/** Component the system is working with. */
 		ComponentBase* m_component = nullptr;
 	};
+
+	/**
+	 * @struct CollisionData
+	 * @brief Information about a collision.
+	 */
+	struct CollisionData
+	{
+		/** Collider tocuhed. */
+		Handle<Collider> touched = {};
+
+		/** Collider touching. */
+		Handle<Collider> touching = {};
+
+		/** Contact point in world space. */
+		glm::vec3 point = {};
+
+		/** Normal on touched object. */
+		glm::vec3 normal = {};
+	};
 }
 
 /** BoxCollider */
@@ -522,23 +542,130 @@ namespace gust
 		 */
 		void onEnd() override;
 	};
+}
+
+/** CapsuleCollider */
+namespace gust
+{
+	/**
+	 * @class CapsuleCollider
+	 * @brief Allows an entity to have a capsule collider.
+	 */
+	class CapsuleCollider : public Component<CapsuleCollider>, public Collider
+	{
+		friend class CapsuleColliderSystem;
+
+	public:
+
+		/**
+		 * @brief Default constructor.
+		 */
+		CapsuleCollider() = default;
+
+		/**
+		 * @brief Constructor.
+		 * @param Entity the component is attached to
+		 * @param Component handle
+		 */
+		CapsuleCollider(Entity entity, Handle<CapsuleCollider> handle);
+
+		/**
+		 * @brief Destructor.
+		 * @see Component::~Component
+		 */
+		~CapsuleCollider();
+
+		/**
+		 * @brief Set capsule radius.
+		 * @param New capsule radius.
+		 * @return New capsule radius.
+		 */
+		inline float setRadius(float radius)
+		{
+			m_radius = radius;
+			
+			m_shape = std::make_unique<btCapsuleShape>(m_radius, m_height);
+			m_rigidBody->setCollisionShape(m_shape.get());
+
+			return m_radius;
+		}
+
+		/**
+		 * @brief Get sphere radius
+		 * @return Sphere radius
+		 */
+		inline float getRadius() const
+		{
+			return m_radius;
+		}
+
+		/**
+		 * @brief Set capsule height.
+		 * @param New capsule height.
+		 * @return New capsule height.
+		 */
+		inline float setHeight(float height)
+		{
+			m_height = height;
+
+			m_shape = std::make_unique<btCapsuleShape>(m_radius, m_height);
+			m_rigidBody->setCollisionShape(m_shape.get());
+
+			return m_height;
+		}
+
+		/**
+		 * @brief Get capsule height.
+		 * @return Capsule height.
+		 */
+		inline float getHeight() const
+		{
+			return m_height;
+		}
+
+	private:
+
+		/** Sphere radius */
+		float m_radius = 0.5f;
+
+		/** Capsule height. */
+		float m_height = 2.0f;
+	};
 
 	/**
-	 * @struct CollisionData
-	 * @brief Information about a collision.
+	 * @class CapsuleColliderSystem
+	 * @brief Implementation of a sphere collider.
 	 */
-	struct CollisionData
+	class CapsuleColliderSystem : public ColliderSystem
 	{
-		/** Collider tocuhed. */
-		Handle<Collider> touched = {};
+	public:
 
-		/** Collider touching. */
-		Handle<Collider> touching = {};
+		/**
+		 * @brief Constructor.
+		 * @param Scene the system is in.
+		 */
+		CapsuleColliderSystem(Scene* scene);
 
-		/** Contact point in world space. */
-		glm::vec3 point = {};
+		/**
+		 * @brief Destructor.
+		 */
+		~CapsuleColliderSystem();
 
-		/** Normal on touched object. */
-		glm::vec3 normal = {};
+		/**
+		 * @brief Called when a component is added to the system.
+		 * @param Component to act upon.
+		 */
+		void onBegin() override;
+
+		/**
+		 * @brief Called once per tick after onTick().
+		 * @param Delta time.
+		 */
+		void onLateTick(float deltaTime) override;
+
+		/**
+		 * @brief Called when a component is removed from the system.
+		 */
+		void onEnd() override;
 	};
 }

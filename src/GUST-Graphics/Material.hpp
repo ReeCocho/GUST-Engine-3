@@ -73,7 +73,7 @@ namespace gust
 		template<class T>
 		void setFragmentData(const T& data)
 		{
-			auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+			auto logicalDevice = m_graphics->getLogicalDevice();
 			void* cpyData;
 
 			// Map memory
@@ -100,7 +100,7 @@ namespace gust
 		template<class T>
 		void setVertexData(const T& data)
 		{
-			auto logicalDevice = m_graphics->getDeviceManager()->getLogicalDevice();
+			auto logicalDevice = m_graphics->getLogicalDevice();
 			void* cpyData;
 
 			// Map memory

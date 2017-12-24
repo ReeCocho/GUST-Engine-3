@@ -15,8 +15,3 @@ layout(std140, set = 0, binding = 2) uniform GUST_FRAG_DATA
 {
 	layout(offset = 0) vec4 VIEW_POSITION;
 } GUST_DATA;
-
-// layout(std140, set = 0, binding = 3) uniform CUSTOM_FRAG_DATA
-// {
-// 	layout(offset = 0) float test;
-// } CUSTOM_DATA;

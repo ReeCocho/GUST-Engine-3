@@ -102,6 +102,11 @@ public:
 	}
 };
 
+struct TestData
+{
+	glm::vec2 uv = {};
+};
+
 int main()
 {
 	// Initialize engine
@@ -117,11 +122,19 @@ int main()
 
 	// Add systems
 	{
+		// Core systems
 		gust::scene.addSystem<gust::TransformSystem>();
+
+		// Custom systems
 		gust::scene.addSystem<SpinningObjectSystem>();
+		gust::scene.addSystem<CameraControllerSystem>();
+
+		// Physics systems
 		gust::scene.addSystem<gust::BoxColliderSystem>();
 		gust::scene.addSystem<gust::SphereColliderSystem>();
-		gust::scene.addSystem<CameraControllerSystem>();
+		gust::scene.addSystem<gust::CapsuleColliderSystem>();
+
+		// Rendering systems
 		gust::scene.addSystem<gust::PointLightSystem>();
 		gust::scene.addSystem<gust::DirectionalLightSystem>();
 		gust::scene.addSystem<gust::SpotLightSystem>();
@@ -135,23 +148,33 @@ int main()
 		"./Shaders/standard-vert.spv",
 		"./Shaders/standard-frag.spv",
 		sizeof(gust::EmptyVertexData),
-		sizeof(gust::EmptyFragmentData),
-		1,
+		sizeof(TestData),
+		2,
 		true,
 		true
 	);
 
 	// Create textures
+	auto floor_n = gust::resourceManager.createTexture("./Textures/BrickFloor_n.png", vk::Filter::eLinear);
 	auto floor = gust::resourceManager.createTexture("./Textures/BrickFloor.jpg", vk::Filter::eLinear);
 	auto pom = gust::resourceManager.createTexture("./Textures/CutePom.png", vk::Filter::eLinear);
 	auto gabe = gust::resourceManager.createTexture("./Textures/Gabe.jpg", vk::Filter::eLinear);
 
+	TestData data = {};
+	data.uv = { 6.0f, 6.0f };
+
 	// Create materials
 	auto floor_mat = gust::resourceManager.createMaterial(shader);
 	floor_mat->setTexture(floor, 0);
+	floor_mat->setTexture(floor_n, 1);
+	floor_mat->setFragmentData<TestData>(data);
+		
+	data.uv = { 1, 1 };
 
 	auto pom_mat = gust::resourceManager.createMaterial(shader);
 	pom_mat->setTexture(gabe, 0);
+	pom_mat->setTexture(floor_n, 1);
+	pom_mat->setFragmentData<TestData>(data);
 
 	// Create meshes
 	auto cube_mesh = gust::resourceManager.createMesh("./Meshes/Cube.obj");
@@ -184,6 +207,22 @@ int main()
 		meshRenderer->setMesh(cube_mesh);
 
 		auto collider = entity.addComponent<gust::BoxCollider>();
+	}
+
+	// Create pillar
+	{
+		auto entity = gust::Entity(&gust::scene);
+
+		auto transform = entity.getComponent<gust::Transform>();
+		transform->setPosition({ -5, 3, 4 });
+		transform->setLocalScale({ 1, 3, 1 });
+		transform->setLocalEulerAngles({ 90, 0, 0 });
+
+		auto meshRenderer = entity.addComponent<gust::MeshRenderer>();
+		meshRenderer->setMaterial(pom_mat);
+		meshRenderer->setMesh(cube_mesh);
+
+		auto collider = entity.addComponent<gust::CapsuleCollider>();
 	}
 
 	// Create sphere

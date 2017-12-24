@@ -225,7 +225,7 @@ void main()
 	
 	// Directional lights
 	for(uint i = 0; i < lightingData.directionalLightCount; i++)
-		total += calculateDirectionalLight(lightingData.directionalLights[i], viewDir, normal, color, 0.0f);
+		total += calculateDirectionalLight(lightingData.directionalLights[i], viewDir, normal, color, 1.0f);
 	
 	// Point lights
 	for(uint i = 0; i < lightingData.pointLightCount; i++)

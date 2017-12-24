@@ -15,5 +15,5 @@ void main()
 	GUST_FRAG_POS = vec3(GUST_DATA.MODEL * vec4(IN_POSITION, 1.0));
 	GUST_UV = IN_UV;
 	GUST_TANGENT = tangent;
-	GUST_BITANGENT = cross(tangent, normal);
+	GUST_BITANGENT = cross(normal, tangent);
 }
