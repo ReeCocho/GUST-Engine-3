@@ -134,11 +134,13 @@ namespace gust
 
 	void BoxColliderSystem::onLateTick(float deltaTime)
 	{
-		auto collider = getComponent<BoxCollider>();
-		m_collider = static_cast<Collider*>(collider.get());
-		m_component = static_cast<ComponentBase*>(collider.get());
+		for (Handle<BoxCollider> collider : *this)
+		{
+			m_collider = static_cast<Collider*>(collider.get());
+			m_component = static_cast<ComponentBase*>(collider.get());
 
-		ColliderSystem::onLateTick(deltaTime);
+			ColliderSystem::onLateTick(deltaTime);
+		}
 	}
 
 	void BoxColliderSystem::onEnd()
@@ -193,11 +195,13 @@ namespace gust
 
 	void SphereColliderSystem::onLateTick(float deltaTime)
 	{
-		auto collider = getComponent<SphereCollider>();
-		m_collider = static_cast<Collider*>(collider.get());
-		m_component = static_cast<ComponentBase*>(collider.get());
+		for (Handle<SphereCollider> collider : *this)
+		{
+			m_collider = static_cast<Collider*>(collider.get());
+			m_component = static_cast<ComponentBase*>(collider.get());
 
-		ColliderSystem::onLateTick(deltaTime);
+			ColliderSystem::onLateTick(deltaTime);
+		}
 	}
 
 	void SphereColliderSystem::onEnd()

@@ -23,8 +23,81 @@ namespace gust
 	class System
 	{
 		friend class Scene;
+		friend class SystemIterator;
 
 	public:
+
+		/**
+		 * @class Iterator
+		 * @brief Class used to iterate over components in a system.
+		 */
+		class Iterator
+		{
+		public:
+
+			/**
+			 * @brief Default constructor.
+			 */
+			Iterator() = default;
+
+			/**
+			 * @brief Constructor.
+			 * @param System to iterate over.
+			 * @param Starting position for the handle.
+			 */
+			Iterator(System* system, size_t pos);
+
+			/**
+			 * @brief Default destructor.
+			 */
+			~Iterator();
+
+			/**
+			 * @brief Unequivilence operator.
+			 * @param Left side.
+			 * @param Right side.
+			 * @return If the iterators are equal.
+			 */
+			bool operator!=(const Iterator& other) const
+			{
+				return m_handle != other.m_handle;
+			}
+
+			/**
+			 * @brief Increment operator.
+			 * @return Self.
+			 */
+			Iterator& operator++()
+			{
+				++m_handle;
+
+				while (!m_system->m_components->isAllocated(m_handle) && m_handle != m_system->m_components->getMaxResourceCount() - 1)
+					++m_handle;
+
+				m_system->m_componentHandle = m_handle;
+				return *this;
+			}
+
+			/**
+			 * @brief Indirection operator.
+			 * @tparam Component type.
+			 * @return Active component.
+			 */
+			Handle<ComponentBase> operator*()
+			{
+				return Handle<ComponentBase>(m_system->m_components.get(), m_handle);
+			}
+
+		private:
+
+			/** System to iterate over. */
+			System* m_system;
+
+			/** Handle. */
+			size_t m_handle;
+		};
+
+
 
 		/**
 		 * @brief Default constructor.
@@ -158,6 +231,33 @@ namespace gust
 		{
 			auto allocator = static_cast<ResourceAllocator<T>*>(m_components.get());
 			return Handle<T>(allocator, m_componentHandle);
+		}
+
+		/**
+		 * @brief Get iterator at the beginning of the component list.
+		 * @return Iterator at the beginning of the component list.
+		 */
+		Iterator begin()
+		{
+			size_t index = 0;
+
+			for (size_t i = 0; i < m_components->getMaxResourceCount(); i++)
+			{
+				index = i;
+				if (m_components->isAllocated(i))
+					break;
+			}
+
+			return Iterator(this, index);
+		}
+
+		/**
+		 * @brief Get iterator at the end of the component list.
+		 * @return Iterator at the end of the component list.
+		 */
+		Iterator end()
+		{
+			return Iterator(this, m_components->getMaxResourceCount() - 1);
 		}
 
 	private:

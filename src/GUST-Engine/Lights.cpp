@@ -30,15 +30,18 @@ namespace gust
 
 	void PointLightSystem::onPreRender(float deltaTime)
 	{
-		auto pointLight = getComponent<PointLight>();
+		for (Handle<PointLight> pointLight : *this)
+		{
+			bool test = pointLight.getResourceAllocator()->isAllocated(0);
 
-		PointLightData data = {};
-		data.color = { pointLight->getColor(), 1 };
-		data.intensity = pointLight->getIntensity();
-		data.range = pointLight->m_range;
-		data.position = { pointLight->m_transform->getPosition(), 1 };
+			PointLightData data = {};
+			data.color = { pointLight->getColor(), 1 };
+			data.intensity = pointLight->getIntensity();
+			data.range = pointLight->m_range;
+			data.position = { pointLight->m_transform->getPosition(), 1 };
 
-		gust::renderer.draw(data);
+			gust::renderer.draw(data);
+		}
 	}
 
 
@@ -71,14 +74,15 @@ namespace gust
 
 	void DirectionalLightSystem::onPreRender(float deltaTime)
 	{
-		auto directionalLight = getComponent<DirectionalLight>();
+		for (Handle<DirectionalLight> directionalLight : *this)
+		{
+			DirectionalLightData data = {};
+			data.color = { directionalLight->getColor(), 1 };
+			data.intensity = directionalLight->getIntensity();
+			data.direction = { directionalLight->m_transform->getForward(), 1 };
 
-		DirectionalLightData data = {};
-		data.color = { directionalLight->getColor(), 1 };
-		data.intensity = directionalLight->getIntensity();
-		data.direction = { directionalLight->m_transform->getForward(), 1 };
-
-		gust::renderer.draw(data);
+			gust::renderer.draw(data);
+		}
 	}
 
 
@@ -111,16 +115,17 @@ namespace gust
 
 	void SpotLightSystem::onPreRender(float deltaTime)
 	{
-		auto spotLight = getComponent<SpotLight>();
+		for (Handle<SpotLight> spotLight : *this)
+		{
+			SpotLightData data = {};
+			data.color = { spotLight->getColor(), 1 };
+			data.intensity = spotLight->getIntensity();
+			data.direction = { spotLight->m_transform->getForward(), 1 };
+			data.cutOff = glm::cos(glm::radians(spotLight->m_angle));
+			data.range = spotLight->m_range;
+			data.position = { spotLight->m_transform->getPosition(), 1 };
 
-		SpotLightData data = {};
-		data.color = { spotLight->getColor(), 1 };
-		data.intensity = spotLight->getIntensity();
-		data.direction = { spotLight->m_transform->getForward(), 1 };
-		data.cutOff = glm::cos(glm::radians(spotLight->m_angle));
-		data.range = spotLight->m_range;
-		data.position = { spotLight->m_transform->getPosition(), 1 };
-
-		gust::renderer.draw(data);
+			gust::renderer.draw(data);
+		}
 	}
 }

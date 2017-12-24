@@ -76,30 +76,15 @@ namespace gust
 
 		// Call onTick()
 		for (auto& system : m_systems)
-			for (size_t i = 0; i < system->m_components->getMaxResourceCount(); ++i)
-				if (system->m_components->isAllocated(i))
-				{
-					system->m_componentHandle = i;
-					system->onTick(deltaTime);
-				}
+			system->onTick(deltaTime);
 
 		// Call onLateTick()
 		for (auto& system : m_systems)
-			for (size_t i = 0; i < system->m_components->getMaxResourceCount(); ++i)
-				if (system->m_components->isAllocated(i))
-				{
-					system->m_componentHandle = i;
-					system->onLateTick(deltaTime);
-				}
+			system->onLateTick(deltaTime);
 
 		// Call onPreRender()
 		for (auto& system : m_systems)
-			for (size_t i = 0; i < system->m_components->getMaxResourceCount(); ++i)
-				if (system->m_components->isAllocated(i))
-				{
-					system->m_componentHandle = i;
-					system->onPreRender(deltaTime);
-				}
+			system->onPreRender(deltaTime);
 	}
 
 	System* Scene::getSystemOfType(size_t id)

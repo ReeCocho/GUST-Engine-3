@@ -63,13 +63,15 @@ namespace gust
 
 	void CameraSystem::onPreRender(float deltaTime)
 	{
-		auto camera = getComponent<Camera>();
-		camera->generateProjectionMatrix();
-		camera->generateViewMatrix();		
+		for (Handle<Camera> camera : *this)
+		{
+			camera->generateProjectionMatrix();
+			camera->generateViewMatrix();
 
-		camera->m_virtualCamera->view = camera->m_view;
-		camera->m_virtualCamera->projection = camera->m_projection;
-		camera->m_virtualCamera->viewPosition = camera->m_transform->getPosition();
+			camera->m_virtualCamera->view = camera->m_view;
+			camera->m_virtualCamera->projection = camera->m_projection;
+			camera->m_virtualCamera->viewPosition = camera->m_transform->getPosition();
+		}
 	}
 
 	void CameraSystem::onEnd()

@@ -103,9 +103,11 @@ namespace gust
 					{
 						T* component = allocator->getResourceByHandle(i);
 						assert(entity.getHandle() == component->getEntity().getHandle());
+						size_t oldHandle = system->m_componentHandle;
 						system->m_componentHandle = i;
 						system->onEnd();
 						allocator->deallocate(i);
+						system->m_componentHandle = oldHandle;
 					}
 			}
 		}
@@ -156,8 +158,10 @@ namespace gust
 				::new(component)(T)(entity, componentHandle);
 
 				// Call onBegin()		
+				size_t oldHandle = system->m_componentHandle;
 				system->m_componentHandle = handle;
 				system->onBegin();
+				system->m_componentHandle = oldHandle;
 
 				return componentHandle;
 			}

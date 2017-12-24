@@ -112,31 +112,32 @@ namespace gust
 
 	void MeshRendererSystem::onPreRender(float deltaTime)
 	{
-		auto meshRenderer = getComponent<MeshRenderer>();
-		
-		if (meshRenderer->m_material != Handle<Material>::nullHandle() && meshRenderer->m_mesh != Handle<Mesh>::nullHandle())
+		for (Handle<MeshRenderer> meshRenderer : *this)
 		{
-			MeshData data = {};
-			data.commandBuffer = meshRenderer->m_commandBuffer;
-			data.material = meshRenderer->m_material;
-			data.mesh = meshRenderer->m_mesh;
-			data.model = meshRenderer->m_transform->getModelMatrix();
-			data.fragmentUniformBuffer = meshRenderer->m_fragmentUniformBuffer;
-			data.vertexUniformBuffer = meshRenderer->m_vertexUniformBuffer;
-		
-			if (meshRenderer->m_material->getShader()->getTextureCount() > 0)
+			if (meshRenderer->m_material != Handle<Material>::nullHandle() && meshRenderer->m_mesh != Handle<Mesh>::nullHandle())
 			{
-				data.descriptorSets.resize(2);
-				data.descriptorSets[0] = meshRenderer->m_descriptorSet;
-				data.descriptorSets[1] = meshRenderer->m_material->getTextureDescriptorSet();
+				MeshData data = {};
+				data.commandBuffer = meshRenderer->m_commandBuffer;
+				data.material = meshRenderer->m_material;
+				data.mesh = meshRenderer->m_mesh;
+				data.model = meshRenderer->m_transform->getModelMatrix();
+				data.fragmentUniformBuffer = meshRenderer->m_fragmentUniformBuffer;
+				data.vertexUniformBuffer = meshRenderer->m_vertexUniformBuffer;
+
+				if (meshRenderer->m_material->getShader()->getTextureCount() > 0)
+				{
+					data.descriptorSets.resize(2);
+					data.descriptorSets[0] = meshRenderer->m_descriptorSet;
+					data.descriptorSets[1] = meshRenderer->m_material->getTextureDescriptorSet();
+				}
+				else
+				{
+					data.descriptorSets.resize(1);
+					data.descriptorSets[0] = meshRenderer->m_descriptorSet;
+				}
+
+				gust::renderer.draw(data);
 			}
-			else
-			{
-				data.descriptorSets.resize(1);
-				data.descriptorSets[0] = meshRenderer->m_descriptorSet;
-			}
-		
-			gust::renderer.draw(data);
 		}
 	}
 

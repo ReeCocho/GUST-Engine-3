@@ -35,13 +35,7 @@ public:
 
 	void onTick(float deltaTime) override
 	{
-		auto component = getComponent<SpinningObject>();
-		// component->m_transform->modEulerAngles({ 0, deltaTime * 60.0f, 0 });
-	}
 
-	void onCollision(gust::CollisionData data)
-	{
-		std::cout << "T";
 	}
 };
 
@@ -76,33 +70,34 @@ public:
 
 	void onTick(float deltaTime) override
 	{
-		auto controller = getComponent<CameraController>();
-
-		if (gust::input.getKeyDown(gust::KeyCode::M))
-			controller->m_enabled = !controller->m_enabled;
-
-		gust::input.setLockedMouse(controller->m_enabled);
-
-		if (controller->m_enabled)
+		for (gust::Handle<CameraController> controller : *this)
 		{
-			auto mouseDel = gust::input.getMouseDelta();
+			if (gust::input.getKeyDown(gust::KeyCode::M))
+				controller->m_enabled = !controller->m_enabled;
 
-			float x = gust::input.getAxis("Horizontal");
-			float y = gust::input.getAxis("Vertical");
+			gust::input.setLockedMouse(controller->m_enabled);
 
-			controller->m_transform->modPosition(controller->m_transform->getForward() * y * deltaTime);
-			controller->m_transform->modPosition(controller->m_transform->getRight() * x * deltaTime);
+			if (controller->m_enabled)
+			{
+				auto mouseDel = gust::input.getMouseDelta();
 
-			glm::vec3 rot = controller->m_transform->getEulerAngles();
-			rot += glm::vec3(mouseDel.y, mouseDel.x, 0) * 0.25f;
+				float x = gust::input.getAxis("Horizontal");
+				float y = gust::input.getAxis("Vertical");
 
-			if (rot.x < -89.0f)
-				rot.x = -89.0f;
+				controller->m_transform->modPosition(controller->m_transform->getForward() * y * deltaTime);
+				controller->m_transform->modPosition(controller->m_transform->getRight() * x * deltaTime);
 
-			if (rot.x > 89.0f)
-				rot.x = 89.0f;
+				glm::vec3 rot = controller->m_transform->getEulerAngles();
+				rot += glm::vec3(mouseDel.y, mouseDel.x, 0) * 0.25f;
 
-			controller->m_transform->setEulerAngles(rot);
+				if (rot.x < -89.0f)
+					rot.x = -89.0f;
+
+				if (rot.x > 89.0f)
+					rot.x = 89.0f;
+
+				controller->m_transform->setEulerAngles(rot);
+			}
 		}
 	}
 };
