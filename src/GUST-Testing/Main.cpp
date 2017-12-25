@@ -57,6 +57,8 @@ public:
 
 	float m_camRot = 0;
 
+	float m_yVelocity = 0;
+
 	bool m_enabled = true;
 };
 
@@ -84,6 +86,8 @@ public:
 			float x = gust::input.getAxis("Horizontal");
 			float y = gust::input.getAxis("Vertical");
 
+			glm::vec3 movementVector = {};
+
 			if (x != 0 || y != 0)
 			{
 				auto forward = player->m_cameraTransform->getForward();
@@ -94,12 +98,20 @@ public:
 				right.y = 0;
 				right = glm::normalize(right);
 
-				glm::vec3 movementVector = forward * y;
+				movementVector = forward * y;
 				movementVector += right * x;
-				movementVector = glm::normalize(movementVector);
+				movementVector = glm::normalize(movementVector) * 5.0f;
 
-				player->m_controller->move(movementVector * deltaTime);
+				movementVector *= deltaTime;
 			}
+
+			player->m_yVelocity -= 6.82f * deltaTime * deltaTime;
+			if (player->m_controller->isGrounded())
+				player->m_yVelocity = 0;
+
+			movementVector.y = player->m_yVelocity;
+
+			player->m_controller->move(movementVector);
 
 			if (gust::input.getKeyDown(gust::KeyCode::M))
 				player->m_enabled = !player->m_enabled;

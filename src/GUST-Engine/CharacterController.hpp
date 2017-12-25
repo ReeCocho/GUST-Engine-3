@@ -101,6 +101,15 @@ namespace gust
 		}
 
 		/**
+		 * @brief Get if the controller is grounded.
+		 * @return If the controller is grounded.
+		 */
+		inline bool isGrounded() const
+		{
+			return m_grounded;
+		}
+
+		/**
 		 * @brief Move the controller.
 		 * @param Movement delta.
 		 */
@@ -128,6 +137,12 @@ namespace gust
 
 		/** Target constraint. */
 		std::unique_ptr<btGeneric6DofConstraint> m_constraint = nullptr;
+
+		/** Last recorded position. */
+		glm::vec3 m_lastPosition = {};
+
+		/** Is the controller grounded. */
+		bool m_grounded = false;
 
 		/** Sphere radius */
 		float m_radius = 0.5f;

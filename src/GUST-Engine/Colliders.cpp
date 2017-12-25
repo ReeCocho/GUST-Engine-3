@@ -89,6 +89,11 @@ namespace gust
 		// Register body with dynamics world
 		gust::physics.registerRigidBody(m_collider->m_rigidBody.get());
 		m_collider->m_rigidBody->setSleepingThresholds(0.025f, 0.01f);
+
+		// Calculate inertia
+		btVector3 inertia(0, 0, 0);
+		m_collider->m_shape->calculateLocalInertia(1.0f, inertia);
+		m_collider->m_rigidBody->setMassProps(1.0f, inertia);
 	}
 }
 

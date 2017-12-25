@@ -1,5 +1,6 @@
 #include <iostream>
 #include <tuple>
+#include <map>
 #include "Engine.hpp"
 #include "Colliders.hpp"
 
@@ -25,6 +26,9 @@ namespace
 
 	/** Physics thread. */
 	std::unique_ptr<gust::SimulationThread> physicsThread;
+
+	/** Collision mapping. */
+	std::map<btCollisionObject*, std::vector<gust::PhysicsCollisionData>> collisions = {};
 }
 
 namespace gust
@@ -63,7 +67,8 @@ namespace gust
 		renderingThread = std::make_unique<SimulationThread>([]() { renderer.render(); });
 		physicsThread = std::make_unique<SimulationThread>([]() 
 		{ 
-			physics.step(GUST_PHYSICS_STEP_RATE);
+			physics.step(physicsTimer);
+			physicsTimer = 0;
 		});
 	}
 
@@ -73,6 +78,10 @@ namespace gust
 		{
 			// Get delta time
 			float deltaTime = gameClock.getDeltaTime();
+
+			// Clamp delta time
+			if (deltaTime > 10.0f)
+				deltaTime = 0;
 
 			// Increment physics timer
 			physicsTimer += deltaTime;
@@ -99,9 +108,14 @@ namespace gust
 
 			// Run game code
 			{
+				// Clear old collisions
+				for (auto& collision : collisions)
+					collision.second.clear();
+
 				// Collision callbacks
 				PhysicsCollisionData data = {};
-				while (physics.pollPhysicsCollisionData(data));
+				while (physics.pollPhysicsCollisionData(data))
+					collisions[data.touched].push_back(data);
 
 				// Scene tick
 				scene.tick(deltaTime);
@@ -111,10 +125,7 @@ namespace gust
 			renderingThread->start();
 
 			if (physicsTimer >= GUST_PHYSICS_STEP_RATE)
-			{
 				physicsThread->start();
-				physicsTimer = 0;
-			}
 		}
 	}
 
@@ -136,5 +147,10 @@ namespace gust
 	uint32_t getFrameRate()
 	{
 		return frameRate;
+	}
+
+	const std::vector<PhysicsCollisionData>& requestCollisionData(btCollisionObject* obj)
+	{
+		return collisions[obj];
 	}
 }

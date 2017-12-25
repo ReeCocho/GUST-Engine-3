@@ -14,6 +14,9 @@ namespace gust
 
 	void CharacterController::move(glm::vec3 movement)
 	{
+		m_targetRigidBody->activate();
+		m_rigidBody->activate();
+
 		auto transform = m_targetRigidBody->getWorldTransform();
 		transform.setOrigin(transform.getOrigin() + btVector3(movement.x, movement.y, movement.z));
 		m_targetRigidBody->setWorldTransform(transform);
@@ -38,6 +41,8 @@ namespace gust
 		collider->m_transform = collider->getEntity().getComponent<Transform>();
 		auto pos = collider->m_transform->getPosition();
 		auto rot = collider->m_transform->getRotation();
+
+		collider->m_lastPosition = pos;
 
 		// Set transform
 		btTransform transform = {};
@@ -89,7 +94,7 @@ namespace gust
 		collider->m_rigidBody->setSleepingThresholds(0.025f, 0.01f);
 		collider->m_rigidBody->setAngularFactor(0);
 		collider->m_targetRigidBody->setCollisionFlags(collider->m_targetRigidBody->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-		collider->m_targetRigidBody->setActivationState(DISABLE_DEACTIVATION);
+		// collider->m_targetRigidBody->setActivationState(DISABLE_DEACTIVATION);
 
 		// Create constraint
 		{
@@ -97,7 +102,7 @@ namespace gust
 			(
 				*collider->m_rigidBody.get(), *collider->m_targetRigidBody.get(),
 				btTransform(btQuaternion::getIdentity(), { 0.0f, 0.0f, 0.0f }),
-				btTransform(btQuaternion::getIdentity(), { 0.0f,  0.0f, 0.0f }),
+				btTransform(btQuaternion::getIdentity(), { 0.0f, 0.0f, 0.0f }),
 				true
 			);
 
@@ -106,8 +111,10 @@ namespace gust
 			collider->m_constraint->setLinearLowerLimit(btVector3(0.0f, 0.0f, 0.0f));
 			collider->m_constraint->setLinearUpperLimit(btVector3(0.0f, 0.0f, 0.0f));
 
-			collider->m_constraint->setAngularLowerLimit(btVector3(1, 1, 1));
-			collider->m_constraint->setAngularUpperLimit(btVector3(-1, -1, -1));
+			collider->m_constraint->setAngularLowerLimit(btVector3(0, 0, 0));
+			collider->m_constraint->setAngularUpperLimit(btVector3(0, 0, 0));
+
+			collider->m_constraint->setBreakingImpulseThreshold(INFINITY);
 		}
 
 		// Register contraint
@@ -118,12 +125,34 @@ namespace gust
 	{
 		for (Handle<CharacterController> controller : *this)
 		{
-			// Get rigid body origin
-			auto t = controller->m_rigidBody->getWorldTransform();
-			auto pos = t.getOrigin();
+			// Check if the controller is grounded
+			controller->m_grounded = false;
+			if (gust::requestCollisionData(controller->m_rigidBody.get()).size() > 0)
+				controller->m_grounded = true;
 
-			// Set position
-			controller->m_transform->setPosition({ pos.x(), pos.y(), pos.z() });
+			auto newPos = controller->m_transform->getPosition();
+
+			// If the  transform was changed since the last time
+			if (controller->m_lastPosition != newPos)
+			{
+				btTransform t = {};
+				t.setIdentity();
+				t.setOrigin({ newPos.x, newPos.y, newPos.z });
+
+				controller->m_rigidBody->setWorldTransform(t);
+			}
+			else
+			{
+				// Get transform
+				btTransform t = {};
+				controller->m_motionState->getWorldTransform(t);
+				auto pos = t.getOrigin();
+
+				controller->m_transform->setPosition({ pos.x(), pos.y(), pos.z() });
+			}
+
+			// Set last transform
+			controller->m_lastPosition = controller->m_transform->getPosition();
 		}
 	}
 

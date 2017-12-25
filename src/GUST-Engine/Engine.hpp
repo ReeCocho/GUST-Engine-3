@@ -49,6 +49,13 @@ namespace gust
 	 */
 	extern uint32_t getFrameRate();
 
+	/**
+	 * @brief Request all collisions involving the given collision object.
+	 * @param Collision object.
+	 * @return Collisions.
+	 */
+	extern const std::vector<PhysicsCollisionData>& requestCollisionData(btCollisionObject* obj);
+
 
 	/** Graphics context. */
 	extern Graphics graphics;

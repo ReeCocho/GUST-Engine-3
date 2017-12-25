@@ -16,6 +16,8 @@
 /** Collider */
 namespace gust
 {
+	class CollisionCallback;
+
 	/**
 	 * @class Collider
 	 * @brief Base class for other colliders.
@@ -249,6 +251,17 @@ namespace gust
 			return Handle<Collider>::nullHandle();
 		}
 
+		/**
+		 * @brief Add a callback.
+		 * @param Component the callback is associated with.
+		 * @param Callback.
+		 * @note If the handle to the component is null the callback will be removed.
+		 */
+
+		/**
+		 * @brief Remove 
+		 */
+
 	private:
 
 		/** Colliders created. */
@@ -343,6 +356,50 @@ namespace gust
 
 		/** Normal on touched object. */
 		glm::vec3 normal = {};
+	};
+
+	/**
+	 * @class CollisionCallback
+	 * @brief Callback manager for colliders.
+	 */
+	class CollisionCallback
+	{
+	public:
+
+		/**
+		 * @brief Constructor.
+		 * @param Collider the callback is associated with.
+		 * @param Callback.
+		 */
+		CollisionCallback(Handle<Collider> collider, std::function<void(CollisionData)> callback);
+
+		/**
+		 * @brief Destructor.
+		 */
+		~CollisionCallback();
+
+		/**
+		 * @brief Invoke the callback.
+		 * @param Collision data.
+		 */
+		void invoke(CollisionData data);
+
+		/**
+		 * @brief Get collider.
+		 * @return Collider.
+		 */
+		inline Handle<Collider> getCollider()
+		{
+			return m_collider;
+		}
+
+	private:
+
+		/** Collider. */
+		Handle<Collider> m_collider = Handle<Collider>::nullHandle();
+
+		/** Callback. */
+		std::function<void(CollisionData)> m_callback;
 	};
 }
 
