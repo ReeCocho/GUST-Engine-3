@@ -50,7 +50,7 @@ namespace gust
 			t.setOrigin({ newPos.x, newPos.y, newPos.z });
 			t.setRotation({ newRot.w, newRot.x, newRot.y, newRot.z });
 
-			m_collider->m_motionState->setWorldTransform(t);
+			m_collider->m_rigidBody->setWorldTransform(t);
 		}
 		else
 		{
@@ -89,7 +89,6 @@ namespace gust
 		// Register body with dynamics world
 		gust::physics.registerRigidBody(m_collider->m_rigidBody.get());
 		m_collider->m_rigidBody->setSleepingThresholds(0.025f, 0.01f);
-		m_collider->m_rigidBody->setActivationState(DISABLE_DEACTIVATION);
 	}
 }
 

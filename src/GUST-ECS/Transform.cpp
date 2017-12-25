@@ -203,14 +203,17 @@ namespace gust
 	{
 		for (auto child : m_children)
 		{
-			// Local position to global position
-			child->setLocalPosition(child->m_localPosition);
+			// Update rotation
+			child->m_rotation = m_rotation * child->m_localRotation;
+			child->m_eulerAngles = glm::degrees(glm::eulerAngles(m_rotation));
 
-			// Local euler angles to global euler angles
-			child->setLocalRotation(child->m_localRotation);
+			// Update position
+			glm::vec4 newPos = m_unscaledModelMatrix * glm::vec4(child->m_localPosition, 1.0);
+			child->m_position = glm::vec3(newPos.x, newPos.y, newPos.z);
 
-			// child->generateModelMatrix();
-			// child->updateChildren();
+			// Update model matrix and childrens children
+			child->generateModelMatrix();
+			child->updateChildren();
 		}
 	}
 

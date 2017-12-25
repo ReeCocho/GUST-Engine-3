@@ -5,6 +5,7 @@
 #include <Camera.hpp>
 #include <Lights.hpp>
 #include <Colliders.hpp>
+#include <CharacterController.hpp>
 
 class SpinningObject : public gust::Component<SpinningObject>
 {
@@ -39,64 +40,88 @@ public:
 	}
 };
 
-class CameraController : public gust::Component<CameraController>
+class Player : public gust::Component<Player>
 {
 public:
 
-	CameraController(gust::Entity entity, gust::Handle<CameraController> handle) : gust::Component<CameraController>(entity, handle)
+	Player(gust::Entity entity, gust::Handle<Player> handle) : gust::Component<Player>(entity, handle)
 	{
 
 	}
 
 	gust::Handle<gust::Transform> m_transform;
 
+	gust::Handle<gust::CharacterController> m_controller;
+
+	gust::Handle<gust::Transform> m_cameraTransform;
+
+	float m_camRot = 0;
+
 	bool m_enabled = true;
 };
 
-class CameraControllerSystem : public gust::System
+class PlayerSystem : public gust::System
 {
 public:
 
-	CameraControllerSystem(gust::Scene* scene) : gust::System(scene)
+	PlayerSystem(gust::Scene* scene) : gust::System(scene)
 	{
-		initialize<CameraController>();
+		initialize<Player>();
 	}
 
 	void onBegin() override
 	{
-		auto controller = getComponent<CameraController>();
-		controller->m_transform = controller->getEntity().getComponent<gust::Transform>();
+		auto player = getComponent<Player>();
+		player->m_transform = player->getEntity().getComponent<gust::Transform>();
+		player->m_cameraTransform = player->m_transform->getChild(0);
+		player->m_controller = player->getEntity().getComponent<gust::CharacterController>();
 	}
 
 	void onTick(float deltaTime) override
 	{
-		for (gust::Handle<CameraController> controller : *this)
+		for (gust::Handle<Player> player : *this)
 		{
+			float x = gust::input.getAxis("Horizontal");
+			float y = gust::input.getAxis("Vertical");
+
+			if (x != 0 || y != 0)
+			{
+				auto forward = player->m_cameraTransform->getForward();
+				forward.y = 0;
+				forward = glm::normalize(forward);
+
+				auto right = player->m_cameraTransform->getRight();
+				right.y = 0;
+				right = glm::normalize(right);
+
+				glm::vec3 movementVector = forward * y;
+				movementVector += right * x;
+				movementVector = glm::normalize(movementVector);
+
+				player->m_controller->move(movementVector * deltaTime);
+			}
+
 			if (gust::input.getKeyDown(gust::KeyCode::M))
-				controller->m_enabled = !controller->m_enabled;
+				player->m_enabled = !player->m_enabled;
 
-			gust::input.setLockedMouse(controller->m_enabled);
+			gust::input.setLockedMouse(player->m_enabled);
 
-			if (controller->m_enabled)
+			if (player->m_enabled)
 			{
 				auto mouseDel = gust::input.getMouseDelta();
+				mouseDel.x /= static_cast<float>(gust::graphics.getWidth()) / 2.0f;
+				mouseDel.y /= static_cast<float>(gust::graphics.getHeight()) / 2.0f;
+				player->m_transform->modEulerAngles(glm::vec3(0, mouseDel.x, 0) * 50.0f);
 
-				float x = gust::input.getAxis("Horizontal");
-				float y = gust::input.getAxis("Vertical");
+				player->m_camRot += (mouseDel.y * 50.0f);
 
-				controller->m_transform->modPosition(controller->m_transform->getForward() * y * deltaTime);
-				controller->m_transform->modPosition(controller->m_transform->getRight() * x * deltaTime);
+				if (player->m_camRot < -89.0f)
+					player->m_camRot = -89.0f;
 
-				glm::vec3 rot = controller->m_transform->getEulerAngles();
-				rot += glm::vec3(mouseDel.y, mouseDel.x, 0) * 0.25f;
+				if (player->m_camRot > 89.0f)
+					player->m_camRot = 89.0f;
 
-				if (rot.x < -89.0f)
-					rot.x = -89.0f;
-
-				if (rot.x > 89.0f)
-					rot.x = 89.0f;
-
-				controller->m_transform->setEulerAngles(rot);
+				player->m_cameraTransform->setLocalEulerAngles(glm::vec3(player->m_camRot, 0, 0));
 			}
 		}
 	}
@@ -127,9 +152,10 @@ int main()
 
 		// Custom systems
 		gust::scene.addSystem<SpinningObjectSystem>();
-		gust::scene.addSystem<CameraControllerSystem>();
+		gust::scene.addSystem<PlayerSystem>();
 
 		// Physics systems
+		gust::scene.addSystem<gust::CharacterControllerSystem>();
 		gust::scene.addSystem<gust::BoxColliderSystem>();
 		gust::scene.addSystem<gust::SphereColliderSystem>();
 		gust::scene.addSystem<gust::CapsuleColliderSystem>();
@@ -242,17 +268,44 @@ int main()
 		entity.addComponent<SpinningObject>();
 	}
 
-	// Create camera
+	// Create player
 	{
 		auto entity = gust::Entity(&gust::scene);
-	
-		entity.addComponent<CameraController>();
 
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setPosition({ 0, 3, 0 });
-	
-		auto camera = entity.addComponent<gust::Camera>();
-		gust::Camera::setMainCamera(camera);
+		transform->setPosition({ -3, 3, -3 });
+
+		auto controller = entity.addComponent<gust::CharacterController>();
+		controller->setHeight(1.0f);
+		controller->setRadius(0.5f);
+
+		// Create camera
+		{
+			auto entity2 = gust::Entity(&gust::scene);
+
+			auto transform2 = entity2.getComponent<gust::Transform>();
+			transform2->setParent(transform);
+			transform2->setLocalPosition({ 0, 1, 0 });
+
+			auto camera = entity2.addComponent<gust::Camera>();
+			gust::Camera::setMainCamera(camera);
+		}
+
+		// Create mesh
+		{
+			auto entity2 = gust::Entity(&gust::scene);
+			
+			auto transform2 = entity2.getComponent<gust::Transform>();
+			transform2->setParent(transform);
+			transform2->setLocalPosition({ 0, 0, 0 });
+			transform2->setLocalScale({ 1, 2, 1 });
+
+			auto meshRenderer2 = entity2.addComponent<gust::MeshRenderer>();
+			meshRenderer2->setMaterial(pom_mat);
+			meshRenderer2->setMesh(cube_mesh);
+		}
+
+		auto player = entity.addComponent<Player>();
 	}
 	
 	// Create light

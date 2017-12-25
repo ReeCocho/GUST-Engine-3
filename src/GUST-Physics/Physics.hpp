@@ -130,6 +130,24 @@ namespace gust
 		}
 
 		/**
+		 * @brief Register a constraint.
+		 * @param Constriant to register.
+		 */
+		inline void registerConstraint(btTypedConstraint* constraint)
+		{
+			m_dynamicsWorld->addConstraint(constraint);
+		}
+
+		/**
+		 * @brief Unregister a constraint.
+		 * @param Constriant to unregister.
+		 */
+		inline void unregisterConstraint(btTypedConstraint* constraint)
+		{
+			m_dynamicsWorld->removeConstraint(constraint);
+		}
+
+		/**
 		 * @brief Perform a linecast.
 		 * @brief Origin.
 		 * @brief Destination.

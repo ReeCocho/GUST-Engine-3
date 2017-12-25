@@ -8,6 +8,7 @@ set(
 	MeshRenderer.cpp
 	ResourceManager.cpp
 	Colliders.cpp
+	CharacterController.cpp
 )
 
 # Headers
@@ -20,6 +21,7 @@ set(
 	MeshRenderer.hpp
 	ResourceManager.hpp
 	Colliders.hpp
+	CharacterController.hpp
 )
 
 # Project declaration

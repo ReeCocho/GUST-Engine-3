@@ -591,8 +591,8 @@ namespace gust
 		}
 
 		/**
-		 * @brief Get sphere radius
-		 * @return Sphere radius
+		 * @brief Get capsule radius
+		 * @return Capsule radius
 		 */
 		inline float getRadius() const
 		{
