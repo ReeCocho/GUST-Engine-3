@@ -123,20 +123,11 @@ namespace gust
 		/** Motion state. */
 		std::unique_ptr<btMotionState> m_motionState = nullptr;
 
-		/** Target motion state. */
-		std::unique_ptr<btMotionState> m_targetMotionState = nullptr;
-
 		/** Collision shape. */
 		std::unique_ptr<btCollisionShape> m_shape = nullptr;
 
 		/** Rigid body. */
 		std::unique_ptr<btRigidBody> m_rigidBody = nullptr;
-
-		/** Target body. */
-		std::unique_ptr<btRigidBody> m_targetRigidBody = nullptr;
-
-		/** Target constraint. */
-		std::unique_ptr<btGeneric6DofConstraint> m_constraint = nullptr;
 
 		/** Last recorded position. */
 		glm::vec3 m_lastPosition = {};
@@ -149,6 +140,9 @@ namespace gust
 
 		/** Capsule height. */
 		float m_height = 2.0f;
+
+		/** Sliding angle. */
+		float m_slidingAngle = 45.0f;
 	};
 
 	/**

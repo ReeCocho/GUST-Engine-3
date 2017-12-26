@@ -79,7 +79,7 @@ public:
 		player->m_controller = player->getEntity().getComponent<gust::CharacterController>();
 	}
 
-	void onTick(float deltaTime) override
+	void onLateTick(float deltaTime) override
 	{
 		for (gust::Handle<Player> player : *this)
 		{
@@ -100,12 +100,11 @@ public:
 
 				movementVector = forward * y;
 				movementVector += right * x;
-				movementVector = glm::normalize(movementVector) * 5.0f;
-
-				movementVector *= deltaTime;
+				movementVector = glm::normalize(movementVector) * 3.0f;
 			}
 
-			player->m_yVelocity -= 6.82f * deltaTime * deltaTime;
+			player->m_yVelocity -= 6.82f * deltaTime;
+			// std::cout << player->m_yVelocity << '\n';
 			if (player->m_controller->isGrounded())
 				player->m_yVelocity = 0;
 
@@ -162,15 +161,15 @@ int main()
 		// Core systems
 		gust::scene.addSystem<gust::TransformSystem>();
 
-		// Custom systems
-		gust::scene.addSystem<SpinningObjectSystem>();
-		gust::scene.addSystem<PlayerSystem>();
-
 		// Physics systems
 		gust::scene.addSystem<gust::CharacterControllerSystem>();
 		gust::scene.addSystem<gust::BoxColliderSystem>();
 		gust::scene.addSystem<gust::SphereColliderSystem>();
 		gust::scene.addSystem<gust::CapsuleColliderSystem>();
+
+		// Custom systems
+		gust::scene.addSystem<SpinningObjectSystem>();
+		gust::scene.addSystem<PlayerSystem>();
 
 		// Rendering systems
 		gust::scene.addSystem<gust::PointLightSystem>();
@@ -232,6 +231,23 @@ int main()
 		auto collider = entity.addComponent<gust::BoxCollider>();
 		collider->setStatic(true);
 	}
+
+	// Create wall
+	{
+		auto entity = gust::Entity(&gust::scene);
+
+		auto transform = entity.getComponent<gust::Transform>();
+		transform->setLocalScale({ 16, 1, 16 });
+		transform->setPosition({ 0, 8, 8 });
+		transform->setEulerAngles({ 90, 0, 0 });
+
+		auto meshRenderer = entity.addComponent<gust::MeshRenderer>();
+		meshRenderer->setMaterial(floor_mat);
+		meshRenderer->setMesh(cube_mesh);
+
+		auto collider = entity.addComponent<gust::BoxCollider>();
+		collider->setStatic(true);
+	}
 	
 	// Create cube
 	{
@@ -285,7 +301,7 @@ int main()
 		auto entity = gust::Entity(&gust::scene);
 
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setPosition({ -3, 3, -3 });
+		transform->setPosition({ -3, 2, -3 });
 
 		auto controller = entity.addComponent<gust::CharacterController>();
 		controller->setHeight(1.0f);

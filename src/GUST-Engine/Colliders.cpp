@@ -3,10 +3,6 @@
 /** Collider */
 namespace gust
 {
-	std::vector<Handle<Collider>> Collider::colliders = {};
-
-
-
 	ColliderSystem::ColliderSystem(Scene* scene) : System(scene)
 	{
 
@@ -126,8 +122,6 @@ namespace gust
 		m_collider = static_cast<Collider*>(collider.get());
 		m_component = static_cast<ComponentBase*>(collider.get());
 
-		Collider::colliders.push_back(collider);
-
 		ColliderSystem::onBegin();
 
 		// Create box shape
@@ -153,7 +147,6 @@ namespace gust
 		m_collider = static_cast<Collider*>(collider.get());
 		m_component = static_cast<ComponentBase*>(collider.get());
 
-		Collider::colliders.erase(std::remove(Collider::colliders.begin(), Collider::colliders.end(), Handle<Collider>(collider)), Collider::colliders.end());
 		ColliderSystem::onEnd();
 	}
 }
@@ -187,8 +180,6 @@ namespace gust
 		m_collider = static_cast<Collider*>(collider.get());
 		m_component = static_cast<ComponentBase*>(collider.get());
 
-		Collider::colliders.push_back(collider);
-
 		ColliderSystem::onBegin();
 
 		// Create sphere shape
@@ -215,7 +206,6 @@ namespace gust
 		m_collider = static_cast<Collider*>(collider.get());
 		m_component = static_cast<ComponentBase*>(collider.get());
 
-		Collider::colliders.erase(std::remove(Collider::colliders.begin(), Collider::colliders.end(), Handle<Collider>(collider)), Collider::colliders.end());
 		ColliderSystem::onEnd();
 	}
 }
@@ -249,8 +239,6 @@ namespace gust
 		m_collider = static_cast<Collider*>(collider.get());
 		m_component = static_cast<ComponentBase*>(collider.get());
 
-		Collider::colliders.push_back(collider);
-
 		ColliderSystem::onBegin();
 
 		// Create sphere shape
@@ -278,7 +266,6 @@ namespace gust
 		m_collider = static_cast<Collider*>(collider.get());
 		m_component = static_cast<ComponentBase*>(collider.get());
 
-		Collider::colliders.erase(std::remove(Collider::colliders.begin(), Collider::colliders.end(), Handle<Collider>(collider)), Collider::colliders.end());
 		ColliderSystem::onEnd();
 	}
 }

@@ -65,6 +65,7 @@ namespace gust
 				m_shape->calculateLocalInertia(mass, inertia);
 
 			m_rigidBody->setMassProps(mass, inertia);
+			m_rigidBody->updateInertiaTensor();
 
 			return mass;
 		}
@@ -238,20 +239,6 @@ namespace gust
 		}
 
 		/**
-		 * @brief Get collider by btCollisionShape*.
-		 * @param Bullet collision shape.
-		 * @return Handle to collider.
-		 */
-		inline static Handle<Collider> getColliderByShape(btCollisionShape* shape)
-		{
-			for (auto& handle : colliders)
-				if (handle->getCollisionShape() == shape)
-					return handle;
-
-			return Handle<Collider>::nullHandle();
-		}
-
-		/**
 		 * @brief Add a callback.
 		 * @param Component the callback is associated with.
 		 * @param Callback.
@@ -263,9 +250,6 @@ namespace gust
 		 */
 
 	private:
-
-		/** Colliders created. */
-		static std::vector<Handle<Collider>> colliders;
 
 		/** Motion state. */
 		std::unique_ptr<btMotionState> m_motionState = nullptr;

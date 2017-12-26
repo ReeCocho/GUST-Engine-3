@@ -80,7 +80,7 @@ namespace gust
 			float deltaTime = gameClock.getDeltaTime();
 
 			// Clamp delta time
-			if (deltaTime > 10.0f)
+			if (deltaTime >= 5.0f)
 				deltaTime = 0;
 
 			// Increment physics timer
