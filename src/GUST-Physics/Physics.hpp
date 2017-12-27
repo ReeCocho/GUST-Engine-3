@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <queue>
 #include <btBulletDynamicsCommon.h>
+#include <BulletCollision\CollisionDispatch\btGhostObject.h>
 
 namespace gust
 {

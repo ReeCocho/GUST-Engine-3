@@ -1,3 +1,4 @@
+#include <iostream>
 #include "CharacterController.hpp"
 
 namespace gust
@@ -123,6 +124,7 @@ namespace gust
 				const auto& collisionData = gust::requestCollisionData(controller->m_rigidBody.get());
 				for (auto data : collisionData)
 				{
+					std::cout << "T\n";
 					btTransform t = controller->m_rigidBody->getWorldTransform();
 					t.setOrigin(t.getOrigin() - (btVector3(data.normal.x, data.normal.y, data.normal.z) * data.penetration));
 					auto pos = t.getOrigin();

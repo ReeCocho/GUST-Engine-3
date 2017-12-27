@@ -352,19 +352,19 @@ int main()
 			gust::Camera::setMainCamera(camera);
 		}
 
-		// Create mesh
-		{
-			auto entity2 = gust::Entity(&gust::scene);
-			
-			auto transform2 = entity2.getComponent<gust::Transform>();
-			transform2->setParent(transform);
-			transform2->setLocalPosition({ 0, 0, 0 });
-			transform2->setLocalScale({ 1, 2, 1 });
-
-			auto meshRenderer2 = entity2.addComponent<gust::MeshRenderer>();
-			meshRenderer2->setMaterial(pom_mat);
-			meshRenderer2->setMesh(cube_mesh);
-		}
+		// // Create mesh
+		// {
+		// 	auto entity2 = gust::Entity(&gust::scene);
+		// 	
+		// 	auto transform2 = entity2.getComponent<gust::Transform>();
+		// 	transform2->setParent(transform);
+		// 	transform2->setLocalPosition({ 0, 0, 0 });
+		// 	transform2->setLocalScale({ 1, 2, 1 });
+		// 
+		// 	auto meshRenderer2 = entity2.addComponent<gust::MeshRenderer>();
+		// 	meshRenderer2->setMaterial(pom_mat);
+		// 	meshRenderer2->setMesh(cube_mesh);
+		// }
 
 		auto player = entity.addComponent<Player>();
 	}

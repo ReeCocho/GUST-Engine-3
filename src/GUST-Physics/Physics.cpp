@@ -27,6 +27,8 @@ namespace gust
 			m_collisionConfig.get()
 		);
 
+		m_dynamicsWorld->getPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
+
 		auto solver = m_dynamicsWorld->getSolverInfo();
 		solver.m_numIterations = 50;
 
