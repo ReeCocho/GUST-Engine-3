@@ -126,8 +126,8 @@ namespace gust
 
 		// Create box shape
 		collider->m_shape = std::make_unique<btBoxShape>(btVector3(.5f, .5f, .5f));
-		collider->setScale(collider->m_transform->getLocalScale());
 		initRigidBody();
+		collider->setScale(collider->m_transform->getLocalScale());
 	}
 
 	void BoxColliderSystem::onLateTick(float deltaTime)

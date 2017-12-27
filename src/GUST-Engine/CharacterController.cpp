@@ -15,7 +15,13 @@ namespace gust
 	void CharacterController::move(glm::vec3 movement)
 	{
 		m_rigidBody->activate();
-		m_rigidBody->setLinearVelocity(btVector3(movement.x, movement.y, movement.z));
+		
+		btTransform t = m_rigidBody->getWorldTransform();
+		t.setOrigin(t.getOrigin() + btVector3(movement.x, movement.y, movement.z));
+
+		m_rigidBody->setWorldTransform(t);
+
+		// m_rigidBody->setLinearVelocity(btVector3(movement.x, movement.y, movement.z));
 	}
 
 
@@ -32,12 +38,12 @@ namespace gust
 
 	void CharacterControllerSystem::onBegin()
 	{
-		auto collider = getComponent<CharacterController>();
+		auto controller = getComponent<CharacterController>();
 
-		collider->m_transform = collider->getEntity().getComponent<Transform>();
-		auto pos = collider->m_transform->getPosition();
+		controller->m_transform = controller->getEntity().getComponent<Transform>();
+		auto pos = controller->m_transform->getPosition();
 
-		collider->m_lastPosition = pos;
+		controller->m_lastPosition = pos;
 
 		// Set transform
 		btTransform transform = {};
@@ -45,32 +51,39 @@ namespace gust
 		transform.setOrigin({ pos.x, pos.y, pos.z });
 
 		// Create motion states
-		collider->m_motionState = std::make_unique<btDefaultMotionState>(transform);
+		controller->m_motionState = std::make_unique<btDefaultMotionState>(transform);
 
 		// Create sphere shape
-		auto scale = collider->m_transform->getLocalScale();
-		collider->m_radius = (scale.x + scale.z) / 2.0f;
-		collider->m_height = scale.y;
-		collider->m_shape = std::make_unique<btCapsuleShape>(collider->m_radius / 2.0f, collider->m_height - (2.0f * collider->m_radius));
+		auto scale = controller->m_transform->getLocalScale();
+		controller->m_radius = (scale.x + scale.z) / 2.0f;
+		controller->m_height = scale.y;
+		controller->m_shape = std::make_unique<btCapsuleShape>
+		(
+			controller->m_radius / 2.0f, 
+			controller->m_height - (2.0f * controller->m_radius)
+		);
 
 		// Create rigid body
 		{
 			btRigidBody::btRigidBodyConstructionInfo info
 			(
-				0.01f,
-				collider->m_motionState.get(),
-				collider->m_shape.get()
+				1.0f,
+				controller->m_motionState.get(),
+				controller->m_shape.get()
 			);
 
 			// Create rigid body
-			collider->m_rigidBody = std::make_unique<btRigidBody>(info);
+			controller->m_rigidBody = std::make_unique<btRigidBody>(info);
 
-			collider->m_rigidBody->setGravity(btVector3(0, 0, 0));
-			collider->m_rigidBody->setAngularFactor(0);
+			controller->m_rigidBody->setFriction(0);
+			controller->m_rigidBody->setRestitution(0);
+			controller->m_rigidBody->setGravity(btVector3(0, 0, 0));
+			controller->m_rigidBody->setAngularFactor(0);
+			controller->m_rigidBody->setCollisionFlags(controller->m_rigidBody->getCollisionFlags() | btRigidBody::CF_KINEMATIC_OBJECT);
 		}
 
 		// Register bodies with dynamics world
-		gust::physics.registerRigidBody(collider->m_rigidBody.get());
+		gust::physics.registerRigidBody(controller->m_rigidBody.get());
 	}
 
 	void CharacterControllerSystem::onLateTick(float deltaTime)
@@ -102,17 +115,44 @@ namespace gust
 			controller->m_lastPosition = controller->m_transform->getPosition();
 
 			// Check if the controller is grounded
-			controller->m_grounded = false;
+			{
+				controller->m_grounded = false;
 
-			float cosSliding = glm::cos(glm::radians(controller->m_slidingAngle));
+				float cosSliding = glm::cos(glm::radians(controller->m_slidingAngle));
 
-			const auto& collisionData = gust::requestCollisionData(controller->m_rigidBody.get());
-			for (auto data : collisionData)
-				if (data.point.y < controller->m_lastPosition.y - (controller->m_height / 2.0f) && glm::dot(glm::vec3(0, -1, 0), -data.normal) < cosSliding)
+				const auto& collisionData = gust::requestCollisionData(controller->m_rigidBody.get());
+				for (auto data : collisionData)
 				{
-					controller->m_grounded = true;
-					break;
+					btTransform t = controller->m_rigidBody->getWorldTransform();
+					t.setOrigin(t.getOrigin() - (btVector3(data.normal.x, data.normal.y, data.normal.z) * data.penetration));
+					auto pos = t.getOrigin();
+
+					if (data.point.y < controller->m_lastPosition.y - (controller->m_height / 2.0f) && glm::dot(glm::vec3(0, -1, 0), -data.normal) < cosSliding)
+					{
+						controller->m_grounded = true;
+						break;
+					}
 				}
+			}
+
+			// // Clamp us to the floor
+			// {
+			// 	glm::vec3 origin = controller->m_transform->getPosition();
+			// 	origin.y -= controller->m_height / 2.0f;
+			// 	origin.y -= controller->m_radius;
+			// 
+			// 	RaycastHitData hitData = gust::physics.raycast(origin, glm::vec3(0, -1, 0), controller->m_floorClampDistance);
+			// 
+			// 	if (hitData.hit)
+			// 	{
+			// 		btTransform t = controller->m_rigidBody->getWorldTransform();
+			// 		t.setOrigin(t.getOrigin() - btVector3(0, ((origin.y - hitData.point.y) / 2.0f) * deltaTime, 0));
+			// 		auto pos = t.getOrigin();
+			// 
+			// 		controller->m_rigidBody->setWorldTransform(t);
+			// 		controller->m_transform->setPosition({ pos.x(), pos.y(), pos.z() });
+			// 	}
+			// }
 		}
 	}
 

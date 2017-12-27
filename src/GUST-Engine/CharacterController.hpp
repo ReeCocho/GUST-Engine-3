@@ -132,6 +132,9 @@ namespace gust
 		/** Last recorded position. */
 		glm::vec3 m_lastPosition = {};
 
+		/** Floor clamping distance. */
+		const float m_floorClampDistance = 0.25f;
+
 		/** Is the controller grounded. */
 		bool m_grounded = false;
 

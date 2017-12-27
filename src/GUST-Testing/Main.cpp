@@ -100,10 +100,10 @@ public:
 
 				movementVector = forward * y;
 				movementVector += right * x;
-				movementVector = glm::normalize(movementVector) * 3.0f;
+				movementVector = glm::normalize(movementVector) * 6.0f * deltaTime;
 			}
 
-			player->m_yVelocity -= 6.82f * deltaTime;
+			// player->m_yVelocity -= 6.82f * deltaTime * deltaTime;
 			// std::cout << player->m_yVelocity << '\n';
 			if (player->m_controller->isGrounded())
 				player->m_yVelocity = 0;
@@ -248,6 +248,39 @@ int main()
 		auto collider = entity.addComponent<gust::BoxCollider>();
 		collider->setStatic(true);
 	}
+
+	// Create ramp
+	{
+		auto entity = gust::Entity(&gust::scene);
+
+		auto transform = entity.getComponent<gust::Transform>();
+		transform->setLocalScale({ 16, 1, 16 });
+		transform->setPosition({ 0, 4, -13 });
+		transform->setEulerAngles({ 30, 0, 0 });
+
+		auto meshRenderer = entity.addComponent<gust::MeshRenderer>();
+		meshRenderer->setMaterial(floor_mat);
+		meshRenderer->setMesh(cube_mesh);
+
+		auto collider = entity.addComponent<gust::BoxCollider>();
+		collider->setStatic(true);
+	}
+
+	// Create upper floor
+	{
+		auto entity = gust::Entity(&gust::scene);
+
+		auto transform = entity.getComponent<gust::Transform>();
+		transform->setLocalScale({ 16, 1, 16 });
+		transform->setPosition({ 0, 7.9f, -27.7f });
+
+		auto meshRenderer = entity.addComponent<gust::MeshRenderer>();
+		meshRenderer->setMaterial(floor_mat);
+		meshRenderer->setMesh(cube_mesh);
+
+		auto collider = entity.addComponent<gust::BoxCollider>();
+		collider->setStatic(true);
+	}
 	
 	// Create cube
 	{
@@ -301,7 +334,7 @@ int main()
 		auto entity = gust::Entity(&gust::scene);
 
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setPosition({ -3, 2, -3 });
+		transform->setPosition({ -3, 3, -3 });
 
 		auto controller = entity.addComponent<gust::CharacterController>();
 		controller->setHeight(1.0f);

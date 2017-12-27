@@ -340,6 +340,9 @@ namespace gust
 
 		/** Normal on touched object. */
 		glm::vec3 normal = {};
+
+		/** Penetration. */
+		float penetration = 0;
 	};
 
 	/**

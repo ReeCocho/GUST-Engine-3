@@ -74,7 +74,7 @@ namespace gust
 					const btVector3& ptA = pt.getPositionWorldOnA();
 					const btVector3& ptB = pt.getPositionWorldOnB();
 					const btVector3& normalOnB = pt.m_normalWorldOnB;
-					
+
 					btRigidBody* rbA = nullptr;
 					btRigidBody* rbB = nullptr;
 
@@ -96,6 +96,9 @@ namespace gust
 					data.normal = { normalOnB.x(), normalOnB.y(), normalOnB.z() };
 					data.touched = rbB;
 					data.touching = rbA;
+
+					if (pt.getDistance() < 0)
+						data.penetration = -pt.getDistance();
 
 					// Add collision data
 					m_collisionData.emplace(data);
