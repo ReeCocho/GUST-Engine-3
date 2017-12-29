@@ -10,6 +10,11 @@ layout(location = 4) in vec3 GUST_BITANGENT;
 layout(location = 0) out vec4 GUST_OUT_POSITION;
 layout(location = 1) out vec4 GUST_OUT_NORMAL;
 layout(location = 2) out vec4 GUST_OUT_COLOR;
+layout(location = 3) out vec4 GUST_OUT_MISC;
+
+#define GUST_OUT_ROUGHNESS GUST_OUT_MISC.r
+#define GUST_OUT_METALLIC GUST_OUT_MISC.g
+#define GUST_OUT_AO GUST_OUT_MISC.b
 
 layout(std140, set = 0, binding = 2) uniform GUST_FRAG_DATA
 {

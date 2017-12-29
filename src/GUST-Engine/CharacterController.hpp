@@ -26,21 +26,21 @@ namespace gust
 	public:
 
 		/**
-		* @brief Default constructor.
-		*/
+		 * @brief Default constructor.
+		 */
 		CharacterController() = default;
 
 		/**
-		* @brief Constructor.
-		* @param Entity the component is attached to
-		* @param Component handle
-		*/
+		 * @brief Constructor.
+		 * @param Entity the component is attached to
+		 * @param Component handle
+		 */
 		CharacterController(Entity entity, Handle<CharacterController> handle);
 
 		/**
-		* @brief Destructor.
-		* @see Component::~Component
-		*/
+		 * @brief Destructor.
+		 * @see Component::~Component
+		 */
 		~CharacterController();
 
 		/**
@@ -128,9 +128,6 @@ namespace gust
 
 		/** Rigid body. */
 		std::unique_ptr<btRigidBody> m_rigidBody = nullptr;
-
-		/** Last recorded position. */
-		glm::vec3 m_lastPosition = {};
 
 		/** Floor clamping distance. */
 		const float m_floorClampDistance = 0.25f;

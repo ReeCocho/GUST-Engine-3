@@ -7,7 +7,7 @@ set(
 	Lights.cpp
 	MeshRenderer.cpp
 	ResourceManager.cpp
-	Colliders.cpp
+	RigidBody.cpp
 	CharacterController.cpp
 )
 
@@ -20,7 +20,7 @@ set(
 	Lights.hpp
 	MeshRenderer.hpp
 	ResourceManager.hpp
-	Colliders.hpp
+	RigidBody.hpp
 	CharacterController.hpp
 )
 

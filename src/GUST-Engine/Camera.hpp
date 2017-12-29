@@ -71,6 +71,15 @@ namespace gust
 		}
 
 		/**
+		 * @brief Get clear color.
+		 * @return Clear color.
+		 */
+		inline glm::vec3 getClearColor() const
+		{
+			return m_virtualCamera->clearColor;
+		}
+
+		/**
 		 * @brief Get view matrix.
 		 * @return View matrix.
 		 */
@@ -122,6 +131,17 @@ namespace gust
 			m_farClippingPlane = fcp;
 			generateProjectionMatrix();
 			return m_farClippingPlane;
+		}
+
+		/**
+		 * @brief Set clear color.
+		 * @param New clear color.
+		 * @return New clear color.
+		 */
+		inline glm::vec3 setClearColor(glm::vec3 clearColor)
+		{
+			m_virtualCamera->clearColor = clearColor;
+			return m_virtualCamera->clearColor;
 		}
 
 		/**

@@ -252,7 +252,7 @@ namespace gust
 		depthStencil.setFront(stencil);
 		depthStencil.setBack(stencil);
 		
-		std::array<vk::PipelineColorBlendAttachmentState, 3> colorBlendAttachments = {};
+		std::array<vk::PipelineColorBlendAttachmentState, 4> colorBlendAttachments = {};
 		
 		for (size_t i = 0; i < colorBlendAttachments.size(); ++i)
 		{

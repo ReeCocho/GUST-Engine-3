@@ -1,0 +1,18 @@
+{
+	"MESHES" : "./MESHES.dat",
+	"MATERIALS" : "./MATERIALS.dat",
+	"SHADERS" : "./SHADERS.dat",
+	"TEXTURES" : "./TEXTURES.dat",
+	"SCENE" : 
+	[
+		{
+			"COMPONENTS" : 
+			[
+				"TRANSFORM" :
+				{
+					"POSITION"
+				}
+			]
+		}
+	]
+}

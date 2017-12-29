@@ -178,6 +178,15 @@ namespace gust
 		 */
 		bool pollPhysicsCollisionData(PhysicsCollisionData& data);
 
+		/**
+		 * @brief Get dynamics world.
+		 * @return Dynamics world.
+		 */
+		inline btDiscreteDynamicsWorld* getDynamicsWorld()
+		{
+			return m_dynamicsWorld.get();
+		}
+
 	private:
 
 		/** Collision configuration. */

@@ -36,7 +36,7 @@ target_link_libraries(
 	${Bullet_LIBRARIES}
 )
 
-# Move shader, mesh, and texture folders into the build directory
+# Move shader, mesh, scene, and texture folders into the build directory
 add_custom_command(
 	TARGET GUST-Testing POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -53,4 +53,10 @@ add_custom_command(
 	TARGET GUST-Testing POST_BUILD
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 	${CMAKE_SOURCE_DIR}/src/Textures $<TARGET_FILE_DIR:GUST-Testing>/../Textures
+)
+
+add_custom_command(
+	TARGET GUST-Testing POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	${CMAKE_SOURCE_DIR}/src/Scenes $<TARGET_FILE_DIR:GUST-Testing>/../Scenes
 )

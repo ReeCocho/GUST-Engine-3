@@ -4,7 +4,7 @@
 #include <MeshRenderer.hpp>
 #include <Camera.hpp>
 #include <Lights.hpp>
-#include <Colliders.hpp>
+#include <RigidBody.hpp>
 #include <CharacterController.hpp>
 
 class SpinningObject : public gust::Component<SpinningObject>
@@ -100,11 +100,10 @@ public:
 
 				movementVector = forward * y;
 				movementVector += right * x;
-				movementVector = glm::normalize(movementVector) * 6.0f * deltaTime;
+				movementVector = glm::normalize(movementVector) * 6.0f;
 			}
 
-			// player->m_yVelocity -= 6.82f * deltaTime * deltaTime;
-			// std::cout << player->m_yVelocity << '\n';
+			player->m_yVelocity -= 6.82f * deltaTime;
 			if (player->m_controller->isGrounded())
 				player->m_yVelocity = 0;
 
@@ -153,8 +152,8 @@ int main()
 	gust::input.registerAxis("Vertical", { { gust::KeyCode::S, -1.0f }, { gust::KeyCode::W, 1.0f } });
 	
 	// Graphics setup
-	gust::renderer.setAmbientColor({ 0.9f, 0.9f, 1 });
-	gust::renderer.setAmbientIntensity(0.5f);
+	gust::renderer.setAmbientColor({ 1.0f, 1.0f, 1.0f });
+	gust::renderer.setAmbientIntensity(0.2f);
 
 	// Add systems
 	{
@@ -163,9 +162,7 @@ int main()
 
 		// Physics systems
 		gust::scene.addSystem<gust::CharacterControllerSystem>();
-		gust::scene.addSystem<gust::BoxColliderSystem>();
-		gust::scene.addSystem<gust::SphereColliderSystem>();
-		gust::scene.addSystem<gust::CapsuleColliderSystem>();
+		gust::scene.addSystem<gust::RigidBodySystem>();
 
 		// Custom systems
 		gust::scene.addSystem<SpinningObjectSystem>();
@@ -186,7 +183,7 @@ int main()
 		"./Shaders/standard-frag.spv",
 		sizeof(gust::EmptyVertexData),
 		sizeof(TestData),
-		2,
+		4,
 		true,
 		true
 	);
@@ -196,26 +193,38 @@ int main()
 	auto floor = gust::resourceManager.createTexture("./Textures/BrickFloor.jpg", vk::Filter::eLinear);
 	auto pom = gust::resourceManager.createTexture("./Textures/CutePom.png", vk::Filter::eLinear);
 	auto gabe = gust::resourceManager.createTexture("./Textures/Gabe.jpg", vk::Filter::eLinear);
+	auto flat_n = gust::resourceManager.createTexture("./Textures/Flat_n.png", vk::Filter::eLinear);
+	auto red = gust::resourceManager.createTexture("./Textures/Red.png", vk::Filter::eLinear);
+
+	auto stone_a = gust::resourceManager.createTexture("./Textures/Stone_a.png", vk::Filter::eLinear);
+	auto stone_m = gust::resourceManager.createTexture("./Textures/Stone_m.png", vk::Filter::eLinear);
+	auto stone_o = gust::resourceManager.createTexture("./Textures/Stone_o.png", vk::Filter::eLinear);
+	auto stone_n = gust::resourceManager.createTexture("./Textures/Stone_n.png", vk::Filter::eLinear);
 
 	TestData data = {};
 	data.uv = { 6.0f, 6.0f };
 
 	// Create materials
 	auto floor_mat = gust::resourceManager.createMaterial(shader);
-	floor_mat->setTexture(floor, 0);
-	floor_mat->setTexture(floor_n, 1);
+	floor_mat->setTexture(stone_a, 0);
+	floor_mat->setTexture(stone_n, 1);
+	floor_mat->setTexture(stone_m, 2);
+	floor_mat->setTexture(stone_o, 3);
 	floor_mat->setFragmentData<TestData>(data);
 		
 	data.uv = { 1, 1 };
 
 	auto pom_mat = gust::resourceManager.createMaterial(shader);
-	pom_mat->setTexture(gabe, 0);
-	pom_mat->setTexture(floor_n, 1);
+	pom_mat->setTexture(red, 0);
+	pom_mat->setTexture(flat_n, 1);
+	pom_mat->setTexture(red, 2);
+	pom_mat->setTexture(red, 3);
 	pom_mat->setFragmentData<TestData>(data);
 
 	// Create meshes
 	auto cube_mesh = gust::resourceManager.createMesh("./Meshes/Cube.obj");
 	auto sphere_mesh = gust::resourceManager.createMesh("./Meshes/Sphere.obj");
+	auto capsuleWall_mesh = gust::resourceManager.createMesh("./Meshes/CapsuleWall.obj");
 
 	// Create floor
 	{
@@ -228,7 +237,8 @@ int main()
 		meshRenderer->setMaterial(floor_mat);
 		meshRenderer->setMesh(cube_mesh);
 
-		auto collider = entity.addComponent<gust::BoxCollider>();
+		auto collider = entity.addComponent<gust::RigidBody>();
+		collider->setBoxShape(glm::vec3(16, 1, 16));
 		collider->setStatic(true);
 	}
 
@@ -245,7 +255,8 @@ int main()
 		meshRenderer->setMaterial(floor_mat);
 		meshRenderer->setMesh(cube_mesh);
 
-		auto collider = entity.addComponent<gust::BoxCollider>();
+		auto collider = entity.addComponent<gust::RigidBody>();
+		collider->setBoxShape(glm::vec3(16, 1, 16));
 		collider->setStatic(true);
 	}
 
@@ -262,7 +273,8 @@ int main()
 		meshRenderer->setMaterial(floor_mat);
 		meshRenderer->setMesh(cube_mesh);
 
-		auto collider = entity.addComponent<gust::BoxCollider>();
+		auto collider = entity.addComponent<gust::RigidBody>();
+		collider->setBoxShape(glm::vec3(16, 1, 16));
 		collider->setStatic(true);
 	}
 
@@ -278,7 +290,8 @@ int main()
 		meshRenderer->setMaterial(floor_mat);
 		meshRenderer->setMesh(cube_mesh);
 
-		auto collider = entity.addComponent<gust::BoxCollider>();
+		auto collider = entity.addComponent<gust::RigidBody>();
+		collider->setBoxShape(glm::vec3(16, 1, 16));
 		collider->setStatic(true);
 	}
 	
@@ -287,13 +300,16 @@ int main()
 		auto entity = gust::Entity(&gust::scene);
 
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setPosition({ 0, 3, 4 });
+		transform->setPosition({ 0, 6, 4 });
+		transform->setLocalScale({ 3, 3, 3 });
 
 		auto meshRenderer = entity.addComponent<gust::MeshRenderer>();
 		meshRenderer->setMaterial(pom_mat);
 		meshRenderer->setMesh(cube_mesh);
 
-		auto collider = entity.addComponent<gust::BoxCollider>();
+		auto collider = entity.addComponent<gust::RigidBody>();
+		collider->setBoxShape(glm::vec3(3, 3, 3));
+		collider->setMass(10);
 	}
 
 	// Create pillar
@@ -302,14 +318,48 @@ int main()
 
 		auto transform = entity.getComponent<gust::Transform>();
 		transform->setPosition({ -5, 3, 4 });
-		transform->setLocalScale({ 1, 3, 1 });
-		transform->setLocalEulerAngles({ 90, 0, 0 });
 
-		auto meshRenderer = entity.addComponent<gust::MeshRenderer>();
-		meshRenderer->setMaterial(pom_mat);
-		meshRenderer->setMesh(cube_mesh);
+		auto collider = entity.addComponent<gust::RigidBody>();
+		collider->setCapsuleShape(2.0f, 0.5f);
 
-		auto collider = entity.addComponent<gust::CapsuleCollider>();
+		{
+			auto entity2 = gust::Entity(&gust::scene);
+
+			auto transform2 = entity2.getComponent<gust::Transform>();
+			transform2->setParent(transform);
+			transform2->setLocalPosition({ 0, 0, 0 });
+			transform2->setLocalScale({ 1, 2, 1 });
+
+			auto meshRenderer = entity2.addComponent<gust::MeshRenderer>();
+			meshRenderer->setMaterial(pom_mat);
+			meshRenderer->setMesh(capsuleWall_mesh);
+		}
+
+		{
+			auto entity2 = gust::Entity(&gust::scene);
+
+			auto transform2 = entity2.getComponent<gust::Transform>();
+			transform2->setParent(transform);
+			transform2->setLocalPosition({ 0, 1, 0 });
+			transform2->setLocalScale({ 1, 1, 1 });
+
+			auto meshRenderer2 = entity2.addComponent<gust::MeshRenderer>();
+			meshRenderer2->setMaterial(pom_mat);
+			meshRenderer2->setMesh(sphere_mesh);
+		}
+
+		{
+			auto entity2 = gust::Entity(&gust::scene);
+
+			auto transform2 = entity2.getComponent<gust::Transform>();
+			transform2->setParent(transform);
+			transform2->setLocalPosition({ 0, -1, 0 });
+			transform2->setLocalScale({ 1, 1, 1 });
+
+			auto meshRenderer2 = entity2.addComponent<gust::MeshRenderer>();
+			meshRenderer2->setMaterial(pom_mat);
+			meshRenderer2->setMesh(sphere_mesh);
+		}
 	}
 
 	// Create sphere
@@ -324,8 +374,9 @@ int main()
 		meshRenderer->setMaterial(pom_mat);
 		meshRenderer->setMesh(sphere_mesh);
 
-		auto collider = entity.addComponent<gust::SphereCollider>();
-		
+		auto collider = entity.addComponent<gust::RigidBody>();
+		collider->setSphereShape(1);
+
 		entity.addComponent<SpinningObject>();
 	}
 
@@ -349,35 +400,22 @@ int main()
 			transform2->setLocalPosition({ 0, 1, 0 });
 
 			auto camera = entity2.addComponent<gust::Camera>();
+			camera->setClearColor(glm::vec3(0.386f, 0.621f, 1.0f));
 			gust::Camera::setMainCamera(camera);
 		}
-
-		// // Create mesh
-		// {
-		// 	auto entity2 = gust::Entity(&gust::scene);
-		// 	
-		// 	auto transform2 = entity2.getComponent<gust::Transform>();
-		// 	transform2->setParent(transform);
-		// 	transform2->setLocalPosition({ 0, 0, 0 });
-		// 	transform2->setLocalScale({ 1, 2, 1 });
-		// 
-		// 	auto meshRenderer2 = entity2.addComponent<gust::MeshRenderer>();
-		// 	meshRenderer2->setMaterial(pom_mat);
-		// 	meshRenderer2->setMesh(cube_mesh);
-		// }
 
 		auto player = entity.addComponent<Player>();
 	}
 	
-	// Create light
+	// Create sun
 	{
 		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
-		// transform->setPosition({ 0, 3, 0 });
 		transform->setEulerAngles({ 45, 60, 0 });
 	
 		auto light = entity.addComponent<gust::DirectionalLight>();
+		light->setIntensity(20.0f);
 	}
 	
 	gust::simulate();

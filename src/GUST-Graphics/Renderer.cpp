@@ -186,8 +186,6 @@ namespace gust
 		camera->commandBuffer = createCommandBuffer(vk::CommandBufferLevel::ePrimary);
 		camera->lightingCommandBuffer = createCommandBuffer(vk::CommandBufferLevel::ePrimary);
 
-		// Color attachments
-
 		// (World space) Positions
 		FrameBufferAttachment position = createAttachment
 		(
@@ -206,7 +204,14 @@ namespace gust
 		FrameBufferAttachment color = createAttachment
 		(
 			m_graphics->getSurfaceColorFormat(),
-			vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc
+			vk::ImageUsageFlagBits::eColorAttachment
+		);
+
+		// Misc
+		FrameBufferAttachment misc = createAttachment
+		(
+			vk::Format::eR16G16B16A16Sfloat,
+			vk::ImageUsageFlagBits::eColorAttachment
 		);
 
 		// Depth attachment
@@ -234,19 +239,22 @@ namespace gust
 		vk::Sampler positionSampler = m_graphics->getLogicalDevice().createSampler(sampler);
 		vk::Sampler normalSampler = m_graphics->getLogicalDevice().createSampler(sampler);
 		vk::Sampler colorSampler = m_graphics->getLogicalDevice().createSampler(sampler);
+		vk::Sampler miscSampler = m_graphics->getLogicalDevice().createSampler(sampler);
 		vk::Sampler depthSampler = m_graphics->getLogicalDevice().createSampler(sampler);
 
 		// Set attachments
 		camera->position	= std::make_unique<Texture>(m_graphics, position.image, position.view, positionSampler, position.memory, camera->width, camera->height);
 		camera->normal		= std::make_unique<Texture>(m_graphics, normals.image, normals.view, normalSampler, normals.memory, camera->width, camera->height);
 		camera->color		= std::make_unique<Texture>(m_graphics, color.image, color.view, colorSampler, color.memory, camera->width, camera->height);
+		camera->misc		= std::make_unique<Texture>(m_graphics, misc.image, misc.view, miscSampler, misc.memory, camera->width, camera->height);
 		camera->depth		= std::make_unique<Texture>(m_graphics, depth.image, depth.view, depthSampler, depth.memory, camera->width, camera->height);
 
-		std::array<vk::ImageView, 4> attachments;
+		std::array<vk::ImageView, 5> attachments;
 		attachments[0] = camera->position->getImageView();
 		attachments[1] = camera->normal->getImageView();
 		attachments[2] = camera->color->getImageView();
-		attachments[3] = camera->depth->getImageView();
+		attachments[3] = camera->misc->getImageView();
+		attachments[4] = camera->depth->getImageView();
 
 		vk::FramebufferCreateInfo fbufCreateInfo = {};
 		fbufCreateInfo.setPNext(nullptr);
@@ -325,10 +333,10 @@ namespace gust
 		// Offscreen
 		{
 			// Set up separate renderpass with references to the color and depth attachments
-			std::array<vk::AttachmentDescription, 4> attachmentDescs = {};
+			std::array<vk::AttachmentDescription, 5> attachmentDescs = {};
 
 			// Input attachment properties
-			for (size_t i = 0; i < 4; ++i)
+			for (size_t i = 0; i < attachmentDescs.size(); ++i)
 			{
 				attachmentDescs[i].setSamples(vk::SampleCountFlagBits::e1);
 				attachmentDescs[i].setLoadOp(vk::AttachmentLoadOp::eClear);
@@ -336,7 +344,7 @@ namespace gust
 				attachmentDescs[i].setStencilLoadOp(vk::AttachmentLoadOp::eClear);
 				attachmentDescs[i].setStencilStoreOp(vk::AttachmentStoreOp::eStore);
 
-				if (i == 3)
+				if (i == attachmentDescs.size() - 1)
 				{
 					attachmentDescs[i].setInitialLayout(vk::ImageLayout::eUndefined);
 					attachmentDescs[i].setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
@@ -352,15 +360,17 @@ namespace gust
 			attachmentDescs[0].setFormat(vk::Format::eR16G16B16A16Sfloat);
 			attachmentDescs[1].setFormat(vk::Format::eR16G16B16A16Sfloat);
 			attachmentDescs[2].setFormat(m_graphics->getSurfaceColorFormat());
-			attachmentDescs[3].setFormat(m_graphics->getDepthFormat());
+			attachmentDescs[3].setFormat(vk::Format::eR16G16B16A16Sfloat);
+			attachmentDescs[4].setFormat(m_graphics->getDepthFormat());
 
-			std::array<vk::AttachmentReference, 3> colorReferences = {};
+			std::array<vk::AttachmentReference, 4> colorReferences = {};
 			colorReferences[0] = { 0, vk::ImageLayout::eColorAttachmentOptimal };
 			colorReferences[1] = { 1, vk::ImageLayout::eColorAttachmentOptimal };
 			colorReferences[2] = { 2, vk::ImageLayout::eColorAttachmentOptimal };
+			colorReferences[3] = { 3, vk::ImageLayout::eColorAttachmentOptimal };
 
 			vk::AttachmentReference depthReference = {};
-			depthReference.setAttachment(3);
+			depthReference.setAttachment(4);
 			depthReference.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
 			vk::SubpassDescription subpass = {};
@@ -409,10 +419,10 @@ namespace gust
 		// Lighting
 		{
 			// Set up separate renderpass with references to the color and depth attachments
-			std::array<vk::AttachmentDescription, 4> attachmentDescs = {};
+			std::array<vk::AttachmentDescription, 5> attachmentDescs = {};
 
 			// Input attachment properties
-			for (size_t i = 0; i < 4; ++i)
+			for (size_t i = 0; i < attachmentDescs.size(); ++i)
 			{
 				attachmentDescs[i].setSamples(vk::SampleCountFlagBits::e1);
 				attachmentDescs[i].setLoadOp(vk::AttachmentLoadOp::eLoad);
@@ -420,7 +430,7 @@ namespace gust
 				attachmentDescs[i].setStencilLoadOp(vk::AttachmentLoadOp::eLoad);
 				attachmentDescs[i].setStencilStoreOp(vk::AttachmentStoreOp::eStore);
 
-				if (i == 3)
+				if (i == attachmentDescs.size() - 1)
 				{
 					attachmentDescs[i].setInitialLayout(vk::ImageLayout::eUndefined);
 					attachmentDescs[i].setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
@@ -436,15 +446,17 @@ namespace gust
 			attachmentDescs[0].setFormat(vk::Format::eR16G16B16A16Sfloat);
 			attachmentDescs[1].setFormat(vk::Format::eR16G16B16A16Sfloat);
 			attachmentDescs[2].setFormat(m_graphics->getSurfaceColorFormat());
-			attachmentDescs[3].setFormat(m_graphics->getDepthFormat());
+			attachmentDescs[3].setFormat(vk::Format::eR16G16B16A16Sfloat);
+			attachmentDescs[4].setFormat(m_graphics->getDepthFormat());
 
-			std::array<vk::AttachmentReference, 3> colorReferences = {};
+			std::array<vk::AttachmentReference, 4> colorReferences = {};
 			colorReferences[0] = { 0, vk::ImageLayout::eColorAttachmentOptimal };
 			colorReferences[1] = { 1, vk::ImageLayout::eColorAttachmentOptimal };
 			colorReferences[2] = { 2, vk::ImageLayout::eColorAttachmentOptimal };
+			colorReferences[3] = { 3, vk::ImageLayout::eColorAttachmentOptimal };
 
 			vk::AttachmentReference depthReference = {};
-			depthReference.setAttachment(3);
+			depthReference.setAttachment(4);
 			depthReference.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
 			vk::SubpassDescription subpass = {};
@@ -680,7 +692,7 @@ namespace gust
 
 		// Lighting descriptor set Layout
 		{
-			std::array<vk::DescriptorSetLayoutBinding, 4> bindings = {};
+			std::array<vk::DescriptorSetLayoutBinding, 5> bindings = {};
 
 			// Lighting
 			bindings[0].setBinding(0);
@@ -705,6 +717,12 @@ namespace gust
 			bindings[3].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
 			bindings[3].setDescriptorCount(1);
 			bindings[3].setStageFlags(vk::ShaderStageFlagBits::eFragment);
+
+			// Misc binding
+			bindings[4].setBinding(4);
+			bindings[4].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+			bindings[4].setDescriptorCount(1);
+			bindings[4].setStageFlags(vk::ShaderStageFlagBits::eFragment);
 
 			vk::DescriptorSetLayoutCreateInfo createInfo = {};
 			createInfo.setBindingCount(static_cast<uint32_t>(bindings.size()));
@@ -739,7 +757,7 @@ namespace gust
 		poolSizes[0].setDescriptorCount(2);
 		poolSizes[0].setType(vk::DescriptorType::eUniformBuffer);
 
-		poolSizes[1].setDescriptorCount(4);
+		poolSizes[1].setDescriptorCount(5);
 		poolSizes[1].setType(vk::DescriptorType::eCombinedImageSampler);
 
 		vk::DescriptorPoolCreateInfo poolInfo = {};
@@ -1001,9 +1019,9 @@ namespace gust
 			depthStencil.setFront(stencil);
 			depthStencil.setBack(stencil);
 
-			std::array<vk::PipelineColorBlendAttachmentState, 3> colorBlendAttachments = {};
+			std::array<vk::PipelineColorBlendAttachmentState, 4> colorBlendAttachments = {};
 
-			for (size_t i = 0; i < 3; ++i)
+			for (size_t i = 0; i < colorBlendAttachments.size(); ++i)
 			{
 				colorBlendAttachments[i].setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
 				colorBlendAttachments[i].setBlendEnable(true);
@@ -1314,7 +1332,7 @@ namespace gust
 	{
 		// Set camera position
 		if(m_mainCamera != Handle<VirtualCamera>::nullHandle())
-			m_lightingData.viewPosition = { m_mainCamera->viewPosition, 1 };
+			m_lightingData.viewPosition = glm::vec4(m_mainCamera->viewPosition, 1);
 
 		// Set light counts
 		m_lightingData.directionalLightCount = static_cast<uint32_t>(m_directionalLights.size());
@@ -1465,11 +1483,12 @@ namespace gust
 		camera->commandBuffer.buffer.begin(cmdBufInfo);
 
 		// Clear values for all attachments written in the fragment shader
-		std::array<vk::ClearValue, 4> clearValues;
+		std::array<vk::ClearValue, 5> clearValues;
 		clearValues[0].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
 		clearValues[1].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
-		clearValues[2].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
-		clearValues[3].setDepthStencil({ 1.0f, 0 });
+		clearValues[2].setColor(std::array<float, 4>{ camera->clearColor.x, camera->clearColor.y, camera->clearColor.z, 0.0f });
+		clearValues[3].setColor(std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 0.0f });
+		clearValues[4].setDepthStencil({ 1.0f, 0 });
 
 		vk::RenderPassBeginInfo renderPassBeginInfo = {};
 		renderPassBeginInfo.setRenderPass(m_renderPasses.offscreen);
@@ -1525,22 +1544,27 @@ namespace gust
 
 	void Renderer::performCameraLighting(Handle<VirtualCamera> camera)
 	{
-		std::array<vk::WriteDescriptorSet, 3> sets = {};
+		std::array<vk::WriteDescriptorSet, 4> sets = {};
 
 		vk::DescriptorImageInfo position = {};
-		position.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		position.setImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 		position.setImageView(m_mainCamera->position->getImageView());
 		position.setSampler(m_mainCamera->position->getSampler());
 
 		vk::DescriptorImageInfo normal = {};
-		normal.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		normal.setImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 		normal.setImageView(m_mainCamera->normal->getImageView());
 		normal.setSampler(m_mainCamera->normal->getSampler());
 
 		vk::DescriptorImageInfo color = {};
-		color.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		color.setImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 		color.setImageView(m_mainCamera->color->getImageView());
 		color.setSampler(m_mainCamera->color->getSampler());
+
+		vk::DescriptorImageInfo misc = {};
+		misc.setImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+		misc.setImageView(m_mainCamera->misc->getImageView());
+		misc.setSampler(m_mainCamera->misc->getSampler());
 
 		sets[0].setDstSet(m_descriptors.lightingDescriptorSet);
 		sets[0].setDstBinding(1);
@@ -1562,6 +1586,13 @@ namespace gust
 		sets[2].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
 		sets[2].setDescriptorCount(1);
 		sets[2].setPImageInfo(&color);
+
+		sets[3].setDstSet(m_descriptors.lightingDescriptorSet);
+		sets[3].setDstBinding(4);
+		sets[3].setDstArrayElement(0);
+		sets[3].setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+		sets[3].setDescriptorCount(1);
+		sets[3].setPImageInfo(&misc);
 
 		// Update lighting descriptor set
 		m_graphics->getLogicalDevice().updateDescriptorSets(static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);

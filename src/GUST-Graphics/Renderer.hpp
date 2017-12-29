@@ -181,6 +181,9 @@ namespace gust
 		/** Albedo attachment. */
 		std::unique_ptr<Texture> color;
 
+		/** Misc attachment. */
+		std::unique_ptr<Texture> misc;
+
 		/** Depth attachment. */
 		std::unique_ptr<Texture> depth;
 
@@ -192,6 +195,9 @@ namespace gust
 
 		/** Camera position. */
 		glm::vec3 viewPosition = {};
+
+		/** Clear color. */
+		glm::vec3 clearColor = { 0, 0, 0 };
 	};
 
 
@@ -678,7 +684,7 @@ namespace gust
 			/** Point lights in use. */
 			uint32_t pointLightCount = 0;
 
-			/** Padding.  */
+			/** Padding. */
 			char padding1[12];
 
 			/** Directional lights. */

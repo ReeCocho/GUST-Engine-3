@@ -5,6 +5,7 @@
 layout(location = 0) out vec4 outPosition;
 layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outAlbedo;
+layout(location = 3) out vec4 outMisc;
 
 #define GUST_POINT_LIGHT_COUNT 64
 #define GUST_DIRECTIONAL_LIGHT_COUNT 8
@@ -35,9 +36,28 @@ struct SpotLightData
 	float range;
 };
 
+struct CalculationData
+{
+	// Light
+	vec3 direction;
+	vec3 lightColor;
+	float attenuation;
+	
+	// Material
+	float metallic;
+	float roughness;
+	vec3 albedo;
+	vec3 reflectance;
+	
+	// Misc
+	vec3 normal;
+	vec3 viewDirection;
+};
+
 layout(set = 0, binding = 1) uniform sampler2D inPosition;
 layout(set = 0, binding = 2) uniform sampler2D inNormal;
 layout(set = 0, binding = 3) uniform sampler2D inAlbedo;
+layout(set = 0, binding = 4) uniform sampler2D inMisc;
 
 layout(std140, set = 0, binding = 0) uniform LightingData 
 {
@@ -80,131 +100,72 @@ layout(location = 0) in VS_OUT
 	vec2 uv;
 } vsOut;
 
+const float PI = 3.14159265359;
 
-
-/**
- * @brief Calculates the fragment color for a directional light.
- * @param Directional light to use.
- * @param Direction from the camera to the fragment.
- * @param Vector normal to the fragment.
- * @param Original color of the fragment.
- * @param Specularity of the fragment.
- */
-vec3 calculateDirectionalLight(DirectionalLightData directionalLight, vec3 viewDirection, vec3 normal, vec3 color, float specularity)
+float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
-	// // Ambient
-	// vec3 ambient = ambientStrength * directionalLight.color.xyz * color;
-	vec3 ambient = lightingData.ambient.xyz * lightingData.ambient.w;
-	ambient *= directionalLight.color.xyz * color;
-	
-	// Diffuse
-	vec3 lightDir = normalize(-directionalLight.direction.xyz);  
-	float diff = max(dot(normal, lightDir), 0.0);
-	vec3 diffuse = diff * directionalLight.color.xyz * color;
+	float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
 
-	// Specular
-	vec3 reflectDir = reflect(-lightDir, normal);  
-	float spec = pow(max(dot(viewDirection, reflectDir), 0.0), 32);
-	vec3 specular = 1.0 * spec * directionalLight.color.xyz * color * specularity ;
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
 
-	// Add to lighting total
-	return (ambient + diffuse + specular) * directionalLight.intensity;
+    return nom / max(denom, 0.001);
 }
 
-/**
- * @brief Calculates fragment the color for a point light.
- * @param Point light to use.
- * @param Direction from the camera to the fragment.
- * @param Position of the fragment in world coordinates.
- * @param Vector normal to the fragment.
- * @param Original color of the fragment.
- * @param Specularity of the fragment.
- */
-vec3 calculatePointLight(PointLightData pointLight, vec3 viewDirection, vec3 position, vec3 normal, vec3 color, float specularity)
+float GeometrySchlickGGX(float NdotV, float roughness)
 {
-	// Distance from light source to fragment
-	float dist = length(pointLight.position.xyz - position);
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
 
-	if(dist > pointLight.range)
-		return vec3(0, 0, 0);
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
 
-	// // Ambient
-	// vec3 ambient = ambientStrength * pointLight.color.xyz * color;
-	vec3 ambient = lightingData.ambient.xyz * lightingData.ambient.w;
-	ambient *= pointLight.color.xyz * color;
-	
-	// Diffuse
-	vec3 lightDir = normalize(pointLight.position.xyz - position);  
-	float diff = max(dot(normal, lightDir), 0.0);
-	vec3 diffuse = diff * pointLight.color.xyz * color;
-
-	// Specular
-	vec3 reflectDir = reflect(-lightDir, normal);  
-	float spec = pow(max(dot(viewDirection, reflectDir), 0.0), 32);
-	vec3 specular = 1.0 * spec * pointLight.color.xyz * color * specularity; 
-
-	// Attenuation
-	float intensity = pointLight.intensity;
-	float range = pointLight.range;
-	float attenuation = intensity / (1.0f + ( (intensity * 128.0f * (dist * dist) ) / (range * range) ) );
-	
-	// Add to lighting total
-	return (ambient + diffuse + specular) * attenuation;
+    return nom / denom;
 }
 
-/**
- * @brief Calculates fragment the color for a spot light.
- * @param Spot light to use.
- * @param Direction from the camera to the fragment.
- * @param Position of the fragment in world coordinates.
- * @param Vector normal to the fragment.
- * @param Original color of the fragment.
- * @param Specularity of the fragment.
- */
-vec3 calculateSpotLight(SpotLightData spotLight, vec3 viewDirection, vec3 position, vec3 normal, vec3 color, float specularity)
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 {
-	// Distance from light source to fragment
-	float dist = length((spotLight.position.xyz) - position);
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
 
-	if(dist > spotLight.range)
-		return vec3(0, 0, 0);
+    return ggx1 * ggx2;
+}
 
-	// Calculate theta based off spot light direction and direction to fragment
-	vec3 lightDir = normalize(spotLight.position.xyz - position);  
-	float theta = dot(lightDir, normalize(-spotLight.direction.xyz));
-	
-	// Calculate intensity
-	float outerCutoff = spotLight.cutOff * 1.05f;
-	float epsilon   = spotLight.cutOff - outerCutoff;
-	float intensity = (1.0f - clamp((theta - outerCutoff) / epsilon, 0.0, 1.0)) * spotLight.intensity;    
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
 
-	// Attenuation
-	float range = spotLight.range;
-	float attenuation = intensity / (1.0f + ( (intensity * 128.0f * (dist * dist) ) / (range * range) ) );
-	intensity *= attenuation;
-
-	if(theta > spotLight.cutOff) 
-	{       
-		// // Ambient
-		// vec3 ambient = ambientStrength * spotLight.color.xyz * color;
-		vec3 ambient = lightingData.ambient.xyz * lightingData.ambient.w;
-		ambient *= spotLight.color.xyz * color;
-		
-		// Diffuse
-		float diff = max(dot(normal, lightDir), 0.0);
-		vec3 diffuse = diff * spotLight.color.xyz * color;
+vec3 lighting(CalculationData data)
+{
+	// Calculate per-light radiance
+	vec3 L = normalize(data.direction);
+	vec3 H = normalize(data.viewDirection + L);
+	vec3 radiance = data.lightColor * data.attenuation;
 	
-		// Specular
-		vec3 reflectDir = reflect(-lightDir, normal);  
-		float spec = pow(max(dot(viewDirection, reflectDir), 0.0), 32);
-		vec3 specular = 1.0 * spec * spotLight.color.xyz * color * specularity;   
+	// Cook-Torrance BRDF
+	float NDF = DistributionGGX(data.normal, H, data.roughness);
+	float G = GeometrySmith(data.normal, data.viewDirection, L, data.roughness);
+	vec3 F = fresnelSchlick(clamp(dot(H, data.viewDirection), 0.0, 1.0), data.reflectance);
 	
-		// Add to lighting total
-		return (ambient + diffuse + specular) * intensity;
-	}
+	vec3 nominator = NDF * G * F;
+	float denominator = 4.0 * max(dot(data.normal, data.viewDirection), 0.0) * max(dot(data.normal, L), 0.0);
+	vec3 specular = nominator / max(denominator, 0.001);
 	
-	return vec3(0, 0, 0);
-}	
+	vec3 kS = F;
+	vec3 kD = vec3(1.0) - kS;
+	kD *= 1.0 - data.metallic;
+	
+	float NdotL = max(dot(data.normal, L), 0.0);
+	
+	return (kD * data.albedo / PI + specular) * radiance * NdotL;
+}
 
 void main() 
 {
@@ -212,30 +173,82 @@ void main()
 	vec3 position = texture(inPosition, vsOut.uv).rgb;
 	
 	// Normal
-	vec3 normal = texture(inNormal, vsOut.uv).rgb;
+	vec3 normal = normalize(texture(inNormal, vsOut.uv).rgb);
 	
-	// Color
-	vec3 color = texture(inAlbedo, vsOut.uv).rgb;
+	// Albedo
+	vec3 albedo = texture(inAlbedo, vsOut.uv).rgb;
+	albedo.r = pow(albedo.r, 4.4);
+	albedo.g = pow(albedo.g, 4.4);
+	albedo.b = pow(albedo.b, 4.4);
+	
+	// Misc
+	vec4 misc = texture(inMisc, vsOut.uv);
+	
+	// Rougness, metallic, and ambient occlusion
+	float roughness = misc.r;
+	float metallic = misc.g;
+	float ao = misc.b;
 	
 	// View direction
 	vec3 viewDir = normalize(lightingData.cameraPosition.xyz - position);
 	
+	// Reflectance
+	vec3 F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
+	
 	// Total color
-	vec3 total = vec3(0, 0, 0);
+	vec3 total = vec3(0.0);
 	
 	// Directional lights
-	for(uint i = 0; i < lightingData.directionalLightCount; i++)
-		total += calculateDirectionalLight(lightingData.directionalLights[i], viewDir, normal, color, 1.0f);
+	for(uint i = 0; i < lightingData.directionalLightCount; ++i)
+	{
+		CalculationData data;
+		data.direction = -lightingData.directionalLights[i].direction.rgb;
+		data.lightColor = lightingData.directionalLights[i].color.rgb * lightingData.directionalLights[i].intensity;
+		data.attenuation = 1.0;
+		data.metallic = metallic;
+		data.roughness = roughness;
+		data.albedo = albedo;
+		data.reflectance = F0;
+		data.normal = normal;
+		data.viewDirection = viewDir;
+	
+		total += lighting(data);
+	}
 	
 	// Point lights
-	for(uint i = 0; i < lightingData.pointLightCount; i++)
-		total += calculatePointLight(lightingData.pointLights[i], viewDir, position, normal, color, 0.0f);
-		
-	// Spot lights
-	for(uint i = 0; i < lightingData.spotLightCount; i++)
-		total += calculateSpotLight(lightingData.spotLights[i], viewDir, position, normal, color, 0.0f);
+	for(uint i = 0; i < lightingData.pointLightCount; ++i)
+	{
+		vec3 direction = normalize(lightingData.pointLights[i].position.xyz - position);
+		float dist = length(lightingData.pointLights[i].position.xyz - position);
 	
-	outAlbedo = vec4(total, 1.0);
+		CalculationData data;
+		data.direction = direction;
+		data.lightColor = lightingData.pointLights[i].color.rgb * lightingData.pointLights[i].intensity;
+		data.attenuation = 1.0 / (dist * dist);
+		data.metallic = metallic;
+		data.roughness = roughness;
+		data.albedo = albedo;
+		data.reflectance = F0;
+		data.normal = normal;
+		data.viewDirection = viewDir;
+	
+		total += lighting(data);
+	}
+	
+	// Ambient lighting
+	vec3 ambient = albedo * lightingData.ambient.xyz * lightingData.ambient.w * ao;
+	
+	vec3 color = ambient + total;
+	
+	// HDR tonemapping
+	color = color / (color + vec3(1.0));
+	
+	// Gama correct
+	color = pow(color, vec3(1.0/2.2));
+	
+	outAlbedo = vec4(color, 1.0);
 	outNormal = vec4(normal, 1.0);
 	outPosition = vec4(position, 1.0);
+	outMisc = misc;
 }
