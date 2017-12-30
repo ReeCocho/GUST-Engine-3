@@ -56,7 +56,7 @@ namespace gust
 		/**
 		 * @brief Destructor.
 		 */
-		~Texture();
+		virtual ~Texture();
 
 		/**
 		 * @brief Get texture width.
@@ -103,7 +103,7 @@ namespace gust
 			return m_filtering;
 		}
 
-	private:
+	protected:
 
 		/** Graphics context. */
 		Graphics* m_graphics = nullptr;
@@ -128,5 +128,60 @@ namespace gust
 
 		/** Texture height. */
 		uint32_t m_height = 0;
+	};
+
+
+
+	/**
+	 * @class Cubemap
+	 * @brief 3D texture.
+	 */
+	class Cubemap : public Texture
+	{
+	public:
+
+		/**
+		 * @brief Constructor.
+		 * @param Graphics context.
+		 * @param Image.
+		 * @param Image view.
+		 * @param Sampler.
+		 * @param Image memory.
+		 * @param Width.
+		 * @param Height.
+		 */
+		Cubemap
+		(
+			Graphics* graphics, 
+			vk::Image image, 
+			vk::ImageView& imageView, 
+			vk::Sampler sampler, 
+			vk::DeviceMemory memory, 
+			uint32_t width, 
+			uint32_t height
+		);
+
+		/**
+		 * @brief Constructor.
+		 * @param Graphics context.
+		 * @param Path to file containing top image.
+		 * @param Path to file containing bottom image.
+		 * @param Path to file containing north image.
+		 * @param Path to file containing east image.
+		 * @param Path to file containing south image.
+		 * @param Path to file containing west image.
+		 * @param Texture filtering.
+		 */
+		Cubemap
+		(
+			Graphics* graphics, 
+			const std::string& top, 
+			const std::string& bottom,
+			const std::string& north,
+			const std::string& east,
+			const std::string& south,
+			const std::string& west,
+			vk::Filter filter
+		);
 	};
 }

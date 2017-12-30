@@ -80,6 +80,28 @@ namespace gust
 		Handle<Texture> createTexture(const std::string& path, vk::Filter filtering);
 
 		/**
+		 * @brief Create a cubemap.
+		 * @param Path to file containing top image.
+		 * @param Path to file containing bottom image.
+		 * @param Path to file containing north image.
+		 * @param Path to file containing east image.
+		 * @param Path to file containing south image.
+		 * @param Path to file containing west image.
+		 * @param Texture filtering.
+		 * @return Texture handle.
+		 */
+		Handle<Cubemap> createCubemap
+		(
+			const std::string& top,
+			const std::string& bottom,
+			const std::string& north,
+			const std::string& east,
+			const std::string& south,
+			const std::string& west,
+			vk::Filter filter
+		);
+
+		/**
 		 * @brief Create a texture.
 		 * @param Image.
 		 * @param Image view.
@@ -90,6 +112,26 @@ namespace gust
 		 * @return Texture handle.
 		 */
 		Handle<Texture> createTexture
+		(
+			vk::Image image, 
+			vk::ImageView imageView, 
+			vk::Sampler sampler, 
+			vk::DeviceMemory memory, 
+			uint32_t width, 
+			uint32_t height
+		);
+
+		/**
+		 * @brief Create a cubemap.
+		 * @param Image.
+		 * @param Image view.
+		 * @param Sampler.
+		 * @param Image memory.
+		 * @param Width.
+		 * @param Height.
+		 * @return Texture handle.
+		 */
+		Handle<Cubemap> createCubemap
 		(
 			vk::Image image, 
 			vk::ImageView imageView, 
@@ -139,6 +181,12 @@ namespace gust
 		 * @param Texture handle.
 		 */
 		void destroyTexture(Handle<Texture> texture);
+
+		/**
+		 * @brief Destroy a cubemap.
+		 * @param Cubemap handle.
+		 */
+		void destroyCubemap(Handle<Cubemap> cubemap);
 
 		/**
 		 * @brief Destroy a shader.

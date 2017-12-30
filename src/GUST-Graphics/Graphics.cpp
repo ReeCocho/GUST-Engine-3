@@ -360,20 +360,23 @@ namespace gust
 		vk::ImageUsageFlags usage,
 		vk::MemoryPropertyFlags properties,
 		vk::Image& image,
-		vk::DeviceMemory& imageMemory
+		vk::DeviceMemory& imageMemory,
+		vk::ImageCreateFlags flags,
+		uint32_t arrayLayers
 	)
 	{
 		vk::ImageCreateInfo imageInfo = {};
 		imageInfo.setImageType(vk::ImageType::e2D);
 		imageInfo.setExtent({ width, height, 1 });;
 		imageInfo.setMipLevels(1);
-		imageInfo.setArrayLayers(1);
+		imageInfo.setArrayLayers(arrayLayers);
 		imageInfo.setFormat(format);
 		imageInfo.setTiling(tiling);
 		imageInfo.setInitialLayout(vk::ImageLayout::eUndefined);
 		imageInfo.setUsage(usage);
 		imageInfo.setSamples(vk::SampleCountFlagBits::e1);
 		imageInfo.setSharingMode(vk::SharingMode::eExclusive);
+		imageInfo.setFlags(flags);
 
 		// Create image
 		if (m_logicalDevice.createImage(&imageInfo, nullptr, &image) != vk::Result::eSuccess)
@@ -392,7 +395,7 @@ namespace gust
 		m_logicalDevice.bindImageMemory(image, imageMemory, 0);
 	}
 
-	void Graphics::transitionImageLayout(const vk::Image& image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout)
+	void Graphics::transitionImageLayout(const vk::Image& image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t imageCount)
 	{
 		vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -420,7 +423,7 @@ namespace gust
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.layerCount = imageCount;
 
 		if (oldLayout == vk::ImageLayout::eUndefined && newLayout == vk::ImageLayout::eTransferDstOptimal)
 		{
@@ -461,20 +464,26 @@ namespace gust
 		endSingleTimeCommands(commandBuffer);
 	}
 
-	void Graphics::copyBufferToImage(const vk::Buffer& buffer, const vk::Image& image, uint32_t width, uint32_t height)
+	void Graphics::copyBufferToImage(const vk::Buffer& buffer, const vk::Image& image, uint32_t width, uint32_t height, uint32_t imageCount, uint32_t imageSize)
 	{
 		vk::CommandBuffer commandBuffer = beginSingleTimeCommands();
 
-		vk::BufferImageCopy region = {};
-		region.setBufferOffset(0);
-		region.setBufferRowLength(0);
-		region.setBufferImageHeight(0);
-		region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
-		region.imageSubresource.mipLevel = 0;
-		region.imageSubresource.baseArrayLayer = 0;
-		region.imageSubresource.layerCount = 1;
-		region.setImageOffset({ 0, 0, 0 });
-		region.setImageExtent({ width, height, 1 });
+		std::vector<vk::BufferImageCopy> regions(imageCount);
+		uint32_t offset = 0;
+
+		for (size_t i = 0; i < regions.size(); ++i)
+		{
+			regions[i].setBufferOffset(offset);
+			regions[i].setBufferRowLength(0);
+			regions[i].setBufferImageHeight(0);
+			regions[i].imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+			regions[i].imageSubresource.mipLevel = 0;
+			regions[i].imageSubresource.baseArrayLayer = static_cast<uint32_t>(i);
+			regions[i].imageSubresource.layerCount = 1;
+			regions[i].setImageOffset({ 0, 0, 0 });
+			regions[i].setImageExtent({ width, height, 1 });
+			offset += imageSize;
+		}
 
 		// Copy buffer to image
 		commandBuffer.copyBufferToImage
@@ -482,25 +491,25 @@ namespace gust
 			buffer,
 			image,
 			vk::ImageLayout::eTransferDstOptimal,
-			1,
-			&region
+			static_cast<uint32_t>(regions.size()),
+			regions.data()
 		);
 
 		endSingleTimeCommands(commandBuffer);
 	}
 
-	vk::ImageView Graphics::createImageView(const vk::Image& image, vk::Format format, vk::ImageAspectFlags aspectFlags)
+	vk::ImageView Graphics::createImageView(const vk::Image& image, vk::Format format, vk::ImageAspectFlags aspectFlags, vk::ImageViewType viewType, uint32_t imageCount)
 	{
 		vk::ImageViewCreateInfo viewInfo = {};
 		viewInfo.setImage(image);
-		viewInfo.setViewType(vk::ImageViewType::e2D);
+		viewInfo.setViewType(viewType);
 		viewInfo.setFormat(format);
 		viewInfo.setComponents(vk::ComponentMapping());
 		viewInfo.subresourceRange.aspectMask = aspectFlags;
 		viewInfo.subresourceRange.baseMipLevel = 0;
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
+		viewInfo.subresourceRange.layerCount = imageCount;
 
 		vk::ImageView view;
 

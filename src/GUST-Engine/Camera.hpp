@@ -80,6 +80,15 @@ namespace gust
 		}
 
 		/**
+		 * @brief Get the skybox.
+		 * @return The skybox.
+		 */
+		inline Handle<Cubemap> getSkybox() const
+		{
+			return m_virtualCamera->skybox;
+		}
+
+		/**
 		 * @brief Get view matrix.
 		 * @return View matrix.
 		 */
@@ -142,6 +151,17 @@ namespace gust
 		{
 			m_virtualCamera->clearColor = clearColor;
 			return m_virtualCamera->clearColor;
+		}
+
+		/**
+		 * @brief Set the skybox.
+		 * @param New skybox.
+		 * @return New skybox.
+		 */
+		inline Handle<Cubemap> setSkybox(Handle<Cubemap> skybox)
+		{
+			m_virtualCamera->skybox = skybox;
+			return skybox;
 		}
 
 		/**

@@ -244,6 +244,7 @@ namespace gust
 		 * @param Memory property flags.
 		 * @param Image reference.
 		 * @param Image memory reference.
+		 * @param Number of images.
 		 */
 		void createImage
 		(
@@ -254,7 +255,9 @@ namespace gust
 			vk::ImageUsageFlags usage,
 			vk::MemoryPropertyFlags properties,
 			vk::Image& image,
-			vk::DeviceMemory& imageMemory
+			vk::DeviceMemory& imageMemory,
+			vk::ImageCreateFlags flags = static_cast<vk::ImageCreateFlagBits>(0),
+			uint32_t arrayLayers = 1
 		);
 
 		/**
@@ -263,13 +266,15 @@ namespace gust
 		 * @param Transition format.
 		 * @param Old image layout.
 		 * @param New image layout.
+		 * @param Image count.
 		 */
 		void transitionImageLayout
 		(
 			const vk::Image& image, 
 			vk::Format format, 
 			vk::ImageLayout oldLayout, 
-			vk::ImageLayout newLayout
+			vk::ImageLayout newLayout,
+			uint32_t imageCount = 1
 		);
 
 		/**
@@ -278,13 +283,18 @@ namespace gust
 		 * @param Image to copy to.
 		 * @param Image width.
 		 * @param Image height.
+		 * @param Number of images to copy.
+		 * @param Size of each image.
+		 * @note The image size can be zero if you only have one image to copy.
 		 */
 		void copyBufferToImage
 		(
 			const vk::Buffer& buffer, 
 			const vk::Image& image, 
 			uint32_t width, 
-			uint32_t height
+			uint32_t height,
+			uint32_t imageCount = 1,
+			uint32_t imageSize = 0
 		);
 
 		/**
@@ -292,13 +302,17 @@ namespace gust
 		 * @param Image to create view for.
 		 * @param Image view format.
 		 * @param Image aspect flags.
+		 * @param Image view type.
+		 * @param Number of images.
 		 * @return New image view.
 		 */
 		vk::ImageView createImageView
 		(
 			const vk::Image& image, 
 			vk::Format format, 
-			vk::ImageAspectFlags aspectFlags
+			vk::ImageAspectFlags aspectFlags,
+			vk::ImageViewType viewType = vk::ImageViewType::e2D,
+			uint32_t imageCount = 1
 		);
 
 	private:

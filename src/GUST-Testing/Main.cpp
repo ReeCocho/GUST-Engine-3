@@ -153,7 +153,7 @@ int main()
 	
 	// Graphics setup
 	gust::renderer.setAmbientColor({ 1.0f, 1.0f, 1.0f });
-	gust::renderer.setAmbientIntensity(0.2f);
+	gust::renderer.setAmbientIntensity(0.5f);
 
 	// Add systems
 	{
@@ -183,7 +183,7 @@ int main()
 		"./Shaders/standard-frag.spv",
 		sizeof(gust::EmptyVertexData),
 		sizeof(TestData),
-		4,
+		5,
 		true,
 		true
 	);
@@ -194,12 +194,24 @@ int main()
 	auto pom = gust::resourceManager.createTexture("./Textures/CutePom.png", vk::Filter::eLinear);
 	auto gabe = gust::resourceManager.createTexture("./Textures/Gabe.jpg", vk::Filter::eLinear);
 	auto flat_n = gust::resourceManager.createTexture("./Textures/Flat_n.png", vk::Filter::eLinear);
-	auto red = gust::resourceManager.createTexture("./Textures/Red.png", vk::Filter::eLinear);
+	auto white = gust::resourceManager.createTexture("./Textures/White.png", vk::Filter::eNearest);
+	auto black = gust::resourceManager.createTexture("./Textures/Black.png", vk::Filter::eNearest);
 
 	auto stone_a = gust::resourceManager.createTexture("./Textures/Stone_a.png", vk::Filter::eLinear);
 	auto stone_m = gust::resourceManager.createTexture("./Textures/Stone_m.png", vk::Filter::eLinear);
 	auto stone_o = gust::resourceManager.createTexture("./Textures/Stone_o.png", vk::Filter::eLinear);
 	auto stone_n = gust::resourceManager.createTexture("./Textures/Stone_n.png", vk::Filter::eLinear);
+
+	auto skybox = gust::resourceManager.createCubemap
+	(
+		"./Textures/Sky/Top.jpg",
+		"./Textures/Sky/Bottom.jpg",
+		"./Textures/Sky/North.jpg",
+		"./Textures/Sky/East.jpg",
+		"./Textures/Sky/South.jpg",
+		"./Textures/Sky/West.jpg",
+		vk::Filter::eLinear
+	);
 
 	TestData data = {};
 	data.uv = { 6.0f, 6.0f };
@@ -210,15 +222,17 @@ int main()
 	floor_mat->setTexture(stone_n, 1);
 	floor_mat->setTexture(stone_m, 2);
 	floor_mat->setTexture(stone_o, 3);
+	floor_mat->setTexture(white, 4);
 	floor_mat->setFragmentData<TestData>(data);
 		
 	data.uv = { 1, 1 };
 
 	auto pom_mat = gust::resourceManager.createMaterial(shader);
-	pom_mat->setTexture(red, 0);
+	pom_mat->setTexture(white, 0);
 	pom_mat->setTexture(flat_n, 1);
-	pom_mat->setTexture(red, 2);
-	pom_mat->setTexture(red, 3);
+	pom_mat->setTexture(black, 2);
+	pom_mat->setTexture(white, 3);
+	pom_mat->setTexture(white, 4);
 	pom_mat->setFragmentData<TestData>(data);
 
 	// Create meshes
@@ -401,6 +415,7 @@ int main()
 
 			auto camera = entity2.addComponent<gust::Camera>();
 			camera->setClearColor(glm::vec3(0.386f, 0.621f, 1.0f));
+			camera->setSkybox(skybox);
 			gust::Camera::setMainCamera(camera);
 		}
 
@@ -412,7 +427,7 @@ int main()
 		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setEulerAngles({ 45, 60, 0 });
+		transform->setEulerAngles({ 45, 240, 0 });
 	
 		auto light = entity.addComponent<gust::DirectionalLight>();
 		light->setIntensity(20.0f);

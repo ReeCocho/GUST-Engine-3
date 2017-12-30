@@ -11,6 +11,7 @@ layout(set = 1, binding = 0) uniform sampler2D tex;
 layout(set = 1, binding = 1) uniform sampler2D normal_map;
 layout(set = 1, binding = 2) uniform sampler2D metallic_map;
 layout(set = 1, binding = 3) uniform sampler2D ao_map;
+layout(set = 1, binding = 4) uniform sampler2D roughness_map;
 
 void main()
 {
@@ -19,6 +20,9 @@ void main()
 	
 	// Metallic
 	GUST_OUT_METALLIC = texture(metallic_map, GUST_UV * testData.uv).r;
+	
+	// Roughness
+	GUST_OUT_ROUGHNESS = texture(roughness_map, GUST_UV * testData.uv).r;
 	
 	// AO
 	GUST_OUT_AO = texture(ao_map, GUST_UV * testData.uv).r;
@@ -32,5 +36,4 @@ void main()
 	GUST_OUT_COLOR = vec4(color, 1.0);
 	GUST_OUT_NORMAL = vec4(normal, 1.0);
 	GUST_OUT_POSITION = vec4(GUST_FRAG_POS, 1.0);
-	GUST_OUT_ROUGHNESS = 0.5;
 }

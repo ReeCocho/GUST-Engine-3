@@ -50,6 +50,24 @@
  */
 #define GUST_SCREEN_VERTEX_SHADER_PATH "./Shaders/screen-vert.spv"
 
+/**
+ * @def GUST_SKYBOX_MESH_PATH
+ * @brief Path to the file containing the cube used for a skybox.
+ */
+#define GUST_SKYBOX_MESH_PATH "./Meshes/Skybox.obj"
+
+/**
+ * @def GUST_SKYBOX_VERTEX_SHADER_PATH
+ * @brief Path to the file containing the skybox vertex shader.
+ */
+#define GUST_SKYBOX_VERTEX_SHADER_PATH "./Shaders/skybox-vert.spv"
+
+/**
+ * @def GUST_SKYBOX_FRAGMENT_SHADER_PATH
+ * @brief Path to the file containing the skybox fragment shader.
+ */
+#define GUST_SKYBOX_FRAGMENT_SHADER_PATH "./Shaders/skybox-frag.spv"
+
 /** Includes. */
 #include <queue>
 #include <Allocators.hpp>
@@ -198,6 +216,9 @@ namespace gust
 
 		/** Clear color. */
 		glm::vec3 clearColor = { 0, 0, 0 };
+
+		/** Skybox. */
+		Handle<Cubemap> skybox = Handle<Cubemap>::nullHandle();
 	};
 
 
@@ -609,6 +630,9 @@ namespace gust
 			/** Screen descriptor set layout for deferred rendering. */
 			vk::DescriptorSetLayout screenDescriptorSetLayout = {};
 
+			/** Skybox descriptor set layout for deferred rendering. */
+			vk::DescriptorSetLayout skyboxDescriptorSetLayout = {};
+
 			/** Descriptor pool. */
 			vk::DescriptorPool descriptorPool = {};
 
@@ -617,6 +641,9 @@ namespace gust
 
 			/** Screen descriptor set. */
 			vk::DescriptorSet screenDescriptorSet = {};
+
+			/** Skybox descriptor set. */
+			vk::DescriptorSet skyboxDescriptorSet = {};
 
 		} m_descriptors;
 
@@ -671,6 +698,32 @@ namespace gust
 			vk::Pipeline graphicsPipeline = {};
 
 		} m_screenShader;
+
+		/**
+		 * @struct SkyboxShader
+		 * @brief Data about the skybox shader.
+		 */
+		struct SkyboxShader
+		{
+			/** Fragment shader module. */
+			vk::ShaderModule fragmentShader = {};
+
+			/** Vertex shader module. */
+			vk::ShaderModule vertexShader = {};
+
+			/** Shader stage creation info. */
+			std::array<vk::PipelineShaderStageCreateInfo, 2> shaderStages;
+
+			/** Texture descriptor set layout. */
+			vk::DescriptorSetLayout textureDescriptorSetLayout = {};
+
+			/** Graphics pipeline layout. */
+			vk::PipelineLayout graphicsPipelineLayout = {};
+
+			/** Graphics pipeline. */
+			vk::Pipeline graphicsPipeline = {};
+
+		} m_skyboxShader;
 
 		/**
 		 * @struct LightingData
@@ -728,6 +781,9 @@ namespace gust
 			/** Rendering command buffers. */
 			std::vector<CommandBuffer> rendering = {};
 
+			/** Skybox command buffer. */
+			CommandBuffer skybox = {};
+
 		} m_commands;
 
 		/** Camera allocator. */
@@ -741,11 +797,17 @@ namespace gust
 		/** Screen quad. */
 		std::unique_ptr<Mesh> m_screenQuad = nullptr;
 
+		/** Skybox. */
+		std::unique_ptr<Mesh> m_skybox = nullptr;
+
 		/** Main camera. */
 		Handle<VirtualCamera> m_mainCamera = {};
 
 		/** Uniform buffer for lighting data. */
 		Buffer m_lightingUniformBuffer = {};
+
+		/** Skybox uniform buffer. */
+		Buffer m_skyboxUniformBuffer = {};
 
 		/** List of meshes to render. */
 		std::vector<MeshData> m_meshes = {};

@@ -55,6 +55,28 @@ namespace gust
 		return texture;
 	}
 
+	Handle<Cubemap> ResourceManager::createCubemap
+	(
+		const std::string& top,
+		const std::string& bottom,
+		const std::string& north,
+		const std::string& east,
+		const std::string& south,
+		const std::string& west,
+		vk::Filter filter
+	)
+	{
+		// Resize the array if necessary
+		if (m_textureAllocator->getResourceCount() == m_textureAllocator->getMaxResourceCount())
+			m_textureAllocator->resize(m_textureAllocator->getMaxResourceCount() + 100, true);
+
+		// Allocate mesh and call constructor
+		auto cubemap = Handle<Cubemap>(m_textureAllocator.get(), m_textureAllocator->allocate());
+		::new(cubemap.get())(Cubemap)(m_graphics, top, bottom, north, east, south, west, filter);
+
+		return cubemap;
+	}
+
 	Handle<Texture> ResourceManager::createTexture
 	(
 		vk::Image image,
@@ -74,6 +96,27 @@ namespace gust
 		::new(texture.get())(Texture)(m_graphics, image, imageView, sampler, memory, width, height);
 
 		return texture;
+	}
+
+	Handle<Cubemap> ResourceManager::createCubemap
+	(
+		vk::Image image,
+		vk::ImageView imageView,
+		vk::Sampler sampler,
+		vk::DeviceMemory memory,
+		uint32_t width,
+		uint32_t height
+	)
+	{
+		// Resize the array if necessary
+		if (m_textureAllocator->getResourceCount() == m_textureAllocator->getMaxResourceCount())
+			m_textureAllocator->resize(m_textureAllocator->getMaxResourceCount() + 100, true);
+
+		// Allocate texture and call constructor
+		auto cubemap = Handle<Cubemap>(m_textureAllocator.get(), m_textureAllocator->allocate());
+		::new(cubemap.get())(Cubemap)(m_graphics, image, imageView, sampler, memory, width, height);
+
+		return cubemap;
 	}
 
 	Handle<Shader> ResourceManager::createShader
@@ -135,6 +178,11 @@ namespace gust
 	void ResourceManager::destroyTexture(Handle<Texture> texture)
 	{
 		m_textureAllocator->deallocate(texture.getHandle());
+	}
+
+	void ResourceManager::destroyCubemap(Handle<Cubemap> cubemap)
+	{
+		m_textureAllocator->deallocate(cubemap.getHandle());
 	}
 
 	void ResourceManager::destroyShader(Handle<Shader> shader)
