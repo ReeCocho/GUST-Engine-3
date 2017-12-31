@@ -156,18 +156,17 @@ namespace gust
 	{
 		// Remove self from parents child list
 		if (m_parent != Handle<Transform>::nullHandle())
-			parent->m_children.erase(std::remove(parent->m_children.begin(), parent->m_children.end(), getHandle()), parent->m_children.end());
+			m_parent->m_children.erase(std::remove(m_parent->m_children.begin(), m_parent->m_children.end(), getHandle()), m_parent->m_children.end());
 
 		// Set parent
 		m_parent = parent;
 
 		// Add self to new parents children list
 		if (m_parent != Handle<Transform>::nullHandle())
-			parent->m_children.push_back(getHandle());
+			m_parent->m_children.push_back(getHandle());
 
 		// Update local values and model matrix
-		setPosition(getPosition());
-		setRotation(getRotation());
+		generateModelMatrix();
 
 		return m_parent;
 	}
@@ -195,13 +194,13 @@ namespace gust
 		}
 
 		// Update childrens model matrix
-		for (auto child : m_children)
+		for (Handle<Transform>& child : m_children)
 			child->generateModelMatrix();
 	}
 
 	void Transform::updateChildren()
 	{
-		for (auto child : m_children)
+		for (Handle<Transform>& child : m_children)
 		{
 			// Update rotation
 			child->m_rotation = m_rotation * child->m_localRotation;
@@ -232,5 +231,15 @@ namespace gust
 	void TransformSystem::onBegin()
 	{
 		getComponent<Transform>()->generateModelMatrix();
+	}
+
+	void TransformSystem::onEnd()
+	{
+		auto transform = getComponent<Transform>();
+
+		while(transform->childCount() > 0)
+			transform->getChild(0)->setParent(Handle<Transform>::nullHandle());
+
+		transform->setParent(Handle<Transform>::nullHandle());
 	}
 }

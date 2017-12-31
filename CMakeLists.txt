@@ -7,6 +7,9 @@ project(GUST)
 # Modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
+# C++ Version
+set (CMAKE_CXX_STANDARD 14)
+
 # Packages
 find_package(SDL2 REQUIRED)
 find_package(VULKAN REQUIRED)

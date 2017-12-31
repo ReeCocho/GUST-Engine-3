@@ -7,6 +7,7 @@
  */
 
 /** Includes. */
+#include <iostream>
 #include <vector>
 #include <queue>
 #include <memory>
@@ -137,6 +138,8 @@ namespace gust
 				auto allocator = static_cast<ResourceAllocator<T>*>(system->m_components.get());
 
 				// Resize the allocator if needed
+				std::cout << allocator->getResourceCount() << '\n';
+
 				if (allocator->getResourceCount() == allocator->getMaxResourceCount())
 					allocator->resize(allocator->getMaxResourceCount() + 100, true);
 

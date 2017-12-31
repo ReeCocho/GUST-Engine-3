@@ -390,5 +390,10 @@ namespace gust
 		 * @param Component to act upon.
 		 */
 		void onBegin() override;
+
+		/**
+		 * @brief Called when a component is removed from the system.
+		 */
+		void onEnd() override;
 	};
 }

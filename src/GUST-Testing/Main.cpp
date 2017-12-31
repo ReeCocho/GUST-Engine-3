@@ -55,6 +55,10 @@ public:
 
 	gust::Handle<gust::Transform> m_cameraTransform;
 
+	gust::Handle<gust::Mesh> m_sphere;
+
+	gust::Handle<gust::Material> m_material;
+
 	float m_camRot = 0;
 
 	float m_yVelocity = 0;
@@ -132,6 +136,24 @@ public:
 					player->m_camRot = 89.0f;
 
 				player->m_cameraTransform->setLocalEulerAngles(glm::vec3(player->m_camRot, 0, 0));
+			}
+
+			if (gust::input.getKeyDown(gust::KeyCode::Q))
+			{
+				auto e = gust::Entity(&gust::scene);
+
+				auto transform = e.getComponent<gust::Transform>();
+				transform->setLocalScale({ 0.5f, 0.5f, 0.5f });
+				transform->setPosition(player->m_cameraTransform->getPosition() + (player->m_cameraTransform->getForward() * 2.0f));
+
+				auto rigidBody = e.addComponent<gust::RigidBody>();
+				rigidBody->setSphereShape(0.25f);
+				rigidBody->setMass(100.0f);
+				rigidBody->setLinearVelocity(player->m_cameraTransform->getForward() * 30.0f);
+
+				auto meshRenderer = e.addComponent<gust::MeshRenderer>();
+				meshRenderer->setMesh(player->m_sphere);
+				meshRenderer->setMaterial(player->m_material);
 			}
 		}
 	}
@@ -228,7 +250,7 @@ int main()
 	data.uv = { 1, 1 };
 
 	auto pom_mat = gust::resourceManager.createMaterial(shader);
-	pom_mat->setTexture(white, 0);
+	pom_mat->setTexture(pom, 0);
 	pom_mat->setTexture(flat_n, 1);
 	pom_mat->setTexture(black, 2);
 	pom_mat->setTexture(white, 3);
@@ -420,6 +442,8 @@ int main()
 		}
 
 		auto player = entity.addComponent<Player>();
+		player->m_sphere = sphere_mesh;
+		player->m_material = pom_mat;
 	}
 	
 	// Create sun
@@ -427,10 +451,10 @@ int main()
 		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setEulerAngles({ 45, 240, 0 });
+		transform->setEulerAngles({ 45, 60, 0 });
 	
 		auto light = entity.addComponent<gust::DirectionalLight>();
-		light->setIntensity(20.0f);
+		light->setIntensity(10.0f);
 	}
 	
 	gust::simulate();

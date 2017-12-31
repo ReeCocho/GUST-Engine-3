@@ -177,9 +177,9 @@ void main()
 	
 	// Albedo
 	vec3 albedo = texture(inAlbedo, vsOut.uv).rgb;
-	albedo.r = pow(albedo.r, 4.4);
-	albedo.g = pow(albedo.g, 4.4);
-	albedo.b = pow(albedo.b, 4.4);
+	albedo.r = pow(albedo.r, 2.2);
+	albedo.g = pow(albedo.g, 2.2);
+	albedo.b = pow(albedo.b, 2.2);
 	
 	// Misc
 	vec4 misc = texture(inMisc, vsOut.uv);
