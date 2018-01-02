@@ -1,5 +1,5 @@
 #include <fstream>
-#include <assert.h>
+#include "Debugging.hpp"
 #include "FileIO.hpp"
 
 namespace gust
@@ -11,7 +11,7 @@ namespace gust
 
 		// Open stream
 		std::ifstream stream(path);
-		assert(stream.is_open());
+		gAssert(stream.is_open());
 
 		// Read contents and dump them into the contents stream
 		while (std::getline(stream, line))
@@ -25,7 +25,7 @@ namespace gust
 	{
 		// Open stream
 		std::ofstream stream(path);
-		assert(stream.is_open());
+		gAssert(stream.is_open());
 
 		// Write
 		stream << str;
@@ -35,7 +35,7 @@ namespace gust
 	{
 		// Open stream
 		std::ifstream stream(path, std::ios::binary | std::ios::in | std::ios::ate);
-		assert(stream.is_open());
+		gAssert(stream.is_open());
 
 		// Get ammount of data in the stream
 		size_t size = stream.tellg();
@@ -54,7 +54,7 @@ namespace gust
 	{
 		// Open stream
 		std::ofstream stream(path, std::ios::binary | std::ios::out);
-		assert(stream.is_open());
+		gAssert(stream.is_open());
 
 		// Write data
 		stream.write(bytes.data(), bytes.size());

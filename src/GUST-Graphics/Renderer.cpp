@@ -340,8 +340,10 @@ namespace gust
 			renderPassInfo.setDependencyCount(1);
 			renderPassInfo.setPDependencies(&dependency);
 
-			if (m_graphics->getLogicalDevice().createRenderPass(&renderPassInfo, nullptr, &m_renderPasses.onscreen) != vk::Result::eSuccess)
-				throwError("VULKAN: Failed to create render pass");
+			{
+				auto check = m_graphics->getLogicalDevice().createRenderPass(&renderPassInfo, nullptr, &m_renderPasses.onscreen);
+				gAssert(check == vk::Result::eSuccess);
+			}
 		}
 
 		// Offscreen
@@ -574,8 +576,10 @@ namespace gust
 		}
 
 		// Create swapchain
-		if (m_graphics->getLogicalDevice().createSwapchainKHR(&swapchainCreateInfo, nullptr, &m_swapchain.swapchain) != vk::Result::eSuccess)
-			throwError("VULKAN: Unable to create swapchain.");
+		{
+			auto check = m_graphics->getLogicalDevice().createSwapchainKHR(&swapchainCreateInfo, nullptr, &m_swapchain.swapchain);
+			gAssert(check == vk::Result::eSuccess);
+		}
 
 		// Get swapchain images
 		m_swapchain.images = m_graphics->getLogicalDevice().getSwapchainImagesKHR(m_swapchain.swapchain);

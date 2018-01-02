@@ -74,14 +74,13 @@ namespace gust
 
 	void simulate()
 	{
+		// Reset delta time
+		gameClock.getDeltaTime();
+
 		while (!input.isClosing())
 		{
 			// Get delta time
 			float deltaTime = gameClock.getDeltaTime();
-
-			// Clamp delta time
-			if (deltaTime >= 5.0f)
-				deltaTime = 0;
 
 			// Increment physics timer
 			physicsTimer += deltaTime;

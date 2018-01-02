@@ -164,9 +164,7 @@ namespace gust
 		 */
 		inline Handle<Transform> getChild(size_t n) const
 		{
-			if (n < 0 || n >= m_children.size())
-				return Handle<Transform>(nullptr, 0);
-
+			gAssert(n < m_children.size());
 			return m_children[n];
 		}
 
@@ -357,11 +355,11 @@ namespace gust
 		/** Model matrix without scale applied (Used for hierarchy.) */
 		glm::mat4 m_unscaledModelMatrix = {};
 
-		/** Parent. */
-		Handle<Transform> m_parent = Handle<Transform>::nullHandle();
-
 		/** Children. */
 		std::vector<Handle<Transform>> m_children = {};
+
+		/** Parent. */
+		Handle<Transform> m_parent = Handle<Transform>::nullHandle();
 	};
 
 

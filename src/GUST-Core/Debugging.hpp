@@ -7,26 +7,16 @@
  */
 
 /** Includes. */
-#include <string>
-#include <assert.h>
+#include <iostream>
 
-namespace gust
-{
-	/**
-	 * @brief Prints a statement into the console and logs it.
-	 * @param String to print and log.
-	 */
-	extern void print(const std::string& str);
+#define gLog(MSG) std::clog << MSG
 
-	/**
-	 * @brief Prints a statement into the console on a new line and logs it.
-	 * @param String to print and log.
-	 */
-	extern void printLine(const std::string& str);
-
-	/**
-	 * @brief Throw an error and stop the application.
-	 * @param Error message.
-	 */
-	extern void throwError(const std::string& msg);
-}
+#ifdef NDEBUG
+	#define gErr(MSG) ((void)0)
+	#define gOut(MSG) ((void)0)
+	#define gAssert(COND) ((void)0)
+#else
+	#define gErr(MSG) { std::cerr << MSG; std::terminate(); }
+	#define gOut(MSG) std::cout << MSG
+	#define gAssert(COND) {if(!(COND)) gErr("Assertation failed: " << #COND << '\n'); }
+#endif

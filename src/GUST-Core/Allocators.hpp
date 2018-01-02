@@ -7,16 +7,15 @@
  */
 
 /** Includes. */
-#include "Debugging.hpp"
 #include <vector>
 #include <algorithm>
-#include <assert.h>
+#include "Debugging.hpp"
 
 namespace gust
 {
 	/**
 	 * @class StackAllocator
-	 * @brief Allocates data in a stack like fashion.
+	 * @brief Allocates data in a stack.
 	 */
 	class StackAllocator
 	{
@@ -124,8 +123,8 @@ namespace gust
 		~PoolAllocator();
 
 		/**
-		 * @brief Get the total number of bytes allocated on the stack.
-		 * @return Total number of bytes allocated on the stack.
+		 * @brief Get the total number of bytes allocated on the pool.
+		 * @return Total number of bytes allocated on the pool.
 		 */
 		inline size_t getSize() const
 		{
@@ -142,8 +141,8 @@ namespace gust
 		}
 
 		/**
-		 * @brief Get alignment for data in this stack.
-		 * @return Alignment for data in this stack.
+		 * @brief Get alignment for data in this pool.
+		 * @return Alignment for data in this pool.
 		 */
 		inline size_t getAlignment() const
 		{
@@ -184,39 +183,37 @@ namespace gust
 		void* allocate();
 
 		/**
-		 * @brief Free all memory in the stack.
+		 * @brief Free all memory in the pool.
 		 */
 		void freeAll();
 
 		/**
-		 * @brief Initialize a new stack.
+		 * @brief Initialize a new pool.
 		 * @param Size of chunks.
 		 * @param Number of chunks to store.
 		 * @param Chunk alignment.
-		 * @note This will not free the current stack.
+		 * @note This will not free the current pool.
 		 * @note Chunk alignment must be a power of 2.
 		 */
 		void initialize(size_t size, size_t count, size_t alignment);
 
 	private:
 
-		/** Pointer to the base of the stack. */
+		/** Pointer to the base of the pool. */
 		unsigned char* m_data;
 
-		/** Pointer to the top of the stack. */
+		/** Pointer to the top of the pool. */
 		unsigned char* m_top;
 
-		/** Alignment for data on the stack. */
+		/** Alignment for data on the pool. */
 		size_t m_alignment;
 
-		/** Number of chunks stored on the stack. */
+		/** Number of chunks stored on the pool. */
 		size_t m_chunkCount;
 
 		/** Chunk size. */
 		size_t m_chunkSize;
 	};
-
-
 
 	/**
 	 * @class ResourceAllocatorBase
@@ -252,7 +249,7 @@ namespace gust
 		 */
 		inline bool isAllocated(size_t handle) const
 		{
-			assert(handle < m_maxResourceCount);
+			gAssert(handle < m_maxResourceCount);
 			return m_data[handle] != 0;
 		}
 
@@ -285,8 +282,10 @@ namespace gust
 		 * @param Resource handle.
 		 * @return Void* to the resource.
 		 */
-		inline void* getRawResourceByHandle(size_t handle)
+		inline void* getRawResourceByHandle(size_t handle) const
 		{
+			gAssert(handle < m_maxResourceCount);
+
 			// Make sure the handle is in use
 			if (!isAllocated(handle))
 				return nullptr;
@@ -339,15 +338,20 @@ namespace gust
 		 */
 		ResourceAllocator(size_t count, size_t alignment) : ResourceAllocatorBase()
 		{
+			gAssert(alignment != 0 && (alignment & (alignment - 1)) == 0);
+
 			m_alignment = alignment;
 			m_maxResourceCount = count;
 
 			m_clampedDataSize = static_cast<size_t>(ceil(static_cast<float>(sizeof(T)) / static_cast<float>(m_alignment))) * m_alignment;
 			m_data = new unsigned char[(m_clampedDataSize * count) + m_alignment + count];
+
+			gAssert(m_data);
+
 			m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + count);
 
 			// Reset allocation table
-			for (size_t i = 0; i < m_maxResourceCount; ++i)
+			for (size_t i = 0; i < m_maxResourceCount + m_alignment; ++i)
 				m_data[i] = 0;
 		}
 
@@ -360,13 +364,11 @@ namespace gust
 			{
 				// Call destructors for all allocated data
 				for (size_t i = 0; i < m_maxResourceCount; ++i)
-				{
 					if (isAllocated(i))
 					{
 						T* data = reinterpret_cast<T*>(m_data + m_maxResourceCount + m_offset + (i * m_clampedDataSize));
 						data->~T();
 					}
-				}
 
 				delete[] m_data;
 			}
@@ -379,23 +381,18 @@ namespace gust
 		 */
 		inline T* getResourceByHandle(size_t handle) const
 		{
-			// Make sure the handle is in use
-			if (!isAllocated(handle))
-				return nullptr;
-
-			return reinterpret_cast<T*>((m_data + m_offset + m_maxResourceCount) + (handle * m_clampedDataSize));
+			return static_cast<T*>(getRawResourceByHandle(handle));
 		}
 
 		/**
 		 * @brief Allocate a new resource.
 		 * @return Resource handle.
-		 * @note The constructor for the resource will not
-		 * have been called, so make sure you do that.
+		 * @note The constructor for the resource will not be called.
 		 */
 		size_t allocate() const
 		{
 			// Make sure we have enough space
-			assert(getResourceCount() != getMaxResourceCount());
+			gAssert(getResourceCount() != getMaxResourceCount());
 
 			// Search for an appropriate index
 			size_t index = 0;
@@ -413,10 +410,12 @@ namespace gust
 		/**
 		 * @brief Deallocate a resource.
 		 * @param Resource handle.
-		 * @note This will call the destructor so you don't have to.
+		 * @note This will call the destructor.
 		 */
 		void deallocate(size_t handle) const
 		{
+			gAssert(handle < m_maxResourceCount);
+
 			if (!isAllocated(handle))
 				return;
 
@@ -435,7 +434,7 @@ namespace gust
 		void resize(size_t newSize, bool maintain)
 		{
 			// Resize and maintain old data
-			if (maintain && newSize >= m_maxResourceCount)
+			if (maintain && newSize >= m_maxResourceCount && m_data)
 			{
 				unsigned char* oldData = m_data;
 				size_t oldSize = m_maxResourceCount;
@@ -444,6 +443,8 @@ namespace gust
 				// Create new data
 				m_maxResourceCount = newSize;
 				m_data = new unsigned char[(m_clampedDataSize * newSize) + m_alignment + newSize];
+				gAssert(m_data);
+
 				m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + newSize);
 
 				// Reset allocation table
@@ -469,6 +470,8 @@ namespace gust
 				// Create new data
 				m_maxResourceCount = newSize;
 				m_data = new unsigned char[(m_clampedDataSize * newSize) + m_alignment + newSize];
+				gAssert(m_data);
+
 				m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + newSize);
 
 				// Reset allocation table
@@ -505,7 +508,7 @@ namespace gust
 			m_resourceAllocator(other.getResourceAllocator()),
 			m_handle(other.getHandle())
 		{
-			// static_assert(std::is_base_of<T, U>::value, "U must derive from T");
+			
 		}
 
 		/**
@@ -517,7 +520,7 @@ namespace gust
 			m_resourceAllocator(allocator),
 			m_handle(handle)
 		{
-
+			
 		}
 
 		/**
@@ -600,21 +603,7 @@ namespace gust
 		template<class U>
 		inline Handle<T>& operator=(const Handle<U>& other)
 		{
-			static_assert(std::is_base_of<T, U>::value, "U must derive from T");
-			m_resourceAllocator = other.getResourceAllocator();
-			m_handle = other.getHandle();
-			return *this;
-		}
-
-		/**
-		 * @brief Assignment operator.
-		 * @tparam Type of other handle.
-		 * @param Handle to set this handle equal to.
-		 * @return Reference to this handle.
-		 */
-		template<>
-		inline Handle<T>& operator=<T>(const Handle<T>& other)
-		{
+			static_assert(std::is_same<T, U>::value || std::is_base_of<T, U>::value, "U must derive from T or U must equal T.");
 			m_resourceAllocator = other.getResourceAllocator();
 			m_handle = other.getHandle();
 			return *this;

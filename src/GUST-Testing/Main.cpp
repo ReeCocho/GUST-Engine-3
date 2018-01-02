@@ -451,7 +451,7 @@ int main()
 		auto entity = gust::Entity(&gust::scene);
 	
 		auto transform = entity.getComponent<gust::Transform>();
-		transform->setEulerAngles({ 45, 60, 0 });
+		transform->setEulerAngles({ 35, 240, 0 });
 	
 		auto light = entity.addComponent<gust::DirectionalLight>();
 		light->setIntensity(10.0f);

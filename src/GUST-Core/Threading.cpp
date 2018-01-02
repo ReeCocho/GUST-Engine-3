@@ -136,21 +136,22 @@ namespace gust
 
 	ThreadPool::ThreadPool(size_t threadCount)
 	{
+		workers.resize(threadCount);
 		for (size_t i = 0; i < threadCount; i++)
-			workers.push_back(new WorkerThread());
+			workers[i] = new WorkerThread();
 	}
 
 	ThreadPool::~ThreadPool()
 	{
 		wait();
 
-		for (size_t i = 0; i < workers.size(); i++)
-			delete workers[i];
+		for (auto worker : workers)
+			delete worker;
 	}
 
 	void ThreadPool::wait()
 	{
-		for (size_t i = 0; i < workers.size(); i++)
-			workers[i]->wait();
+		for (auto worker : workers)
+			worker->wait();
 	}
 }

@@ -1,4 +1,3 @@
-#include <assert.h>
 #include "Allocators.hpp"
 
 namespace gust
@@ -11,18 +10,20 @@ namespace gust
 	StackAllocator::StackAllocator(size_t size) :  m_size(size)
 	{
 		m_data = new unsigned char[size];
+		gAssert(m_data);
 		m_top = m_data;
 	}
 
 	StackAllocator::~StackAllocator()
 	{
-		if(m_data) delete m_data;
+		gAssert(m_data);  
+		delete m_data;
 	}
 
 	void* StackAllocator::allocate(size_t n)
 	{
 		// Make sure we have enough data to allocate
-		assert(static_cast<size_t>((m_top + n) - m_data) <= m_size);
+		gAssert(static_cast<size_t>((m_top + n) - m_data) <= m_size);
 
 		void* data = reinterpret_cast<void*>(m_top);
 		m_top += n;
@@ -34,7 +35,7 @@ namespace gust
 		size_t offset = (a - 1) & reinterpret_cast<size_t>(m_top);
 
 		// Make sure we have enough data to allocate
-		assert(static_cast<size_t>((m_top + offset + n) - m_data) <= m_size);
+		gAssert(static_cast<size_t>((m_top + offset + n) - m_data) <= m_size);
 
 		void* data = reinterpret_cast<void*>(m_top + offset);
 		m_top += n + offset;
@@ -43,6 +44,7 @@ namespace gust
 
 	void StackAllocator::freeAll()
 	{
+		gAssert(m_data);  
 		delete m_data;
 		m_size = 0;
 	}
@@ -50,6 +52,7 @@ namespace gust
 	void StackAllocator::initialize(size_t n)
 	{
 		m_data = new unsigned char[n];
+		gAssert(m_data);
 		m_size = n;
 	}
 
@@ -71,19 +74,21 @@ namespace gust
 		m_chunkCount(count)
 	{
 		m_data = new unsigned char[getSize()];
+		gAssert(m_data);
 		size_t offset = (alignment - 1) & reinterpret_cast<size_t>(m_data);
 		m_top = m_data + offset;
 	}
 
 	PoolAllocator::~PoolAllocator()
 	{
+		gAssert(m_data); 
 		delete m_data;
 	}
 
 	void* PoolAllocator::allocate()
 	{
 		// Make sure we have enough room
-		assert(getChunkCount() != getMaxChunkCount());
+		gAssert(getChunkCount() != getMaxChunkCount());
 
 		void* data = reinterpret_cast<void*>(m_top);
 		m_top += m_chunkSize;
@@ -92,6 +97,7 @@ namespace gust
 
 	void PoolAllocator::freeAll()
 	{
+		gAssert(m_data);
 		delete m_data;
 		m_alignment = 0;
 		m_chunkCount = 0;
@@ -105,6 +111,7 @@ namespace gust
 		m_chunkSize = size;
 
 		m_data = new unsigned char[getSize()];
+		gAssert(m_data);
 		size_t offset = (alignment - 1) & reinterpret_cast<size_t>(m_data);
 		m_top = m_data + offset;
 	}

@@ -12,6 +12,7 @@
 #include <queue>
 #include <memory>
 #include "System.hpp"
+#include "Debugging.hpp"
 
 namespace gust
 {
@@ -86,6 +87,7 @@ namespace gust
 		{
 			static_assert(std::is_base_of<Component<T>, T>::value, "T must derive from gust::Component");
 			static_assert(!std::is_same<T, Transform>::value, "T must not be of type gust::Transform");
+			gAssert(entity.getScene() == this);
 
 			// Get ID of the component
 			size_t id = TypeID<T>::id();
@@ -103,12 +105,14 @@ namespace gust
 					if (allocator->isAllocated(i))
 					{
 						T* component = allocator->getResourceByHandle(i);
-						assert(entity.getHandle() == component->getEntity().getHandle());
-						size_t oldHandle = system->m_componentHandle;
-						system->m_componentHandle = i;
-						system->onEnd();
-						allocator->deallocate(i);
-						system->m_componentHandle = oldHandle;
+						if (entity.getHandle() == component->getEntity().getHandle())
+						{
+							size_t oldHandle = system->m_componentHandle;
+							system->m_componentHandle = i;
+							system->onEnd();
+							allocator->deallocate(i);
+							system->m_componentHandle = oldHandle;
+						}
 					}
 			}
 		}
@@ -125,6 +129,7 @@ namespace gust
 		Handle<T> addComponent(Entity entity)
 		{
 			static_assert(std::is_base_of<Component<T>, T>::value, "T must derive from gust::Component");
+			gAssert(entity.getScene() == this);
 
 			// Get ID of the component
 			size_t id = TypeID<T>::id();
@@ -137,9 +142,7 @@ namespace gust
 				// Cast system as appropriate ResourceAllocator
 				auto allocator = static_cast<ResourceAllocator<T>*>(system->m_components.get());
 
-				// Resize the allocator if needed
-				std::cout << allocator->getResourceCount() << '\n';
-
+				// Resize pool if needed
 				if (allocator->getResourceCount() == allocator->getMaxResourceCount())
 					allocator->resize(allocator->getMaxResourceCount() + 100, true);
 
@@ -183,6 +186,7 @@ namespace gust
 		Handle<T> getComponent(Entity entity)
 		{
 			static_assert(std::is_base_of<Component<T>, T>::value, "T must derive from gust::Component");
+			gAssert(entity.getScene() == this);
 
 			// Get ID of the component
 			size_t id = TypeID<T>::id();

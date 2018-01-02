@@ -1,4 +1,4 @@
-#include <xhash>
+#include <functional>
 #include "Hashing.hpp"
 
 namespace gust

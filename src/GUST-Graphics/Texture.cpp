@@ -29,8 +29,7 @@ namespace gust
 		m_width = static_cast<uint32_t>(texWidth);
 		m_height = static_cast<uint32_t>(texHeight);
 	
-		if (!pixels)
-			throwError("VULKAN: Failed to load texture image");
+		gAssert(pixels);
 	
 		auto imageSize = static_cast<vk::DeviceSize>(m_width * m_height * 4);
 	
@@ -160,8 +159,7 @@ namespace gust
 		m_width = static_cast<uint32_t>(texWidth);
 		m_height = static_cast<uint32_t>(texHeight);
 	
-		if (!topPixels || !bottomPixels || !northPixels || !eastPixels || !southPixels || !westPixels)
-			throwError("VULKAN: Failed to load cubemap image");
+		gAssert(topPixels && bottomPixels && northPixels && eastPixels && southPixels && westPixels);
 	
 		auto imageSize = static_cast<vk::DeviceSize>((m_width * m_height * 4) * 6);
 		auto singleImageSize = static_cast<vk::DeviceSize>(m_width * m_height * 4);

@@ -9,9 +9,9 @@ namespace gust
 	void Graphics::startup(const std::string& name, uint32_t width, uint32_t height)
 	{
 		// Check parameters
-		assert(width > 0);
-		assert(height > 0);
-		assert(name != "");
+		gAssert(width > 0);
+		gAssert(height > 0);
+		gAssert(name != "");
 
 		m_width = width;
 		m_height = height;
@@ -19,7 +19,7 @@ namespace gust
 
 		// Initialize SDL video
 		if (SDL_Init(SDL_INIT_VIDEO | SDL_VIDEO_VULKAN) != 0)
-			throwError("SDL: Unable to initialize video.");
+			gErr("SDL: Unable to initialize video.");
 
 		// Create SDL window
 		m_window = SDL_CreateWindow
@@ -33,20 +33,23 @@ namespace gust
 		);
 
 		// Check window creation
-		if (m_window == nullptr)
-			throwError("SDL: Unable to create window.");
+		gAssert(m_window != nullptr);
 
 		// Extension data
 		const char** extensions = nullptr;
 		unsigned extensionCount = 0;
 
-		if (!SDL_Vulkan_GetInstanceExtensions(m_window, &extensionCount, nullptr))
-			throwError("SDL: Unable to get extension count.");
+		{
+			auto check = SDL_Vulkan_GetInstanceExtensions(m_window, &extensionCount, nullptr);
+			gAssert(check);
+		}
 
 		extensions = static_cast<const char**>(SDL_malloc(sizeof(const char*) * extensionCount));
 
-		if (!SDL_Vulkan_GetInstanceExtensions(m_window, &extensionCount, extensions))
-			throwError("SDL: Unable to get extension names.");
+		{
+			auto check = SDL_Vulkan_GetInstanceExtensions(m_window, &extensionCount, extensions);
+			gAssert(check);
+		}
 
 		// Requested layers
 		std::vector<const char*> requestedLayers =
@@ -80,10 +83,10 @@ namespace gust
 
 		// Get extensions and layers
 		m_layers = getLayers(requestedLayers);
-		assert(m_layers.size() == requestedLayers.size());
+		gAssert(m_layers.size() == requestedLayers.size());
 		
 		m_extensions = getExtensions(requestedExtensions);
-		assert(m_extensions.size() == requestedExtensions.size());
+		gAssert(m_extensions.size() == requestedExtensions.size());
 
 		// Instance creation info
 		vk::InstanceCreateInfo createInfo = {};
@@ -95,8 +98,10 @@ namespace gust
 		createInfo.setPpEnabledExtensionNames(m_extensions.data());								// Extension data
 
 		// Create Vulkan instance
-		if (vk::createInstance(&createInfo, nullptr, &m_instance) != vk::Result::eSuccess)
-			throwError("VULKAN: Unable to create instance.");
+		{
+			auto check = vk::createInstance(&createInfo, nullptr, &m_instance);
+			gAssert(check == vk::Result::eSuccess);
+		}
 
 		// Free extension memory
 		SDL_free(static_cast<void*>(extensions));
@@ -112,7 +117,7 @@ namespace gust
 			VkSurfaceKHR surface = VK_NULL_HANDLE;
 			SDL_Vulkan_CreateSurface(m_window, static_cast<VkInstance>(m_instance), &surface);
 
-			assert(surface != VK_NULL_HANDLE);
+			gAssert(surface != VK_NULL_HANDLE);
 
 			m_surface = static_cast<vk::SurfaceKHR>(surface);
 		}
@@ -121,7 +126,7 @@ namespace gust
 		{
 			// Get physical devices
 			auto devices = m_instance.enumeratePhysicalDevices();
-			assert(devices.size() > 0);
+			gAssert(devices.size() > 0);
 
 			// Map that holds GPU's and their scores
 			std::multimap<size_t, std::tuple<vk::PhysicalDevice, QueueFamilyIndices>> canidates = {};
@@ -135,12 +140,11 @@ namespace gust
 			}
 
 			// Pick best device
-			if (canidates.rbegin()->first == 0 || !std::get<1>(canidates.rbegin()->second).isComplete())
-				throwError("VULKAN: Unable to find physical device canidate.");
+			gAssert(canidates.rbegin()->first != 0 && std::get<1>(canidates.rbegin()->second).isComplete());
 
 			m_physicalDevice = std::get<0>(canidates.rbegin()->second);
 			m_queueFamilyIndices = std::get<1>(canidates.rbegin()->second);
-			assert(m_physicalDevice);
+			gAssert(m_physicalDevice);
 
 			// Get GPU indices
 			std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos = {};
@@ -176,17 +180,21 @@ namespace gust
 			createInfo.setPpEnabledExtensionNames(m_deviceExtensions.data());						// Extensions
 			createInfo.setEnabledExtensionCount(static_cast<uint32_t>(m_deviceExtensions.size()));	// Extension count
 
-																									// Create logical device
-			if (m_physicalDevice.createDevice(&createInfo, nullptr, &m_logicalDevice) != vk::Result::eSuccess)
-				throwError("VULKAN: Unable to create logical device.");
+			// Create logical device
+			{
+				auto check = m_physicalDevice.createDevice(&createInfo, nullptr, &m_logicalDevice);
+				gAssert(check == vk::Result::eSuccess);
+			}
 		}
 
 		// Initialize surface formats
 		initSurfaceFormats(m_physicalDevice);
 
 		// Check if the physical device supports the surface.
-		if (!m_physicalDevice.getSurfaceSupportKHR(m_queueFamilyIndices.presentFamily, m_surface))
-			throwError("VULKAN: Physical device does not support presenting to the surface.");
+		{
+			auto check = m_physicalDevice.getSurfaceSupportKHR(m_queueFamilyIndices.presentFamily, m_surface);
+			gAssert(check);
+		}
 
 		// Create queues
 		{
@@ -194,9 +202,9 @@ namespace gust
 			m_presentQueue = m_logicalDevice.getQueue(static_cast<uint32_t>(m_queueFamilyIndices.presentFamily), 0);
 			m_transferQueue = m_logicalDevice.getQueue(static_cast<uint32_t>(m_queueFamilyIndices.transferFamily), 0);
 
-			assert(m_graphicsQueue);
-			assert(m_presentQueue);
-			assert(m_transferQueue);
+			gAssert(m_graphicsQueue);
+			gAssert(m_presentQueue);
+			gAssert(m_transferQueue);
 		}
 
 		// Create command stuff
@@ -252,8 +260,8 @@ namespace gust
 	{
 		m_logicalDevice.waitIdle();
 
-		assert(m_width > 0);
-		assert(m_height > 0);
+		gAssert(m_width > 0);
+		gAssert(m_height > 0);
 
 		m_width = width;
 		m_height = height;
@@ -347,7 +355,7 @@ namespace gust
 			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
 				return i;
 
-		throwError("VULKAN: Failed to find suitable memory type");
+		gErr("VULKAN: Failed to find suitable memory type");
 		return 0;
 	}
 
@@ -379,8 +387,10 @@ namespace gust
 		imageInfo.setFlags(flags);
 
 		// Create image
-		if (m_logicalDevice.createImage(&imageInfo, nullptr, &image) != vk::Result::eSuccess)
-			throwError("VULKAN: Unable to create image.");
+		{
+			auto check = m_logicalDevice.createImage(&imageInfo, nullptr, &image);
+			gAssert(check == vk::Result::eSuccess);
+		}
 
 		vk::MemoryRequirements memRequirements = m_logicalDevice.getImageMemoryRequirements(image);
 
@@ -389,8 +399,10 @@ namespace gust
 		allocInfo.setMemoryTypeIndex(findMemoryType(memRequirements.memoryTypeBits, properties));
 
 		// Allocate memory
-		if (m_logicalDevice.allocateMemory(&allocInfo, nullptr, &imageMemory) != vk::Result::eSuccess)
-			throwError("VULKAN: Unable to allocate image memory.");
+		{
+			auto check = m_logicalDevice.allocateMemory(&allocInfo, nullptr, &imageMemory);
+			gAssert(check == vk::Result::eSuccess);
+		}
 
 		m_logicalDevice.bindImageMemory(image, imageMemory, 0);
 	}
@@ -450,7 +462,7 @@ namespace gust
 			dstStageFlags = vk::PipelineStageFlagBits::eEarlyFragmentTests;
 		}
 		else
-			throwError("VULKAN: Unsupported layout transition");
+			gErr("VULKAN: Unsupported layout transition");
 
 		commandBuffer.pipelineBarrier
 		(
@@ -513,8 +525,10 @@ namespace gust
 
 		vk::ImageView view;
 
-		if (m_logicalDevice.createImageView(&viewInfo, nullptr, &view) != vk::Result::eSuccess)
-			throwError("VULKAN: Unable to create image view.");
+		{
+			auto check = m_logicalDevice.createImageView(&viewInfo, nullptr, &view);
+			gAssert(check == vk::Result::eSuccess);
+		}
 
 		return view;
 	}

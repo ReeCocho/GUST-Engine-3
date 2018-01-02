@@ -71,7 +71,7 @@ namespace gust
 			{
 				++m_handle;
 
-				while (!m_system->m_components->isAllocated(m_handle) && m_handle != m_system->m_components->getMaxResourceCount() - 1)
+				while (m_handle != m_system->m_components->getMaxResourceCount() && !m_system->m_components->isAllocated(m_handle))
 					++m_handle;
 
 				m_system->m_componentHandle = m_handle;
@@ -240,11 +240,9 @@ namespace gust
 		Iterator begin()
 		{
 			size_t index = 0;
-
-			for (size_t i = 0; i < m_components->getMaxResourceCount(); i++)
+			for (index; index <= m_components->getMaxResourceCount(); ++index)
 			{
-				index = i;
-				if (m_components->isAllocated(i))
+				if (index == m_components->getMaxResourceCount() || m_components->isAllocated(index))
 					break;
 			}
 
@@ -257,7 +255,7 @@ namespace gust
 		 */
 		Iterator end()
 		{
-			return Iterator(this, m_components->getMaxResourceCount() - 1);
+			return Iterator(this, m_components->getMaxResourceCount());
 		}
 
 	private:

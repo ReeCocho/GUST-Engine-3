@@ -194,13 +194,13 @@ namespace gust
 		}
 
 		// Update childrens model matrix
-		for (Handle<Transform>& child : m_children)
+		for (auto child : m_children)
 			child->generateModelMatrix();
 	}
 
 	void Transform::updateChildren()
 	{
-		for (Handle<Transform>& child : m_children)
+		for (auto child : m_children)
 		{
 			// Update rotation
 			child->m_rotation = m_rotation * child->m_localRotation;
