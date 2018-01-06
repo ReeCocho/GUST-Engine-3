@@ -74,25 +74,33 @@ namespace gust
 
 	Shader::~Shader()
 	{
-		auto logicalDevice = m_graphics->getLogicalDevice();
 
-		// Destroy shader modules
-		if (m_fragmentShader)
-			logicalDevice.destroyShaderModule(m_fragmentShader);
+	}
 
-		if(m_vertexShader)
-			logicalDevice.destroyShaderModule(m_vertexShader);
+	void Shader::free()
+	{
+		if (m_graphics)
+		{
+			auto logicalDevice = m_graphics->getLogicalDevice();
 
-		// Destroy graphics pipeline and layout
-		if(m_graphicsPipeline)
-			logicalDevice.destroyPipeline(m_graphicsPipeline);
+			// Destroy shader modules
+			if (m_fragmentShader)
+				logicalDevice.destroyShaderModule(m_fragmentShader);
 
-		if(m_graphicsPipelineLayout)
-			logicalDevice.destroyPipelineLayout(m_graphicsPipelineLayout);
+			if (m_vertexShader)
+				logicalDevice.destroyShaderModule(m_vertexShader);
 
-		// Destroy descriptor set layout
-		if(m_textureDescriptorSetLayout)
-			logicalDevice.destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
+			// Destroy graphics pipeline and layout
+			if (m_graphicsPipeline)
+				logicalDevice.destroyPipeline(m_graphicsPipeline);
+
+			if (m_graphicsPipelineLayout)
+				logicalDevice.destroyPipelineLayout(m_graphicsPipelineLayout);
+
+			// Destroy descriptor set layout
+			if (m_textureDescriptorSetLayout)
+				logicalDevice.destroyDescriptorSetLayout(m_textureDescriptorSetLayout);
+		}
 	}
 
 	void Shader::initShaderModules

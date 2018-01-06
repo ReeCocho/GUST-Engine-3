@@ -169,6 +169,12 @@ namespace gust
 		 */
 		void calculateTangents();
 
+		/**
+		 * @brief Free memory.
+		 * @note Used internally. Do not call.
+		 */
+		void free();
+
 	private:
 
 		/**

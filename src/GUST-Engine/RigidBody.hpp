@@ -285,13 +285,13 @@ namespace gust
 		ShapeType m_shapeType = ShapeType::None;
 
 		/** Collision shape. */
-		std::unique_ptr<btCollisionShape> m_shape = nullptr;
+		std::shared_ptr<btCollisionShape> m_shape = nullptr;
 
 		/** Motion state. */
-		std::unique_ptr<btMotionState> m_motionState = nullptr;
+		std::shared_ptr<btMotionState> m_motionState = nullptr;
 
 		/** Rigid body. */
-		std::unique_ptr<btRigidBody> m_rigidBody = nullptr;
+		std::shared_ptr<btRigidBody> m_rigidBody = nullptr;
 	};
 
 	/**

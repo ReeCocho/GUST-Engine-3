@@ -7,13 +7,21 @@
  */
 
 /** Includes. */
+#include <mutex>
+
+#if defined(__MINGW32__) || defined(__MINGW64__)
+    #include <mingw.condition_variable.h>
+    #include <mingw.mutex.h>
+    #include <mingw.thread.h>
+#else
+    #include <thread>
+    #include <condition_variable>
+#endif
+
 #include <vector>
-#include <thread>
 #include <atomic>
 #include <functional>
 #include <queue>
-#include <mutex>
-#include <condition_variable>
 #include <memory>
 
 namespace gust
@@ -117,7 +125,7 @@ namespace gust
 		/** Condition to wait for. */
 		std::condition_variable m_condition;
 
-		/** 
+		/**
 		 * @brief Work method.
 		 */
 		void work();
@@ -165,6 +173,6 @@ namespace gust
 		}
 
 		/** Worker threads. */
-		std::vector<WorkerThread*> workers = {};	
+		std::vector<WorkerThread*> workers = {};
 	};
 }

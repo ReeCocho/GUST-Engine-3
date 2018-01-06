@@ -33,18 +33,33 @@ namespace gust
 
 	Material::~Material()
 	{
-		auto logicalDevice = m_graphics->getLogicalDevice();
 
-		// Destroy pool
-		logicalDevice.destroyDescriptorPool(m_descriptorPool);
+	}
 
-		// Cleanup fragment uniform buffer
-		logicalDevice.destroyBuffer(m_fragmentUniformBuffer.buffer);
-		logicalDevice.freeMemory(m_fragmentUniformBuffer.memory);
+	void Material::free()
+	{
+		if (m_graphics)
+		{
+			auto logicalDevice = m_graphics->getLogicalDevice();
 
-		// Cleanup vertex uniform buffer
-		logicalDevice.destroyBuffer(m_vertexUniformBuffer.buffer);
-		logicalDevice.freeMemory(m_vertexUniformBuffer.memory);
+			// Destroy pool
+			if(m_descriptorPool)
+				logicalDevice.destroyDescriptorPool(m_descriptorPool);
+
+			// Cleanup fragment uniform buffer
+			if(m_fragmentUniformBuffer.buffer)
+				logicalDevice.destroyBuffer(m_fragmentUniformBuffer.buffer);
+
+			if(m_fragmentUniformBuffer.memory)
+				logicalDevice.freeMemory(m_fragmentUniformBuffer.memory);
+
+			// Cleanup vertex uniform buffer
+			if(m_vertexUniformBuffer.buffer)
+				logicalDevice.destroyBuffer(m_vertexUniformBuffer.buffer);
+
+			if(m_vertexUniformBuffer.memory)
+				logicalDevice.freeMemory(m_vertexUniformBuffer.memory);
+		}
 	}
 
 	void Material::setTexture(Handle<Texture> texture, size_t index)

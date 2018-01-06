@@ -208,6 +208,6 @@ namespace gust
 		std::vector<btRigidBody*> m_rigidBodies = {};
 
 		/** Collision data from the last step. */
-		std::queue<PhysicsCollisionData> m_collisionData = {};
+		std::queue<PhysicsCollisionData> m_collisionData = std::queue<PhysicsCollisionData>();
 	};
 }

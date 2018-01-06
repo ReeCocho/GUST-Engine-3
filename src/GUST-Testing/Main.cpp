@@ -11,6 +11,8 @@ class SpinningObject : public gust::Component<SpinningObject>
 {
 public:
 
+	SpinningObject() = default;
+
 	SpinningObject(gust::Entity entity, gust::Handle<SpinningObject> handle) : gust::Component<SpinningObject>(entity, handle)
 	{
 
@@ -43,6 +45,8 @@ public:
 class Player : public gust::Component<Player>
 {
 public:
+
+	Player() = default;
 
 	Player(gust::Entity entity, gust::Handle<Player> handle) : gust::Component<Player>(entity, handle)
 	{
@@ -168,6 +172,7 @@ int main()
 {
 	// Initialize engine
 	gust::startup("Test Game", 1280, 720);
+	
 	
 	// Input stuff
 	gust::input.registerAxis("Horizontal", { { gust::KeyCode::A, -1.0f }, { gust::KeyCode::D, 1.0f } });
@@ -416,6 +421,8 @@ int main()
 		entity.addComponent<SpinningObject>();
 	}
 
+	void* test = nullptr;
+
 	// Create player
 	{
 		auto entity = gust::Entity(&gust::scene);
@@ -434,6 +441,8 @@ int main()
 			auto transform2 = entity2.getComponent<gust::Transform>();
 			transform2->setParent(transform);
 			transform2->setLocalPosition({ 0, 1, 0 });
+
+			test = transform.get();
 
 			auto camera = entity2.addComponent<gust::Camera>();
 			camera->setClearColor(glm::vec3(0.386f, 0.621f, 1.0f));
@@ -456,7 +465,7 @@ int main()
 		auto light = entity.addComponent<gust::DirectionalLight>();
 		light->setIntensity(10.0f);
 	}
-	
+
 	gust::simulate();
 	gust::shutdown();
 

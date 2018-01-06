@@ -147,6 +147,12 @@ namespace gust
 			return static_cast<uint32_t>(m_textureCount);
 		}
 
+		/**
+		 * @brief Free memory.
+		 * @note Used internally. Do not call.
+		 */
+		void free();
+
 	private:
 
 		/**
@@ -175,13 +181,13 @@ namespace gust
 		Graphics* m_graphics = nullptr;
 
 		/** Does the shader perform depth testing? */
-		const bool m_depthTesting;
+		bool m_depthTesting;
 
 		/** Does the shader perform lighting calculations? */
-		const bool m_lighting;
+		bool m_lighting;
 
 		/** Number of textures used by the shader. */
-		const size_t m_textureCount;
+		size_t m_textureCount;
 
 		/** Fragment shader module. */
 		vk::ShaderModule m_fragmentShader = {};
@@ -199,7 +205,7 @@ namespace gust
 		std::array<vk::PipelineShaderStageCreateInfo, 2> m_shaderStages;
 
 		/** Descriptor set layouts to use. */
-		const std::vector<vk::DescriptorSetLayout> m_descriptorSetLayouts;
+		std::vector<vk::DescriptorSetLayout> m_descriptorSetLayouts;
 
 		/** Texture descriptor set layout. */
 		vk::DescriptorSetLayout m_textureDescriptorSetLayout = {};

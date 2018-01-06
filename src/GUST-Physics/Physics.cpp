@@ -4,7 +4,7 @@ namespace gust
 {
 	void Physics::startup(glm::vec3 gravity)
 	{
-		
+
 
 		// Create collision configuration
 		m_collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
@@ -54,7 +54,7 @@ namespace gust
 		m_dynamicsWorld->stepSimulation(deltaTime, 50, 1 / 144.0f);
 
 		// Clear collision data
-		std::queue<PhysicsCollisionData> emptyQueue = {};
+		std::queue<PhysicsCollisionData> emptyQueue = std::queue<PhysicsCollisionData>();
 		std::swap(m_collisionData, emptyQueue);
 
 		// Get number of manifolds and loop over them

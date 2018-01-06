@@ -121,16 +121,16 @@ namespace gust
 		Handle<Transform> m_transform = Handle<Transform>::nullHandle();
 
 		/** Motion state. */
-		std::unique_ptr<btMotionState> m_motionState = nullptr;
+		std::shared_ptr<btMotionState> m_motionState = nullptr;
 
 		/** Collision shape. */
-		std::unique_ptr<btCollisionShape> m_shape = nullptr;
+		std::shared_ptr<btCollisionShape> m_shape = nullptr;
 
 		/** Rigid body. */
-		std::unique_ptr<btRigidBody> m_rigidBody = nullptr;
+		std::shared_ptr<btRigidBody> m_rigidBody = nullptr;
 
 		/** Floor clamping distance. */
-		const float m_floorClampDistance = 0.25f;
+		float m_floorClampDistance = 0.25f;
 
 		/** Is the controller grounded. */
 		bool m_grounded = false;

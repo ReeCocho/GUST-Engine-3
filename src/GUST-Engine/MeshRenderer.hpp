@@ -52,7 +52,7 @@ namespace gust
 		inline Handle<Material> setMaterial(Handle<Material> material)
 		{
 			m_material = material;
-			
+
 			if (m_material != Handle<Material>::nullHandle())
 			{
 				std::array<vk::WriteDescriptorSet, 2> writeSets = {};

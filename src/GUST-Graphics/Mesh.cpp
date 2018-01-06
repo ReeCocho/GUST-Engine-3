@@ -162,19 +162,27 @@ namespace gust
 
 	Mesh::~Mesh()
 	{
-		auto logicalDevice = m_graphics->getLogicalDevice();
 
-		if(m_indexUniformBuffer.buffer)
-			logicalDevice.destroyBuffer(m_indexUniformBuffer.buffer);
+	}
 
-		if(m_indexUniformBuffer.memory)
-			logicalDevice.freeMemory(m_indexUniformBuffer.memory);
+	void Mesh::free()
+	{
+		if (m_graphics)
+		{
+			auto logicalDevice = m_graphics->getLogicalDevice();
 
-		if(m_vertexUniformBuffer.buffer)
-			logicalDevice.destroyBuffer(m_vertexUniformBuffer.buffer);
+			if (m_indexUniformBuffer.buffer)
+				logicalDevice.destroyBuffer(m_indexUniformBuffer.buffer);
 
-		if(m_vertexUniformBuffer.memory)
-			logicalDevice.freeMemory(m_vertexUniformBuffer.memory);
+			if (m_indexUniformBuffer.memory)
+				logicalDevice.freeMemory(m_indexUniformBuffer.memory);
+
+			if (m_vertexUniformBuffer.buffer)
+				logicalDevice.destroyBuffer(m_vertexUniformBuffer.buffer);
+
+			if (m_vertexUniformBuffer.memory)
+				logicalDevice.freeMemory(m_vertexUniformBuffer.memory);
+		}
 	}
 
 	void Mesh::initVertexBuffer()

@@ -2,9 +2,10 @@
 
 namespace gust
 {
-	size_t TypeIDGenerator::idCounter = 0;
+	ComponentBase::ComponentBase() : m_entity(Entity(nullptr, 0)), m_id(0)
+	{
 
-
+	}
 
 	ComponentBase::ComponentBase(Entity entity, size_t id) : m_entity(entity), m_id(id)
 	{

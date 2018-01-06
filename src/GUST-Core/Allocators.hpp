@@ -9,6 +9,7 @@
 /** Includes. */
 #include <vector>
 #include <algorithm>
+#include <cmath>
 #include "Debugging.hpp"
 
 namespace gust
@@ -20,7 +21,7 @@ namespace gust
 	class StackAllocator
 	{
 	public:
-		
+
 		/**
 		 * @brief Default constructor.
 		 */
@@ -250,7 +251,7 @@ namespace gust
 		inline bool isAllocated(size_t handle) const
 		{
 			gAssert(handle < m_maxResourceCount);
-			return m_data[handle] != 0;
+			return m_allocation[handle];
 		}
 
 		/**
@@ -268,47 +269,13 @@ namespace gust
 			return counter;
 		}
 
-		/**
-		 * @brief Get size of resources.
-		 * @return Size of resources.
-		 */
-		inline size_t getResourceSize() const
-		{
-			return m_clampedDataSize;
-		}
-
-		/**
-		 * @brief Get a void* to a resource.
-		 * @param Resource handle.
-		 * @return Void* to the resource.
-		 */
-		inline void* getRawResourceByHandle(size_t handle) const
-		{
-			gAssert(handle < m_maxResourceCount);
-
-			// Make sure the handle is in use
-			if (!isAllocated(handle))
-				return nullptr;
-
-			return reinterpret_cast<void*>((m_data + m_offset + m_maxResourceCount) + (handle * m_clampedDataSize));
-		}
-
 	protected:
-
-		/** Pointer to base of the stack. */
-		unsigned char* m_data;
 
 		/** Max number of resources. */
 		size_t m_maxResourceCount;
 
-		/** Data offset. */
-		size_t m_offset;
-
-		/** Size of data clamped to be a multiple of the alignment. */
-		size_t m_clampedDataSize;
-
-		/** Resource alignment. */
-		size_t m_alignment;
+		/** Allocation table. */
+		std::vector<unsigned char> m_allocation = {};
 	};
 
 	/**
@@ -327,61 +294,36 @@ namespace gust
 		 */
 		ResourceAllocator() : ResourceAllocatorBase()
 		{
-			
+
 		}
 
 		/**
 		 * @brief Constructor.
 		 * @param Number of resources stored.
-		 * @param Resource alignment.
-		 * @note Chunk alignment must be a power of 2.
 		 */
-		ResourceAllocator(size_t count, size_t alignment) : ResourceAllocatorBase()
+		ResourceAllocator(size_t count) : ResourceAllocatorBase()
 		{
-			gAssert(alignment != 0 && (alignment & (alignment - 1)) == 0);
-
-			m_alignment = alignment;
 			m_maxResourceCount = count;
-
-			m_clampedDataSize = static_cast<size_t>(ceil(static_cast<float>(sizeof(T)) / static_cast<float>(m_alignment))) * m_alignment;
-			m_data = new unsigned char[(m_clampedDataSize * count) + m_alignment + count];
-
-			gAssert(m_data);
-
-			m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + count);
-
-			// Reset allocation table
-			for (size_t i = 0; i < m_maxResourceCount + m_alignment; ++i)
-				m_data[i] = 0;
+			
+			// Resize resources and allocation table
+			m_allocation.resize(m_maxResourceCount, false);
+			m_resources.resize(m_maxResourceCount);
 		}
 
 		/**
 		 * @brief Destructor.
 		 */
-		~ResourceAllocator()
-		{
-			if (m_data != nullptr)
-			{
-				// Call destructors for all allocated data
-				for (size_t i = 0; i < m_maxResourceCount; ++i)
-					if (isAllocated(i))
-					{
-						T* data = reinterpret_cast<T*>(m_data + m_maxResourceCount + m_offset + (i * m_clampedDataSize));
-						data->~T();
-					}
-
-				delete[] m_data;
-			}
-		}
+		~ResourceAllocator() = default;
 
 		/**
 		 * @brief Get pointer to resource from it's handle.
 		 * @param Resource handle.
 		 * @return Resource.
 		 */
-		inline T* getResourceByHandle(size_t handle) const
+		inline T* getResourceByHandle(size_t handle)
 		{
-			return static_cast<T*>(getRawResourceByHandle(handle));
+			gAssert(handle < m_maxResourceCount);
+			return &m_resources.at(handle);
 		}
 
 		/**
@@ -389,21 +331,18 @@ namespace gust
 		 * @return Resource handle.
 		 * @note The constructor for the resource will not be called.
 		 */
-		size_t allocate() const
+		size_t allocate()
 		{
 			// Make sure we have enough space
 			gAssert(getResourceCount() != getMaxResourceCount());
 
 			// Search for an appropriate index
-			size_t index = 0;
-			for(size_t i = 0; i < m_maxResourceCount; ++i)
-				if (!isAllocated(i))
-				{
-					index = i;
+			size_t index;
+			for(index = 0; index < m_maxResourceCount; ++index)
+				if (!isAllocated(index))
 					break;
-				}
 
-			m_data[index] = 1;
+			m_allocation[index] = true;
 			return index;
 		}
 
@@ -412,16 +351,15 @@ namespace gust
 		 * @param Resource handle.
 		 * @note This will call the destructor.
 		 */
-		void deallocate(size_t handle) const
+		void deallocate(size_t handle)
 		{
 			gAssert(handle < m_maxResourceCount);
 
 			if (!isAllocated(handle))
 				return;
 
-			T* resource = getResourceByHandle(handle);
-			resource->~T();
-			m_data[handle] = 0;
+			m_resources[handle].~T();
+			m_allocation[handle] = false;
 		}
 
 		/**
@@ -433,52 +371,34 @@ namespace gust
 		 */
 		void resize(size_t newSize, bool maintain)
 		{
+			if (newSize == m_maxResourceCount)
+				return;
+
 			// Resize and maintain old data
-			if (maintain && newSize >= m_maxResourceCount && m_data)
+			if (maintain && newSize > m_maxResourceCount)
 			{
-				unsigned char* oldData = m_data;
-				size_t oldSize = m_maxResourceCount;
-				size_t oldOffset = m_offset;
-
-				// Create new data
 				m_maxResourceCount = newSize;
-				m_data = new unsigned char[(m_clampedDataSize * newSize) + m_alignment + newSize];
-				gAssert(m_data);
 
-				m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + newSize);
-
-				// Reset allocation table
-				for (size_t i = 0; i < m_maxResourceCount; ++i)
-					m_data[i] = (i < oldSize ? oldData[i] : 0);
-
-				// Set old data
-				for (size_t i = 0; i < oldSize * m_clampedDataSize; ++i)
-				{
-					size_t newIndex = (m_maxResourceCount + m_offset) + i;
-					size_t oldIndex = (oldSize + oldOffset) + i;
-					m_data[newIndex] = oldData[oldIndex];
-				}
-
-				// Delete old data.
-				delete[] oldData;
+				m_allocation.resize(m_maxResourceCount);
+				m_resources.resize(m_maxResourceCount);
 			}
 			// Ignore old data
 			else
 			{
-				delete[] m_data;
+				m_allocation.clear();
+				m_resources.clear();
 
-				// Create new data
 				m_maxResourceCount = newSize;
-				m_data = new unsigned char[(m_clampedDataSize * newSize) + m_alignment + newSize];
-				gAssert(m_data);
 
-				m_offset = (m_alignment - 1) & reinterpret_cast<size_t>(m_data + newSize);
-
-				// Reset allocation table
-				for (size_t i = 0; i < m_maxResourceCount; ++i)
-					m_data[i] = 0;
+				m_allocation.resize(m_maxResourceCount);
+				m_resources.resize(m_maxResourceCount);
 			}
 		}
+
+	private:
+
+		/** Resources. */
+		std::vector<T> m_resources = {};
 	};
 
 	/**
@@ -504,11 +424,11 @@ namespace gust
 		 * @tparam Type of other handle.
 		 */
 		template<class U>
-		Handle(const Handle<U>& other) : 
+		Handle(const Handle<U>& other) :
 			m_resourceAllocator(other.getResourceAllocator()),
 			m_handle(other.getHandle())
 		{
-			
+
 		}
 
 		/**
@@ -516,11 +436,11 @@ namespace gust
 		 * @param Resource allocator.
 		 * @param Handle.
 		 */
-		Handle(ResourceAllocatorBase* allocator, size_t handle) : 
+		Handle(ResourceAllocatorBase* allocator, size_t handle) :
 			m_resourceAllocator(allocator),
 			m_handle(handle)
 		{
-			
+
 		}
 
 		/**
@@ -559,9 +479,9 @@ namespace gust
 		 * @brief Access operator.
 		 * @return Resource.
 		 */
-		inline T* operator->() const 
+		inline T* operator->() const
 		{
-			return m_resourceAllocator == nullptr ? nullptr : static_cast<T*>(m_resourceAllocator->getRawResourceByHandle(m_handle));
+			return get();
 		}
 
 		/**
@@ -570,9 +490,9 @@ namespace gust
 		 */
 		inline T* get() const
 		{
-			return static_cast<T*>(m_resourceAllocator->getRawResourceByHandle(m_handle));
+			return m_resourceAllocator == nullptr ? nullptr : static_cast<T*>(static_cast<ResourceAllocator<T>*>(m_resourceAllocator)->getResourceByHandle(m_handle));
 		}
-		
+
 		/**
 		 * @brief Equvilence check.
 		 * @param Other.
@@ -604,8 +524,8 @@ namespace gust
 		inline Handle<T>& operator=(const Handle<U>& other)
 		{
 			static_assert(std::is_same<T, U>::value || std::is_base_of<T, U>::value, "U must derive from T or U must equal T.");
-			m_resourceAllocator = other.getResourceAllocator();
-			m_handle = other.getHandle();
+			m_resourceAllocator = other.m_resourceAllocator;
+			m_handle = other.m_handle;
 			return *this;
 		}
 

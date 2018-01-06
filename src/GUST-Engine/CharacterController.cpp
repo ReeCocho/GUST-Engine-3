@@ -44,13 +44,13 @@ namespace gust
 		transform.setOrigin({ pos.x, pos.y, pos.z });
 
 		// Create motion states
-		controller->m_motionState = std::make_unique<btDefaultMotionState>(transform);
+		controller->m_motionState = std::make_shared<btDefaultMotionState>(transform);
 
 		// Create sphere shape
 		auto scale = controller->m_transform->getLocalScale();
 		controller->m_radius = (scale.x + scale.z) / 2.0f;
 		controller->m_height = scale.y;
-		controller->m_shape = std::make_unique<btCapsuleShape>
+		controller->m_shape = std::make_shared<btCapsuleShape>
 		(
 			controller->m_radius / 2.0f, 
 			controller->m_height - (2.0f * controller->m_radius)
@@ -66,7 +66,7 @@ namespace gust
 			);
 
 			// Create rigid body
-			controller->m_rigidBody = std::make_unique<btRigidBody>(info);
+			controller->m_rigidBody = std::make_shared<btRigidBody>(info);
 			
 			controller->m_rigidBody->setFriction(0);
 			controller->m_rigidBody->setRestitution(0);

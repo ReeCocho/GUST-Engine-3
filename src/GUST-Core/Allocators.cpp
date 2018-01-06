@@ -118,12 +118,7 @@ namespace gust
 
 
 
-	ResourceAllocatorBase::ResourceAllocatorBase() :
-		m_data(nullptr),
-		m_alignment(0),
-		m_maxResourceCount(0),
-		m_offset(0),
-		m_clampedDataSize(0)
+	ResourceAllocatorBase::ResourceAllocatorBase() : m_maxResourceCount(0)
 	{
 
 	}

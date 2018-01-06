@@ -54,6 +54,12 @@ namespace gust
 		Texture(Graphics* graphics, const std::string& path, vk::Filter filter);
 
 		/**
+		 * @brief Copy constructor.
+		 * @param Other.
+		 */
+		Texture(const Texture& other);
+
+		/**
 		 * @brief Destructor.
 		 */
 		virtual ~Texture();
@@ -102,6 +108,12 @@ namespace gust
 		{
 			return m_filtering;
 		}
+
+		/**
+		 * @brief Free image memory.
+		 * @note Used internally. Do not call.
+		 */
+		void free();
 
 	protected:
 

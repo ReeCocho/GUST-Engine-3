@@ -18,7 +18,7 @@ namespace gust
 	{
 		m_shapeType = ShapeType::None;
 
-		m_shape = std::make_unique<btEmptyShape>();
+		m_shape = std::make_shared<btEmptyShape>();
 		m_rigidBody->setCollisionShape(m_shape.get());
 
 		btVector3 inertia = { 0, 0, 0 };
@@ -31,7 +31,7 @@ namespace gust
 	{
 		m_shapeType = ShapeType::Box;
 
-		m_shape = std::make_unique<btBoxShape>(btVector3(dimensions.x, dimensions.y, dimensions.z) / 2.0f);
+		m_shape = std::make_shared<btBoxShape>(btVector3(dimensions.x, dimensions.y, dimensions.z) / 2.0f);
 		m_rigidBody->setCollisionShape(m_shape.get());
 
 		btVector3 inertia = { 0, 0, 0 };
@@ -44,7 +44,7 @@ namespace gust
 	{
 		m_shapeType = ShapeType::Sphere;
 
-		m_shape = std::make_unique<btSphereShape>(radius);
+		m_shape = std::make_shared<btSphereShape>(radius);
 		m_rigidBody->setCollisionShape(m_shape.get());
 
 		btVector3 inertia = { 0, 0, 0 };
@@ -59,7 +59,7 @@ namespace gust
 	{
 		m_shapeType = ShapeType::Capsule;
 
-		m_shape = std::make_unique<btCapsuleShape>(radius, height);
+		m_shape = std::make_shared<btCapsuleShape>(radius, height);
 		m_rigidBody->setCollisionShape(m_shape.get());
 
 		btVector3 inertia = { 0, 0, 0 };
@@ -96,10 +96,10 @@ namespace gust
 		transform.setRotation({ rot.x, rot.y, rot.z, rot.w });
 
 		// Create motion state
-		rigidBody->m_motionState = std::make_unique<btDefaultMotionState>(transform);
+		rigidBody->m_motionState = std::make_shared<btDefaultMotionState>(transform);
 
 		// Create shape
-		rigidBody->m_shape = std::make_unique<btEmptyShape>();
+		rigidBody->m_shape = std::make_shared<btEmptyShape>();
 
 		btRigidBody::btRigidBodyConstructionInfo info
 		(
@@ -109,7 +109,7 @@ namespace gust
 		);
 
 		// Create rigid body
-		rigidBody->m_rigidBody = std::make_unique<btRigidBody>(info);
+		rigidBody->m_rigidBody = std::make_shared<btRigidBody>(info);
 
 		// Register body with dynamics world
 		gust::physics.registerRigidBody(rigidBody->m_rigidBody.get());

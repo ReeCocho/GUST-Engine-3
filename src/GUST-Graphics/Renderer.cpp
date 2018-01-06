@@ -8,7 +8,7 @@ namespace gust
 	{
 		m_graphics = graphics;
 		m_threadPool = std::make_unique<ThreadPool>(threadCount);
-		m_cameraAllocator = std::make_unique<ResourceAllocator<VirtualCamera>>(10, 4);
+		m_cameraAllocator = std::make_unique<ResourceAllocator<VirtualCamera>>(10);
 
 		initCommandPools();
 		initRenderPasses();
@@ -36,17 +36,14 @@ namespace gust
 		// Destroy cameras
 		for(size_t i = 0; i < m_cameraAllocator->getMaxResourceCount(); ++i)
 			if (m_cameraAllocator->isAllocated(i))
-			{
-				VirtualCamera* camera = m_cameraAllocator->getResourceByHandle(i);
-				logicalDevice.destroyFramebuffer(camera->frameBuffer);
-				destroyCommandBuffer(camera->commandBuffer);
-				destroyCommandBuffer(camera->lightingCommandBuffer);
-			}
+				destroyCamera(Handle<VirtualCamera>(m_cameraAllocator.get(), i));
 
-		// Destroy cameras
 		m_cameraAllocator = nullptr;
 
 		// Destroy screen quad
+		m_screenQuad->free();
+		m_skybox->free();
+
 		m_screenQuad = nullptr;
 		m_skybox = nullptr;
 
@@ -88,7 +85,7 @@ namespace gust
 		logicalDevice.destroyRenderPass(m_renderPasses.onscreen);
 		logicalDevice.destroyRenderPass(m_renderPasses.offscreen);
 		logicalDevice.destroyRenderPass(m_renderPasses.lighting);
-		
+
 		logicalDevice.destroySemaphore(m_semaphores.imageAvailable);
 		logicalDevice.destroySemaphore(m_semaphores.renderFinished);
 		logicalDevice.destroySemaphore(m_semaphores.offscreen);
@@ -257,11 +254,11 @@ namespace gust
 		vk::Sampler depthSampler = m_graphics->getLogicalDevice().createSampler(sampler);
 
 		// Set attachments
-		camera->position	= std::make_unique<Texture>(m_graphics, position.image, position.view, positionSampler, position.memory, camera->width, camera->height);
-		camera->normal		= std::make_unique<Texture>(m_graphics, normals.image, normals.view, normalSampler, normals.memory, camera->width, camera->height);
-		camera->color		= std::make_unique<Texture>(m_graphics, color.image, color.view, colorSampler, color.memory, camera->width, camera->height);
-		camera->misc		= std::make_unique<Texture>(m_graphics, misc.image, misc.view, miscSampler, misc.memory, camera->width, camera->height);
-		camera->depth		= std::make_unique<Texture>(m_graphics, depth.image, depth.view, depthSampler, depth.memory, camera->width, camera->height);
+		camera->position	= std::make_shared<Texture>(m_graphics, position.image, position.view, positionSampler, position.memory, camera->width, camera->height);
+		camera->normal		= std::make_shared<Texture>(m_graphics, normals.image, normals.view, normalSampler, normals.memory, camera->width, camera->height);
+		camera->color		= std::make_shared<Texture>(m_graphics, color.image, color.view, colorSampler, color.memory, camera->width, camera->height);
+		camera->misc		= std::make_shared<Texture>(m_graphics, misc.image, misc.view, miscSampler, misc.memory, camera->width, camera->height);
+		camera->depth		= std::make_shared<Texture>(m_graphics, depth.image, depth.view, depthSampler, depth.memory, camera->width, camera->height);
 
 		std::array<vk::ImageView, 5> attachments;
 		attachments[0] = camera->position->getImageView();
@@ -549,7 +546,7 @@ namespace gust
 		swapchainCreateInfo.setImageFormat(m_graphics->getSurfaceColorFormat());					// Swapchain images color format
 		swapchainCreateInfo.setImageColorSpace(m_graphics->getSurfaceColorSpace());					// Swapchain images color space
 		swapchainCreateInfo.setImageExtent({ m_graphics->getWidth(), m_graphics->getHeight() });	// Size of swapchain images.
-		swapchainCreateInfo.setImageArrayLayers(1);													// I honestly don't know what this does 
+		swapchainCreateInfo.setImageArrayLayers(1);													// I honestly don't know what this does
 		swapchainCreateInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);				// Type of image
 		swapchainCreateInfo.setPreTransform(surfaceCapabilities.currentTransform);					// Image transformation
 		swapchainCreateInfo.setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque);				// Alpha mode
@@ -877,7 +874,7 @@ namespace gust
 
 	void Renderer::initShaders()
 	{
-		std::vector<uint32_t> inds = 
+		std::vector<uint32_t> inds =
 		{
 			0, 2, 1,
 			2, 3, 1
@@ -1751,7 +1748,7 @@ namespace gust
 		renderPassBeginInfo.setRenderPass(m_renderPasses.offscreen);
 		renderPassBeginInfo.setFramebuffer(camera->frameBuffer);
 		renderPassBeginInfo.renderArea.setExtent(vk::Extent2D(m_graphics->getWidth(), m_graphics->getHeight()));
-		renderPassBeginInfo.renderArea.offset = { 0, 0 };
+		renderPassBeginInfo.renderArea.offset = vk::Offset2D(0, 0);
 		renderPassBeginInfo.setClearValueCount(static_cast<uint32_t>(clearValues.size()));
 		renderPassBeginInfo.setPClearValues(clearValues.data());
 
@@ -1975,7 +1972,7 @@ namespace gust
 		renderPassBeginInfo.setRenderPass(m_renderPasses.lighting);
 		renderPassBeginInfo.setFramebuffer(camera->frameBuffer);
 		renderPassBeginInfo.renderArea.setExtent(vk::Extent2D(m_graphics->getWidth(), m_graphics->getHeight()));
-		renderPassBeginInfo.renderArea.offset = { 0, 0 };
+		renderPassBeginInfo.renderArea.offset = vk::Offset2D(0, 0);
 		renderPassBeginInfo.setClearValueCount(0);
 		renderPassBeginInfo.setPClearValues(nullptr);
 

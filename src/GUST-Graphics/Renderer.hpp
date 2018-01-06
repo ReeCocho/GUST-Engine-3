@@ -191,19 +191,19 @@ namespace gust
 		vk::Framebuffer frameBuffer = {};
 
 		/** Position attachment. */
-		std::unique_ptr<Texture> position;
+		std::shared_ptr<Texture> position;
 
 		/** Normal attachment. */
-		std::unique_ptr<Texture> normal;
+		std::shared_ptr<Texture> normal;
 
 		/** Albedo attachment. */
-		std::unique_ptr<Texture> color;
+		std::shared_ptr<Texture> color;
 
 		/** Misc attachment. */
-		std::unique_ptr<Texture> misc;
+		std::shared_ptr<Texture> misc;
 
 		/** Depth attachment. */
-		std::unique_ptr<Texture> depth;
+		std::shared_ptr<Texture> depth;
 
 		/** Projection matrix. */
 		glm::mat4 projection = {};
@@ -304,7 +304,7 @@ namespace gust
 		{
 			return m_swapchain.buffers[index];
 		}
-		
+
 		/**
 		 * @brief Get swapchain image count.
 		 * @return Swapchain image count.
@@ -365,6 +365,13 @@ namespace gust
 			destroyCommandBuffer(camera->commandBuffer);
 			destroyCommandBuffer(camera->lightingCommandBuffer);
 			m_graphics->getLogicalDevice().destroyFramebuffer(camera->frameBuffer);
+
+			camera->color->free();
+			camera->depth->free();
+			camera->misc->free();
+			camera->normal->free();
+			camera->position->free();
+
 			m_cameraAllocator->deallocate(camera.getHandle());
 		}
 
@@ -524,8 +531,8 @@ namespace gust
 		 */
 		void drawMeshToFramebuffer
 		(
-			const MeshData& mesh, 
-			const vk::CommandBufferInheritanceInfo& inheritanceInfo, 
+			const MeshData& mesh,
+			const vk::CommandBufferInheritanceInfo& inheritanceInfo,
 			size_t threadIndex,
 			Handle<VirtualCamera> camera
 		);
@@ -813,12 +820,12 @@ namespace gust
 		std::vector<MeshData> m_meshes = {};
 
 		/** Point lights to be rendered. */
-		std::queue<PointLightData> m_pointLights = {};
+		std::queue<PointLightData> m_pointLights = std::queue<PointLightData>();
 
 		/** Directional lights to be rendered. */
-		std::queue<DirectionalLightData> m_directionalLights = {};
+		std::queue<DirectionalLightData> m_directionalLights = std::queue<DirectionalLightData>();
 
 		/** Spot lights to be rendered. */
-		std::queue<SpotLightData> m_spotLights = {};
+		std::queue<SpotLightData> m_spotLights = std::queue<SpotLightData>();
 	};
 }

@@ -136,6 +136,7 @@ namespace gust
 
 			// Get system of required type
 			System* system = getSystemOfType<T>();
+			gAssert(system);
 
 			if (system)
 			{
@@ -163,7 +164,7 @@ namespace gust
 				T* component = allocator->getResourceByHandle(handle);
 				::new(component)(T)(entity, componentHandle);
 
-				// Call onBegin()		
+				// Call onBegin()
 				size_t oldHandle = system->m_componentHandle;
 				system->m_componentHandle = handle;
 				system->onBegin();
@@ -271,12 +272,30 @@ namespace gust
 		size_t m_entityHandleCounter = 0;
 
 		/** List of free entity handles. */
-		std::queue<size_t> m_freeEntityHandles = {};
+		std::queue<size_t> m_freeEntityHandles = std::queue<size_t>();
 
 		/** List of components to destroy on the next tick. */
 		std::vector<ComponentBase*> m_markedComponents = {};
-		
+
 		/** List of entities to destroy on the next tick. */
 		std::vector<size_t> m_markedEntities = {};
 	};
+
+    template<class T>
+    void Entity::removeComponent()
+    {
+        m_scene->removeComponent<T>(*this);
+    }
+
+    template<class T>
+    Handle<T> Entity::addComponent()
+    {
+        return m_scene->addComponent<T>(*this);
+    }
+
+    template<class T>
+    Handle<T> Entity::getComponent()
+    {
+        return m_scene->getComponent<T>(*this);
+    }
 }

@@ -42,7 +42,7 @@ namespace gust
 		void* userData
 	)
 	{
-		gLog("Vulkan Validation Layer: " << msg);
+		gLog("Vulkan Validation Layer: " << msg << '\n');
 		return VK_FALSE;
 	}
 }

@@ -15,14 +15,34 @@ namespace gust
 	{
 		m_graphics = graphics;
 		m_renderer = renderer;
-		m_meshAllocator = std::make_unique<ResourceAllocator<Mesh>>(meshCount, alignof(Mesh));
-		m_shaderAllocator = std::make_unique<ResourceAllocator<Shader>>(shaderCount, alignof(Shader));
-		m_materialAllocator = std::make_unique<ResourceAllocator<Material>>(materialCount, alignof(Material));
-		m_textureAllocator = std::make_unique<ResourceAllocator<Texture>>(textureCount, alignof(Texture));
+		m_meshAllocator = std::make_unique<ResourceAllocator<Mesh>>(meshCount);
+		m_shaderAllocator = std::make_unique<ResourceAllocator<Shader>>(shaderCount);
+		m_materialAllocator = std::make_unique<ResourceAllocator<Material>>(materialCount);
+		m_textureAllocator = std::make_unique<ResourceAllocator<Texture>>(textureCount);
 	}
 
 	void ResourceManager::shutdown()
 	{
+		// Free meshes
+		for (size_t i = 0; i < m_meshAllocator->getMaxResourceCount(); ++i)
+			if (m_meshAllocator->isAllocated(i))
+				m_meshAllocator->getResourceByHandle(i)->free();
+
+		// Free materials
+		for (size_t i = 0; i < m_materialAllocator->getMaxResourceCount(); ++i)
+			if (m_materialAllocator->isAllocated(i))
+				m_materialAllocator->getResourceByHandle(i)->free();
+
+		// Free shaders
+		for (size_t i = 0; i < m_shaderAllocator->getMaxResourceCount(); ++i)
+			if (m_shaderAllocator->isAllocated(i))
+				m_shaderAllocator->getResourceByHandle(i)->free();
+
+		// Free textures
+		for (size_t i = 0; i < m_textureAllocator->getMaxResourceCount(); ++i)
+			if (m_textureAllocator->isAllocated(i))
+				m_textureAllocator->getResourceByHandle(i)->free();
+
 		m_meshAllocator = {};
 		m_shaderAllocator = {};
 		m_materialAllocator = {};
@@ -37,6 +57,7 @@ namespace gust
 
 		// Allocate mesh and call constructor
 		auto mesh = Handle<Mesh>(m_meshAllocator.get(), m_meshAllocator->allocate());
+		// *mesh.get() = Mesh(m_graphics, path);
 		::new(mesh.get())(Mesh)(m_graphics, path);
 
 		return mesh;
@@ -50,6 +71,7 @@ namespace gust
 
 		// Allocate mesh and call constructor
 		auto texture = Handle<Texture>(m_textureAllocator.get(), m_textureAllocator->allocate());
+		// *texture.get() = Texture(m_graphics, path, filtering);
 		::new(texture.get())(Texture)(m_graphics, path, filtering);
 
 		return texture;
@@ -72,6 +94,7 @@ namespace gust
 
 		// Allocate mesh and call constructor
 		auto cubemap = Handle<Cubemap>(m_textureAllocator.get(), m_textureAllocator->allocate());
+		// *cubemap.get() = Cubemap(m_graphics, top, bottom, north, east, south, west, filter);
 		::new(cubemap.get())(Cubemap)(m_graphics, top, bottom, north, east, south, west, filter);
 
 		return cubemap;
@@ -93,6 +116,7 @@ namespace gust
 
 		// Allocate texture and call constructor
 		auto texture = Handle<Texture>(m_textureAllocator.get(), m_textureAllocator->allocate());
+		// *texture.get() = Texture(m_graphics, image, imageView, sampler, memory, width, height);
 		::new(texture.get())(Texture)(m_graphics, image, imageView, sampler, memory, width, height);
 
 		return texture;
@@ -114,6 +138,7 @@ namespace gust
 
 		// Allocate texture and call constructor
 		auto cubemap = Handle<Cubemap>(m_textureAllocator.get(), m_textureAllocator->allocate());
+		// *cubemap.get() = Cubemap(m_graphics, image, imageView, sampler, memory, width, height);
 		::new(cubemap.get())(Cubemap)(m_graphics, image, imageView, sampler, memory, width, height);
 
 		return cubemap;
@@ -136,6 +161,22 @@ namespace gust
 
 		// Allocate shader and call constructor
 		auto shader = Handle<Shader>(m_shaderAllocator.get(), m_shaderAllocator->allocate());
+		/*
+		*shader.get() = Shader
+		(
+			m_graphics,
+			{ m_renderer->getStandardLayout() },
+			m_renderer->getOffscreenRenderPass(),
+			vertexPath,
+			fragmentPath,
+			vertexDataSize,
+			fragmentDataSize,
+			textureCount,
+			depthTesting,
+			lighting
+		);
+		*/
+
 		::new(shader.get())(Shader)
 			(
 				m_graphics, 
@@ -161,37 +202,39 @@ namespace gust
 
 		// Allocate material and call constructor
 		auto material = Handle<Material>(m_materialAllocator.get(), m_materialAllocator->allocate());
-		::new(material.get())(Material)
-		(
-			m_graphics,
-			shader
-		);
+		// *material.get() = Material(m_graphics, shader);
+		::new(material.get())(Material)(m_graphics, shader);
 
 		return material;
 	}
 
 	void ResourceManager::destroyMesh(Handle<Mesh> mesh)
 	{
+		mesh->free();
 		m_meshAllocator->deallocate(mesh.getHandle());
 	}
 
 	void ResourceManager::destroyTexture(Handle<Texture> texture)
 	{
+		texture->free();
 		m_textureAllocator->deallocate(texture.getHandle());
 	}
 
 	void ResourceManager::destroyCubemap(Handle<Cubemap> cubemap)
 	{
+		cubemap->free();
 		m_textureAllocator->deallocate(cubemap.getHandle());
 	}
 
 	void ResourceManager::destroyShader(Handle<Shader> shader)
 	{
+		shader->free();
 		m_shaderAllocator->deallocate(shader.getHandle());
 	}
 
 	void ResourceManager::destroyMaterial(Handle<Material> material)
 	{
+		material->free();
 		m_materialAllocator->deallocate(material.getHandle());
 	}
 }

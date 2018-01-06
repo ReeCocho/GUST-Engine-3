@@ -53,7 +53,7 @@ namespace gust
 			~Iterator();
 
 			/**
-			 * @brief Unequivilence operator.
+			 * @brief inequivalence operator.
 			 * @param Left side.
 			 * @param Right side.
 			 * @return If the iterators are equal.
@@ -80,7 +80,6 @@ namespace gust
 
 			/**
 			 * @brief Indirection operator.
-			 * @tparam Component type.
 			 * @return Active component.
 			 */
 			Handle<ComponentBase> operator*()
@@ -91,10 +90,10 @@ namespace gust
 		private:
 
 			/** System to iterate over. */
-			System* m_system;
+			System* m_system = nullptr;
 
 			/** Handle. */
-			size_t m_handle;
+			size_t m_handle = 0;
 		};
 
 
@@ -125,7 +124,7 @@ namespace gust
 			if (m_id == 0)
 			{
 				m_id = TypeID<T>::id();
-				m_components = std::make_unique<ResourceAllocator<T>>(50, alignof(T));
+				m_components = std::make_unique<ResourceAllocator<T>>(50);
 
 				m_destroyByEntity = [this](Entity entity)
 				{

@@ -87,10 +87,7 @@ namespace gust
 		 * @brief Remove a component.
 		 */
 		template<class T>
-		void removeComponent()
-		{
-			m_scene->removeComponent<T>(*this);
-		}
+		void removeComponent();
 
 		/**
 		 * @brief Add component to the system acting upon the given type.
@@ -99,10 +96,7 @@ namespace gust
 		 * @note Will return a pointer to a prexisting component if it already exists.
 		 */
 		template<class T>
-		Handle<T> addComponent()
-		{
-			return m_scene->addComponent<T>(*this);
-		}
+		Handle<T> addComponent();
 
 		/**
 		 * @brief Get component belonging to the given entity of the given type.
@@ -110,10 +104,7 @@ namespace gust
 		 * @note Will return nullptr if the component doesn't exist or the system doesn't exist.
 		 */
 		template<class T>
-		Handle<T> getComponent()
-		{
-			return m_scene->getComponent<T>(*this);
-		}
+		Handle<T> getComponent();
 
 	private:
 

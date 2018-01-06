@@ -26,14 +26,14 @@ include_directories(${CMAKE_SOURCE_DIR}/src/GUST-Physics)
 # Libraries
 target_link_libraries(
 	GUST-Testing 
-	GUST-Engine
-	GUST-Graphics
-	GUST-Core
-	GUST-ECS
-	GUST-Physics
 	${SDL2_LIBRARY} 
 	${VULKAN_LIBRARY}
 	${Bullet_LIBRARIES}
+	GUST-Core
+	GUST-Graphics
+	GUST-ECS
+	GUST-Physics
+	GUST-Engine
 )
 
 # Move shader, mesh, scene, and texture folders into the build directory

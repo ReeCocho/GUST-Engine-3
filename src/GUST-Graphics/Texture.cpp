@@ -97,21 +97,41 @@ namespace gust
 		m_sampler = logicalDevice.createSampler(samplerInfo);
 	}
 
+	Texture::Texture(const Texture& other) :
+		m_graphics(other.m_graphics),
+		m_image(other.m_image),
+		m_imageView(other.m_imageView),
+		m_sampler(other.m_sampler),
+		m_imageMemory(other.m_imageMemory),
+		m_width(other.m_width),
+		m_height(other.m_height)
+	{
+
+	}
+
 	Texture::~Texture()
 	{
-		vk::Device logicalDevice = m_graphics->getLogicalDevice();
 
-		if(m_sampler)
-			logicalDevice.destroySampler(m_sampler);
+	}
 
-		if(m_imageView)
-			logicalDevice.destroyImageView(m_imageView);
+	void Texture::free()
+	{
+		if (m_graphics)
+		{
+			vk::Device logicalDevice = m_graphics->getLogicalDevice();
 
-		if(m_imageMemory)
-			logicalDevice.freeMemory(m_imageMemory);
+			if (m_sampler)
+				logicalDevice.destroySampler(m_sampler);
 
-		if(m_image)
-			logicalDevice.destroyImage(m_image);
+			if (m_imageView)
+				logicalDevice.destroyImageView(m_imageView);
+
+			if (m_imageMemory)
+				logicalDevice.freeMemory(m_imageMemory);
+
+			if (m_image)
+				logicalDevice.destroyImage(m_image);
+		}
 	}
 
 

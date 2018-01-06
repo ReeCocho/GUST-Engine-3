@@ -9,3 +9,6 @@ compile_commands.json
 CTestTestfile.cmake
 /[Bb]uild/
 src/Shaders/build.bat
+/x64/
+/x86/
+/Win32/

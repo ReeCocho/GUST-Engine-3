@@ -20,6 +20,8 @@ namespace gust
 	{
 	public:
 
+		ComponentBase();
+
 		/**
 		 * @brief Constructor.
 		 * @param Entity the component is attached to.
@@ -58,7 +60,7 @@ namespace gust
 		{
 			return m_id;
 		}
-		
+
 	private:
 
 		/** Entity the component is attached to. */
@@ -72,11 +74,12 @@ namespace gust
 	 * @class TypeIDGenerator
 	 * @brief A template class with a static member function to get IDs.
 	 */
+	template<class T>
 	class TypeIDGenerator final
 	{
 	public:
 
-		static size_t idCounter;
+		static const char id = 0;
 	};
 
 	/**
@@ -92,8 +95,8 @@ namespace gust
 
 		static constexpr inline size_t id()
 		{
-			static size_t id = TypeIDGenerator::idCounter++;
-			return id;
+			// static size_t id = TypeIDGenerator::idCounter++;
+			return reinterpret_cast<size_t>(&TypeIDGenerator<T>::id);
 		}
 	};
 
@@ -101,6 +104,11 @@ namespace gust
 	class Component : public ComponentBase
 	{
 	public:
+
+		Component() : ComponentBase(Entity(nullptr, 0), 0)
+		{
+
+		}
 
 		/**
 		 * @brief Constructor.
@@ -117,7 +125,7 @@ namespace gust
 		 */
 		virtual ~Component()
 		{
-			
+
 		}
 
 		/**

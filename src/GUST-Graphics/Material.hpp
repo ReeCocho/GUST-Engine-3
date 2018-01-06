@@ -146,6 +146,12 @@ namespace gust
 			return m_textureDescriptorSet;
 		}
 
+		/**
+		 * @brief Free memory.
+		 * @note Used internally. Do not call.
+		 */
+		void free();
+
 	private:
 
 		/**
