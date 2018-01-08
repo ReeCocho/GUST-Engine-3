@@ -11,6 +11,7 @@
 
 #define gLog(MSG) std::clog << MSG
 
+// Debugging
 #ifdef NDEBUG
 	#define gErr(MSG) ((void)0)
 	#define gOut(MSG) ((void)0)

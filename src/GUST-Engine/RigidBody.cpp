@@ -120,14 +120,23 @@ namespace gust
 	{
 		for (Handle<RigidBody> rigidBody : *this)
 		{
-			// Get transform
+			// Get current transform
+			auto currentPosition = rigidBody->m_transform->getPosition();
+			auto currentRotation = rigidBody->m_transform->getRotation();
+
+			// Get physics transform
 			btTransform t = {};
 			rigidBody->m_motionState->getWorldTransform(t);
 			auto pos = t.getOrigin();
 			auto rot = t.getRotation();
 
-			rigidBody->m_transform->setPosition({ pos.x(), pos.y(), pos.z() });
-			rigidBody->m_transform->setRotation({ rot.w(), rot.x(), rot.y(), rot.z() });
+			// Interpolate transform
+			currentPosition = glm::mix(currentPosition, { pos.x(), pos.y(), pos.z() }, deltaTime * GUST_PHYSICS_POSITION_INTERPOLATION_RATE);
+			currentRotation = glm::slerp(currentRotation, { rot.w(), rot.x(), rot.y(), rot.z() }, deltaTime * GUST_PHYSICS_ROTATION_INTERPOLATION_RATE);
+
+			// Set transform
+			rigidBody->m_transform->setPosition(currentPosition);
+			rigidBody->m_transform->setRotation(currentRotation);
 		}
 	}
 

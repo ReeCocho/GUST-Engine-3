@@ -4,8 +4,6 @@ namespace gust
 {
 	void Physics::startup(glm::vec3 gravity)
 	{
-
-
 		// Create collision configuration
 		m_collisionConfig = std::make_unique<btDefaultCollisionConfiguration>();
 

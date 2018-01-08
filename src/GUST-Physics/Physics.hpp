@@ -7,7 +7,9 @@
  */
 
  /** Defines. */
-#define GUST_PHYSICS_STEP_RATE (1.0f/60.0f)
+#define GUST_PHYSICS_STEP_RATE (1.0f/30.0f)
+#define GUST_PHYSICS_POSITION_INTERPOLATION_RATE (30.0f)
+#define GUST_PHYSICS_ROTATION_INTERPOLATION_RATE (20.0f)
 
  /** Includes. */
 #include <glm\glm.hpp>

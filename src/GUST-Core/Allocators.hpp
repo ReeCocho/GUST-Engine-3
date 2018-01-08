@@ -34,9 +34,22 @@ namespace gust
 		StackAllocator(size_t size);
 
 		/**
+		 * @brief Copy constructor.
+		 * @param Source.
+		 */
+		StackAllocator(const StackAllocator& other);
+		
+		/**
 		 * @brief Destructor.
 		 */
 		~StackAllocator();
+
+		/**
+		 * @brief Assignment operator.
+		 * @param Source.
+		 * @return This.
+		 */
+		StackAllocator& operator=(const StackAllocator& other);
 
 		/**
 		 * @brief Allocate N bytes of data in the stack.
@@ -57,12 +70,12 @@ namespace gust
 		/**
 		 * @brief Free all memory in the stack.
 		 */
-		void freeAll();
+		void free();
 
 		/**
 		 * @brief Initialize a new stack.
 		 * @param Number of bytes to allocate.
-		 * @note This will not free the current stack.
+		 * @note This will free the current stack.
 		 */
 		void initialize(size_t n);
 
@@ -81,7 +94,7 @@ namespace gust
 		 */
 		inline size_t getAllocated() const
 		{
-			return m_top - m_data;
+			return static_cast<size_t>(m_top - m_data);
 		}
 
 	private:
@@ -119,9 +132,22 @@ namespace gust
 		PoolAllocator(size_t size, size_t count, size_t alignment);
 
 		/**
+		 * @brief Copy constructor.
+		 * @param Other.
+		 */
+		PoolAllocator(const PoolAllocator& other);
+
+		/**
 		 * @brief Destructor.
 		 */
 		~PoolAllocator();
+
+		/**
+		 * @brief Assignment operator.
+		 * @param Other.
+		 * @return This.
+		 */
+		PoolAllocator& operator=(const PoolAllocator& other);
 
 		/**
 		 * @brief Get the total number of bytes allocated on the pool.
@@ -138,7 +164,7 @@ namespace gust
 		 */
 		inline size_t getAllocated() const
 		{
-			return m_top - m_data;
+			return static_cast<size_t>(m_top - m_data);
 		}
 
 		/**
@@ -186,14 +212,13 @@ namespace gust
 		/**
 		 * @brief Free all memory in the pool.
 		 */
-		void freeAll();
+		void free();
 
 		/**
 		 * @brief Initialize a new pool.
 		 * @param Size of chunks.
 		 * @param Number of chunks to store.
 		 * @param Chunk alignment.
-		 * @note This will not free the current pool.
 		 * @note Chunk alignment must be a power of 2.
 		 */
 		void initialize(size_t size, size_t count, size_t alignment);

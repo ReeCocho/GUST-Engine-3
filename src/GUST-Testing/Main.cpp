@@ -173,7 +173,6 @@ int main()
 	// Initialize engine
 	gust::startup("Test Game", 1280, 720);
 	
-	
 	// Input stuff
 	gust::input.registerAxis("Horizontal", { { gust::KeyCode::A, -1.0f }, { gust::KeyCode::D, 1.0f } });
 	gust::input.registerAxis("Vertical", { { gust::KeyCode::S, -1.0f }, { gust::KeyCode::W, 1.0f } });

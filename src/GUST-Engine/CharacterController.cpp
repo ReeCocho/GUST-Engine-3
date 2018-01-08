@@ -81,11 +81,18 @@ namespace gust
 		for (Handle<CharacterController> controller : *this)
 		{
 			{
-				// Get transform
-				btTransform t = controller->m_rigidBody->getWorldTransform();
-				auto pos = t.getOrigin();
+				// Get current transform
+				auto currentPos = controller->m_transform->getPosition();
 
-				controller->m_transform->setPosition({ pos.x(), pos.y(), pos.z() });
+				// Get new transform
+				btTransform t = controller->m_rigidBody->getWorldTransform();
+				auto newPos = t.getOrigin();
+
+				// Lerp transform
+				currentPos = glm::mix(currentPos, { newPos.x(), newPos.y(), newPos.z() }, deltaTime * GUST_PHYSICS_POSITION_INTERPOLATION_RATE);
+
+				// Set transform
+				controller->m_transform->setPosition(currentPos);
 			}
 
 			// Check if the controller is grounded
