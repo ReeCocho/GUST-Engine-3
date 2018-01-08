@@ -1,3 +1,5 @@
+#define VMA_IMPLEMENTATION
+
 #include <array>
 #include <map>
 #include <set>
@@ -187,6 +189,15 @@ namespace gust
 			}
 		}
 
+		// Create memory allocator
+		VmaAllocatorCreateInfo allocatorInfo = {};
+		allocatorInfo.physicalDevice = m_physicalDevice;
+		allocatorInfo.device = m_logicalDevice;
+		{
+			auto check = vmaCreateAllocator(&allocatorInfo, &m_memoryAllocator);
+			gAssert(check == VK_SUCCESS);
+		}
+
 		// Initialize surface formats
 		initSurfaceFormats(m_physicalDevice);
 
@@ -233,6 +244,9 @@ namespace gust
 	void Graphics::shutdown()
 	{
 		m_logicalDevice.waitIdle();
+
+		// Destroy memory allocator
+		vmaDestroyAllocator(m_memoryAllocator);
 
 		// Cleanup pools
 		m_logicalDevice.destroyCommandPool(m_transferPool);

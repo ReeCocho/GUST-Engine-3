@@ -6,7 +6,7 @@
  * @author Connor J. Bramham (ReeCocho)
  */
 
-// Tell SDL that the main function is handled.
+/** Defines. */
 #define SDL_MAIN_HANDLED
 
 /** Includes. */
@@ -14,6 +14,11 @@
 #include <SDL_syswm.h>
 #include <SDL_vulkan.h>
 #include <vulkan\vulkan.hpp>
+
+#undef max
+#undef min
+#include <vk_mem_alloc.h>
+
 #include "Math.hpp"
 
 namespace gust

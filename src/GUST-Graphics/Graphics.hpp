@@ -392,6 +392,9 @@ namespace gust
 		std::unique_ptr<VulkanDebugging> m_debugging;
 #endif
 
+		/** Memory allocator. */
+		VmaAllocator m_memoryAllocator = {};
+
 		/** Vulkan surface. */
 		vk::SurfaceKHR m_surface = {};
 
