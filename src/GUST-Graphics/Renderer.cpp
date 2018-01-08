@@ -4,11 +4,19 @@
 
 namespace gust
 {
-	void Renderer::startup(Graphics* graphics, size_t threadCount)
+	void Renderer::startup
+	(
+		Graphics* graphics,
+		ResourceAllocator<Mesh>* meshAllocator,
+		ResourceAllocator<Texture>* textureAllocator,
+		size_t threadCount
+	)
 	{
 		m_graphics = graphics;
 		m_threadPool = std::make_unique<ThreadPool>(threadCount);
 		m_cameraAllocator = std::make_unique<ResourceAllocator<VirtualCamera>>(10);
+		m_meshAllocator = meshAllocator;
+		m_textureAllocator = textureAllocator;
 
 		initCommandPools();
 		initRenderPasses();
@@ -44,8 +52,8 @@ namespace gust
 		m_screenQuad->free();
 		m_skybox->free();
 
-		m_screenQuad = nullptr;
-		m_skybox = nullptr;
+		m_meshAllocator->deallocate(m_screenQuad.getHandle());
+		m_meshAllocator->deallocate(m_skybox.getHandle());
 
 		// Cleanup
 		logicalDevice.destroyShaderModule(m_lightingShader.vertexShader);
@@ -253,12 +261,22 @@ namespace gust
 		vk::Sampler miscSampler = m_graphics->getLogicalDevice().createSampler(sampler);
 		vk::Sampler depthSampler = m_graphics->getLogicalDevice().createSampler(sampler);
 
-		// Set attachments
-		camera->position	= std::make_shared<Texture>(m_graphics, position.image, position.view, positionSampler, position.memory, camera->width, camera->height);
-		camera->normal		= std::make_shared<Texture>(m_graphics, normals.image, normals.view, normalSampler, normals.memory, camera->width, camera->height);
-		camera->color		= std::make_shared<Texture>(m_graphics, color.image, color.view, colorSampler, color.memory, camera->width, camera->height);
-		camera->misc		= std::make_shared<Texture>(m_graphics, misc.image, misc.view, miscSampler, misc.memory, camera->width, camera->height);
-		camera->depth		= std::make_shared<Texture>(m_graphics, depth.image, depth.view, depthSampler, depth.memory, camera->width, camera->height);
+		// Resize allocator if needed
+		if (m_textureAllocator->getResourceCount() + 5 > m_textureAllocator->getMaxResourceCount())
+			m_textureAllocator->resize(m_textureAllocator->getMaxResourceCount() + 5, true);
+
+		// Create attachments
+		camera->position	= Handle<Texture>(m_textureAllocator, m_textureAllocator->allocate());
+		camera->normal		= Handle<Texture>(m_textureAllocator, m_textureAllocator->allocate());
+		camera->color		= Handle<Texture>(m_textureAllocator, m_textureAllocator->allocate());
+		camera->misc		= Handle<Texture>(m_textureAllocator, m_textureAllocator->allocate());
+		camera->depth		= Handle<Texture>(m_textureAllocator, m_textureAllocator->allocate());
+
+		::new(camera->position.get())(Texture)(m_graphics, position.image, position.view, positionSampler, position.memory, camera->width, camera->height);
+		::new(camera->normal.get())(Texture)(m_graphics, normals.image, normals.view, normalSampler, normals.memory, camera->width, camera->height);
+		::new(camera->color.get())(Texture)(m_graphics, color.image, color.view, colorSampler, color.memory, camera->width, camera->height);
+		::new(camera->misc.get())(Texture)(m_graphics, misc.image, misc.view, miscSampler, misc.memory, camera->width, camera->height);
+		::new(camera->depth.get())(Texture)(m_graphics, depth.image, depth.view, depthSampler, depth.memory, camera->width, camera->height);
 
 		std::array<vk::ImageView, 5> attachments;
 		attachments[0] = camera->position->getImageView();
@@ -896,8 +914,15 @@ namespace gust
 			glm::vec2(1, 1)
 		};
 
+		// Resize mesh allocator if needed
+		if (m_meshAllocator->getResourceCount() + 2 > m_meshAllocator->getMaxResourceCount())
+			m_meshAllocator->resize(m_meshAllocator->getMaxResourceCount() + 2, true);
+
+		m_screenQuad = Handle<Mesh>(m_meshAllocator, m_meshAllocator->allocate());
+		m_skybox = Handle<Mesh>(m_meshAllocator, m_meshAllocator->allocate());
+
 		// Make quad
-		m_screenQuad = std::make_unique<Mesh>
+		::new(m_screenQuad.get())(Mesh)		
 		(
 			m_graphics,
 			inds,
@@ -906,7 +931,7 @@ namespace gust
 		);
 
 		// Make skybox
-		m_skybox = std::make_unique<Mesh>
+		::new(m_skybox.get())(Mesh)
 		(
 			m_graphics,
 			GUST_SKYBOX_MESH_PATH

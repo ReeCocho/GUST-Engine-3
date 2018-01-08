@@ -191,19 +191,19 @@ namespace gust
 		vk::Framebuffer frameBuffer = {};
 
 		/** Position attachment. */
-		std::shared_ptr<Texture> position;
+		Handle<Texture> position;
 
 		/** Normal attachment. */
-		std::shared_ptr<Texture> normal;
+		Handle<Texture> normal;
 
 		/** Albedo attachment. */
-		std::shared_ptr<Texture> color;
+		Handle<Texture> color;
 
 		/** Misc attachment. */
-		std::shared_ptr<Texture> misc;
+		Handle<Texture> misc;
 
 		/** Depth attachment. */
-		std::shared_ptr<Texture> depth;
+		Handle<Texture> depth;
 
 		/** Projection matrix. */
 		glm::mat4 projection = {};
@@ -244,9 +244,17 @@ namespace gust
 		/**
 		 * @brief Initiailize renderer.
 		 * @param Graphics context.
+		 * @param Mesh allocator.
+		 * @param Texture allocator.
 		 * @param Thread count.
 		 */
-		void startup(Graphics* graphics, size_t threadCount);
+		void startup
+		(
+			Graphics* graphics, 
+			ResourceAllocator<Mesh>* meshAllocator, 
+			ResourceAllocator<Texture>* textureAllocator, 
+			size_t threadCount
+		);
 
 		/**
 		 * @brief Shutdown renderer.
@@ -371,6 +379,12 @@ namespace gust
 			camera->misc->free();
 			camera->normal->free();
 			camera->position->free();
+
+			m_textureAllocator->deallocate(camera->color.getHandle());
+			m_textureAllocator->deallocate(camera->depth.getHandle());
+			m_textureAllocator->deallocate(camera->misc.getHandle());
+			m_textureAllocator->deallocate(camera->normal.getHandle());
+			m_textureAllocator->deallocate(camera->position.getHandle());
 
 			m_cameraAllocator->deallocate(camera.getHandle());
 		}
@@ -796,19 +810,25 @@ namespace gust
 		/** Camera allocator. */
 		std::unique_ptr<ResourceAllocator<VirtualCamera>> m_cameraAllocator;
 
+		/** Mesh allocator. */
+		ResourceAllocator<Mesh>* m_meshAllocator = nullptr;
+
+		/** Texture allocator. */
+		ResourceAllocator<Texture>* m_textureAllocator = nullptr;
+
 
 
 		/** Thread pool for rendering meshes. */
 		std::unique_ptr<ThreadPool> m_threadPool = nullptr;
 
 		/** Screen quad. */
-		std::unique_ptr<Mesh> m_screenQuad = nullptr;
+		Handle<Mesh> m_screenQuad = Handle<Mesh>::nullHandle();
 
 		/** Skybox. */
-		std::unique_ptr<Mesh> m_skybox = nullptr;
+		Handle<Mesh> m_skybox = Handle<Mesh>::nullHandle();
 
 		/** Main camera. */
-		Handle<VirtualCamera> m_mainCamera = {};
+		Handle<VirtualCamera> m_mainCamera = Handle<VirtualCamera>::nullHandle();
 
 		/** Uniform buffer for lighting data. */
 		Buffer m_lightingUniformBuffer = {};

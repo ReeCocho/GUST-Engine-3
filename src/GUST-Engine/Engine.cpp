@@ -59,7 +59,7 @@ namespace gust
 		input.startup();
 		graphics.startup(name, width, height);
 		resourceManager.startup(&graphics, &renderer, 20, 20, 10, 10);
-		renderer.startup(&graphics, 4);
+		renderer.startup(&graphics, resourceManager.getMeshAllocator(), resourceManager.getTextureAllocator(), 4);
 		scene.startup();
 		physics.startup({ 0, -9.82f, 0 });
 

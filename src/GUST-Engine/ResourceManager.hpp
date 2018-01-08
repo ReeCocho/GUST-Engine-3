@@ -65,6 +65,42 @@ namespace gust
 		void shutdown();
 
 		/**
+		 * @brief Get mesh allocator.
+		 * @return Mesh allocator.
+		 */
+		inline ResourceAllocator<Mesh>* getMeshAllocator()
+		{
+			return m_meshAllocator.get();
+		}
+
+		/**
+		 * @brief Get texture allocator.
+		 * @return Mesh allocator.
+		 */
+		inline ResourceAllocator<Texture>* getTextureAllocator()
+		{
+			return m_textureAllocator.get();
+		}
+
+		/**
+		 * @brief Get material allocator.
+		 * @return Material allocator.
+		 */
+		inline ResourceAllocator<Material>* getMaterialAllocator()
+		{
+			return m_materialAllocator.get();
+		}
+
+		/**
+		 * @brief Get shader allocator.
+		 * @return Shader allocator.
+		 */
+		inline ResourceAllocator<Shader>* getShaderAllocator()
+		{
+			return m_shaderAllocator.get();
+		}
+
+		/**
 		 * @brief Create a mesh.
 		 * @param Path to an OBJ file containing the mesh.
 		 * @return Mesh handle.
